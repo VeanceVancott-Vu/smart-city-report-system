@@ -1,8 +1,0 @@
-com\smartcity\reports\auth\AuthControllerTest.class
-com\smartcity\reports\report\ReportControllerTest.class
-com\smartcity\reports\auth\AuthServiceTest.class
-com\smartcity\reports\dev\DevUserSeederTest.class
-com\smartcity\reports\security\JwtServiceTest.class
-com\smartcity\reports\task\TaskControllerTest.class
-com\smartcity\reports\report\ReportServiceTest.class
-com\smartcity\reports\task\TaskServiceTest.class

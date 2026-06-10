@@ -1,0 +1,37 @@
+# Environment and local secrets
+.env
+*.env
+!.env.example
+application-local.properties
+application-*.local.properties
+application-*.local.yml
+application-*.local.yaml
+
+# Local uploads and runtime files
+uploads/
+backend-spring/uploads/
+*.log
+
+# Java / Spring Boot
+backend-spring/target/
+target/
+*.class
+
+# Python / FastAPI
+ai-service-fastapi/.venv/
+**/__pycache__/
+*.py[cod]
+.pytest_cache/
+
+# Flutter / Dart
+frontend-flutter/.dart_tool/
+frontend-flutter/build/
+frontend-flutter/.flutter-plugins
+frontend-flutter/.flutter-plugins-dependencies
+
+# IDE and OS files
+.idea/
+.vscode/
+*.iml
+.DS_Store
+Thumbs.db
