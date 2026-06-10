@@ -102,13 +102,13 @@ class ReportServiceTest {
     }
 
     @Test
-    void getReportsForMapReturnsNonCancelledPinSummary() {
+    void getReportsForMapReturnsSubmittedPinSummary() {
         User citizen = user(UserRole.CITIZEN);
         User otherCitizen = user(UserRole.CITIZEN);
         Report report = reportFor(otherCitizen);
         report.setId(UUID.randomUUID());
 
-        when(reportRepository.findNonCancelledWithinBounds(10.7, 106.6, 10.8, 106.8))
+        when(reportRepository.findSubmittedWithinBounds(10.7, 106.6, 10.8, 106.8))
                 .thenReturn(List.of(report));
 
         List<ReportMapPinResponse> response = reportService.getReportsForMap(
@@ -123,7 +123,7 @@ class ReportServiceTest {
         assertThat(response.get(0).id()).isEqualTo(report.getId());
         assertThat(response.get(0).title()).isEqualTo("Pothole");
         assertThat(response.get(0).status()).isEqualTo(ReportStatus.SUBMITTED);
-        verify(reportRepository).findNonCancelledWithinBounds(10.7, 106.6, 10.8, 106.8);
+        verify(reportRepository).findSubmittedWithinBounds(10.7, 106.6, 10.8, 106.8);
     }
 
     @Test
@@ -246,6 +246,20 @@ class ReportServiceTest {
         assertThatThrownBy(() -> reportService.upvoteReport(reportId, user(UserRole.CITIZEN)))
                 .isInstanceOf(IllegalArgumentException.class)
                 .hasMessage("Fixed reports cannot be upvoted");
+    }
+
+    @Test
+    void upvoteReportRejectsStaffUser() {
+        assertThatThrownBy(() -> reportService.upvoteReport(UUID.randomUUID(), user(UserRole.STAFF)))
+                .isInstanceOf(AccessDeniedException.class)
+                .hasMessage("Only citizens can upvote reports");
+    }
+
+    @Test
+    void removeUpvoteRejectsOverseerUser() {
+        assertThatThrownBy(() -> reportService.removeUpvote(UUID.randomUUID(), user(UserRole.OVERSEER)))
+                .isInstanceOf(AccessDeniedException.class)
+                .hasMessage("Only citizens can remove report upvotes");
     }
 
     @Test

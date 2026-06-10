@@ -121,6 +121,7 @@ public class ReportService {
     @Transactional
     public ReportUpvoteResponse upvoteReport(UUID id, User currentUser) {
         requireAuthenticated(currentUser);
+        requireCitizen(currentUser, "Only citizens can upvote reports");
         Report report = getReportEntity(id);
         ensureCanReceiveUpvote(report);
 
@@ -131,6 +132,7 @@ public class ReportService {
     @Transactional
     public ReportUpvoteResponse removeUpvote(UUID id, User currentUser) {
         requireAuthenticated(currentUser);
+        requireCitizen(currentUser, "Only citizens can remove report upvotes");
         Report report = getReportEntity(id);
         reportUpvoteRepository.deleteByReport_IdAndUser_Id(id, currentUser.getId());
         return syncUpvoteSummary(report, false);
@@ -146,7 +148,7 @@ public class ReportService {
     ) {
         requireAuthenticated(currentUser);
         validateBounds(minLat, minLng, maxLat, maxLng);
-        return reportRepository.findNonCancelledWithinBounds(minLat, minLng, maxLat, maxLng)
+        return reportRepository.findSubmittedWithinBounds(minLat, minLng, maxLat, maxLng)
                 .stream()
                 .map(reportMapper::toMapPinResponse)
                 .toList();
@@ -238,6 +240,12 @@ public class ReportService {
     private void requireAuthenticated(User currentUser) {
         if (currentUser == null) {
             throw new AccessDeniedException("Authentication required");
+        }
+    }
+
+    private void requireCitizen(User currentUser, String message) {
+        if (currentUser.getRole() != UserRole.CITIZEN) {
+            throw new AccessDeniedException(message);
         }
     }
 

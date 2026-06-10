@@ -12,6 +12,7 @@ import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
 import org.springframework.boot.test.mock.mockito.MockBean;
 import org.springframework.context.annotation.Import;
 import org.springframework.http.MediaType;
+import org.springframework.security.access.AccessDeniedException;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.test.web.servlet.MockMvc;
@@ -99,6 +100,29 @@ class ReportControllerTest {
                 .andExpect(status().isBadRequest())
                 .andExpect(jsonPath("$.message").value("Validation failed"))
                 .andExpect(jsonPath("$.errors.title").exists());
+    }
+
+    @Test
+    void accessDeniedErrorsKeepUsefulMessage() throws Exception {
+        User staff = user(UserRole.STAFF);
+
+        when(reportService.createReport(any(CreateReportRequest.class), nullable(User.class)))
+                .thenThrow(new AccessDeniedException("Only citizens can create reports"));
+
+        mockMvc.perform(post("/api/reports")
+                        .with(authentication(authenticationToken(staff)))
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                {
+                                  "title": "Broken street light",
+                                  "description": "The street light near the park is not working.",
+                                  "category": "STREET_LIGHT",
+                                  "latitude": 10.762622,
+                                  "longitude": 106.660172
+                                }
+                                """))
+                .andExpect(status().isForbidden())
+                .andExpect(jsonPath("$.message").value("Only citizens can create reports"));
     }
 
     @Test

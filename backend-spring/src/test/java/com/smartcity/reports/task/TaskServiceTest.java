@@ -130,6 +130,26 @@ class TaskServiceTest {
     }
 
     @Test
+    void citizenCannotCreateTask() {
+        CreateTaskRequest request = new CreateTaskRequest(
+                "Review drainage issue",
+                "Inspect the drainage issue before assignment.",
+                IssueCategory.DRAINAGE,
+                10.762622,
+                106.660172,
+                null,
+                null,
+                null,
+                null,
+                null
+        );
+
+        assertThatThrownBy(() -> taskService.createTask(request, user(UserRole.CITIZEN)))
+                .isInstanceOf(AccessDeniedException.class)
+                .hasMessage("Only overseers can manage tasks");
+    }
+
+    @Test
     void citizenCannotAccessTasks() {
         assertThatThrownBy(() -> taskService.getTasks(user(UserRole.CITIZEN)))
                 .isInstanceOf(AccessDeniedException.class);
@@ -214,6 +234,13 @@ class TaskServiceTest {
         assertThat(response.status()).isEqualTo(TaskStatus.CLOSED);
         assertThat(response.closedAt()).isEqualTo(NOW);
         assertThat(report.getStatus()).isEqualTo(ReportStatus.FIXED);
+    }
+
+    @Test
+    void staffCannotCloseTask() {
+        assertThatThrownBy(() -> taskService.closeTask(UUID.randomUUID(), user(UserRole.STAFF)))
+                .isInstanceOf(AccessDeniedException.class)
+                .hasMessage("Only overseers can manage tasks");
     }
 
     @Test

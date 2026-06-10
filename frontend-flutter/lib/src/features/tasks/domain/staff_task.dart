@@ -1,3 +1,5 @@
+import 'task.dart';
+
 enum StaffTaskStatus { queued, assigned, inProgress, awaitingReview }
 
 extension StaffTaskStatusLabel on StaffTaskStatus {
@@ -27,4 +29,22 @@ class StaffTask {
   final StaffTaskStatus status;
   final String area;
   final DateTime dueDate;
+
+  factory StaffTask.fromTask(Task task) {
+    return StaffTask(
+      id: task.id,
+      reportTitle: task.title,
+      category: task.category.label,
+      status: switch (task.status) {
+        TaskStatus.assigned => StaffTaskStatus.assigned,
+        TaskStatus.inProgress => StaffTaskStatus.inProgress,
+        TaskStatus.done ||
+        TaskStatus.pendingReview ||
+        TaskStatus.approved => StaffTaskStatus.awaitingReview,
+        _ => StaffTaskStatus.queued,
+      },
+      area: task.locationLabel,
+      dueDate: task.createdAt,
+    );
+  }
 }

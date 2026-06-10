@@ -4,6 +4,7 @@ import com.smartcity.reports.common.DuplicateResourceException;
 import com.smartcity.reports.security.JwtService;
 import com.smartcity.reports.user.User;
 import com.smartcity.reports.user.UserRepository;
+import com.smartcity.reports.user.UserRole;
 import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.security.authentication.BadCredentialsException;
 import org.springframework.security.crypto.password.PasswordEncoder;
@@ -36,7 +37,7 @@ public class AuthService {
                 email,
                 request.fullName().trim(),
                 passwordEncoder.encode(request.password()),
-                request.role()
+                UserRole.CITIZEN
         );
 
         try {

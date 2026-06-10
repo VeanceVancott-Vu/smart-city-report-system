@@ -1,12 +1,24 @@
 import 'package:flutter/material.dart';
 
 class OverseerMapScreen extends StatelessWidget {
-  const OverseerMapScreen({super.key});
+  const OverseerMapScreen({super.key, this.onLogout});
+
+  final VoidCallback? onLogout;
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: const Text('Overseer Map')),
+      appBar: AppBar(
+        title: const Text('Overseer Map'),
+        actions: [
+          if (onLogout != null)
+            IconButton(
+              tooltip: 'Logout',
+              onPressed: onLogout,
+              icon: const Icon(Icons.logout),
+            ),
+        ],
+      ),
       body: SafeArea(
         child: LayoutBuilder(
           builder: (context, constraints) {

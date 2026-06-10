@@ -40,7 +40,7 @@ public class ApiExceptionHandler {
     @ExceptionHandler(AccessDeniedException.class)
     ResponseEntity<ApiErrorResponse> handleAccessDenied(AccessDeniedException exception) {
         return ResponseEntity.status(HttpStatus.FORBIDDEN)
-                .body(ApiErrorResponse.of(HttpStatus.FORBIDDEN.value(), "Access denied"));
+                .body(ApiErrorResponse.of(HttpStatus.FORBIDDEN.value(), messageOrDefault(exception, "Access denied")));
     }
 
     @ExceptionHandler(MethodArgumentNotValidException.class)
@@ -74,5 +74,10 @@ public class ApiExceptionHandler {
     ResponseEntity<ApiErrorResponse> handleBadRequest(IllegalArgumentException exception) {
         return ResponseEntity.badRequest()
                 .body(ApiErrorResponse.of(HttpStatus.BAD_REQUEST.value(), exception.getMessage()));
+    }
+
+    private String messageOrDefault(Exception exception, String fallback) {
+        String message = exception.getMessage();
+        return message == null || message.isBlank() ? fallback : message;
     }
 }

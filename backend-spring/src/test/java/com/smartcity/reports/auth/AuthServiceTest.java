@@ -46,12 +46,12 @@ class AuthServiceTest {
     }
 
     @Test
-    void registerHashesPasswordAndReturnsToken() {
+    void registerHashesPasswordCreatesCitizenAndReturnsToken() {
         RegisterRequest request = new RegisterRequest(
                 "Demo Citizen",
                 "DEMO.CITIZEN@example.local",
                 "correct-password",
-                UserRole.CITIZEN
+                UserRole.OVERSEER
         );
 
         when(userRepository.existsByEmailIgnoreCase("demo.citizen@example.local")).thenReturn(false);
@@ -68,6 +68,7 @@ class AuthServiceTest {
         User savedUser = userCaptor.getValue();
 
         assertThat(savedUser.getEmail()).isEqualTo("demo.citizen@example.local");
+        assertThat(savedUser.getRole()).isEqualTo(UserRole.CITIZEN);
         assertThat(savedUser.getPasswordHash()).isNotEqualTo("correct-password");
         assertThat(passwordEncoder.matches("correct-password", savedUser.getPasswordHash())).isTrue();
         assertThat(response.token()).isNotBlank();

@@ -13,14 +13,14 @@ public interface ReportRepository extends JpaRepository<Report, UUID>, JpaSpecif
     @Query(value = """
             SELECT *
             FROM reports
-            WHERE status <> 'CANCELLED'
+            WHERE status = 'SUBMITTED'
               AND ST_Intersects(
                 location,
                 ST_MakeEnvelope(:minLng, :minLat, :maxLng, :maxLat, 4326)
             )
             ORDER BY priority_score DESC, upvote_count DESC, created_at DESC
             """, nativeQuery = true)
-    List<Report> findNonCancelledWithinBounds(
+    List<Report> findSubmittedWithinBounds(
             @Param("minLat") double minLat,
             @Param("minLng") double minLng,
             @Param("maxLat") double maxLat,
