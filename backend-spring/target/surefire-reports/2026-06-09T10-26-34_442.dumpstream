@@ -1,0 +1,5 @@
+# Created at 2026-06-09T10:26:34.609
+Boot Manifest-JAR contains absolute paths in classpath 'D:\DACN-2\smart-city-report-system\backend-spring\target\test-classes'
+Hint: <argLine>-Djdk.net.URLClassPath.disableClassPathURLCheck=true</argLine>
+'other' has different root
+
