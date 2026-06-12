@@ -6,6 +6,7 @@ import '../../overseer/presentation/overseer_report_dashboard_screen.dart';
 import '../../overseer/presentation/overseer_task_list_screen.dart';
 import '../../reports/data/report_api_service.dart';
 import '../../tasks/data/task_api_service.dart';
+import '../../users/data/user_api_service.dart';
 
 class OverseerHomeScreen extends StatefulWidget {
   const OverseerHomeScreen({
@@ -13,11 +14,13 @@ class OverseerHomeScreen extends StatefulWidget {
     required this.authApiService,
     required this.reportApiService,
     required this.taskApiService,
+    required this.userApiService,
   });
 
   final AuthApiService authApiService;
   final ReportApiService reportApiService;
   final TaskApiService taskApiService;
+  final UserApiService userApiService;
 
   @override
   State<OverseerHomeScreen> createState() => _OverseerHomeScreenState();
@@ -34,6 +37,13 @@ class _OverseerHomeScreenState extends State<OverseerHomeScreen> {
       appBar: AppBar(
         title: Text(titles[_selectedIndex]),
         actions: [
+          IconButton(
+            tooltip: 'Create user',
+            onPressed: () {
+              Navigator.of(context).pushNamed(AppRoutes.overseerCreateUser);
+            },
+            icon: const Icon(Icons.person_add_alt_1),
+          ),
           IconButton(
             tooltip: 'Logout',
             onPressed: () => _logout(context),

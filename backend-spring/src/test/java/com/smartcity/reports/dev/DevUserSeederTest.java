@@ -5,6 +5,7 @@ import com.smartcity.reports.user.UserRepository;
 import com.smartcity.reports.user.UserRole;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.springframework.context.annotation.Profile;
 import org.mockito.ArgumentCaptor;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
@@ -25,6 +26,14 @@ class DevUserSeederTest {
     private UserRepository userRepository;
 
     private final PasswordEncoder passwordEncoder = new BCryptPasswordEncoder();
+
+    @Test
+    void seederOnlyRunsForLocalAndDevProfiles() {
+        Profile profile = DevUserSeeder.class.getAnnotation(Profile.class);
+
+        assertThat(profile).isNotNull();
+        assertThat(profile.value()).containsExactlyInAnyOrder("local", "dev");
+    }
 
     @Test
     void seedUsersCreatesMissingUsersWithHashedPasswords() {

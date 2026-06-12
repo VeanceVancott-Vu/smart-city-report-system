@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 
+import '../../../core/files/uploaded_photo_view.dart';
 import '../../../core/routing/app_routes.dart';
 import '../../reports/data/report_api_service.dart';
 import '../../reports/domain/report.dart';
@@ -121,10 +122,10 @@ class _OverseerReportDetailScreenState
                     _Section(
                       title: 'Address',
                       child: Text(report.addressText!),
-                    ),
+                  ),
                   _Section(
-                    title: 'Before photo URL',
-                    child: Text(report.photoLabel),
+                    title: 'Before photo',
+                    child: UploadedPhotoView(fileUrl: report.beforePhotoUrl),
                   ),
                   _Section(
                     title: 'Created by',

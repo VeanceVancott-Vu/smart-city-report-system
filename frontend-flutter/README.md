@@ -14,19 +14,30 @@ lib/src/features/map/                    Overseer map placeholder
 lib/src/features/tasks/                  Staff task list placeholder
 ```
 
-The first version uses mock API service classes only. Real backend calls should go through the Spring Boot API, not PostgreSQL.
+Real backend calls go through the Spring Boot API, not PostgreSQL.
 
 ## Run
 
+For local web with the Spring Boot backend on `127.0.0.1:8080`:
+
 ```bash
 flutter pub get
-flutter run -d chrome
+flutter run -d web-server --web-hostname 127.0.0.1 --web-port 5200 --dart-define-from-file=config/local_web.json
 ```
 
-For Android:
+Open `http://127.0.0.1:5200` after the web server starts. The fixed port
+matches the backend CORS allowlist.
+
+For Android emulator:
 
 ```bash
-flutter run -d android
+flutter run -d android --dart-define-from-file=config/android_emulator.json
+```
+
+You can also override the API URL directly:
+
+```bash
+flutter run -d web-server --web-hostname 127.0.0.1 --web-port 5200 --dart-define=API_BASE_URL=http://127.0.0.1:8080
 ```
 
 ## Test

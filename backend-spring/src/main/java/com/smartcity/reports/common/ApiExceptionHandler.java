@@ -1,5 +1,6 @@
 package com.smartcity.reports.common;
 
+import com.smartcity.reports.files.FileStorageException;
 import jakarta.validation.ConstraintViolationException;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
@@ -11,6 +12,9 @@ import org.springframework.validation.FieldError;
 import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
+import org.springframework.web.multipart.MaxUploadSizeExceededException;
+import org.springframework.web.multipart.MultipartException;
+import org.springframework.web.multipart.support.MissingServletRequestPartException;
 
 import java.util.LinkedHashMap;
 import java.util.Map;
@@ -70,10 +74,31 @@ public class ApiExceptionHandler {
                 .body(ApiErrorResponse.of(HttpStatus.BAD_REQUEST.value(), "Request body is not valid JSON"));
     }
 
+    @ExceptionHandler({
+            MultipartException.class,
+            MissingServletRequestPartException.class
+    })
+    ResponseEntity<ApiErrorResponse> handleMultipartRequest(Exception exception) {
+        return ResponseEntity.badRequest()
+                .body(ApiErrorResponse.of(HttpStatus.BAD_REQUEST.value(), "Multipart file field 'file' is required"));
+    }
+
+    @ExceptionHandler(MaxUploadSizeExceededException.class)
+    ResponseEntity<ApiErrorResponse> handleMaxUploadSize(MaxUploadSizeExceededException exception) {
+        return ResponseEntity.status(HttpStatus.PAYLOAD_TOO_LARGE)
+                .body(ApiErrorResponse.of(HttpStatus.PAYLOAD_TOO_LARGE.value(), "File exceeds maximum upload size"));
+    }
+
     @ExceptionHandler(IllegalArgumentException.class)
     ResponseEntity<ApiErrorResponse> handleBadRequest(IllegalArgumentException exception) {
         return ResponseEntity.badRequest()
                 .body(ApiErrorResponse.of(HttpStatus.BAD_REQUEST.value(), exception.getMessage()));
+    }
+
+    @ExceptionHandler(FileStorageException.class)
+    ResponseEntity<ApiErrorResponse> handleFileStorage(FileStorageException exception) {
+        return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                .body(ApiErrorResponse.of(HttpStatus.INTERNAL_SERVER_ERROR.value(), exception.getMessage()));
     }
 
     private String messageOrDefault(Exception exception, String fallback) {

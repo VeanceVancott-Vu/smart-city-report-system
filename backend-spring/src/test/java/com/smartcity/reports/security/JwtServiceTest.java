@@ -14,8 +14,7 @@ class JwtServiceTest {
 
     private final JwtService jwtService = new JwtService(
             new ObjectMapper(),
-            "test-secret-with-at-least-32-characters",
-            120
+            new JwtProperties("test-secret-with-at-least-32-characters", 120)
     );
 
     @Test

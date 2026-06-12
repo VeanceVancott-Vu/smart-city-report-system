@@ -1,0 +1,121 @@
+package com.smartcity.reports.user;
+
+import com.smartcity.reports.common.ApiExceptionHandler;
+import com.smartcity.reports.security.JwtAuthenticationFilter;
+import org.junit.jupiter.api.Test;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
+import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
+import org.springframework.boot.test.mock.mockito.MockBean;
+import org.springframework.context.annotation.Import;
+import org.springframework.http.HttpHeaders;
+import org.springframework.http.MediaType;
+import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
+import org.springframework.security.core.authority.SimpleGrantedAuthority;
+import org.springframework.test.web.servlet.MockMvc;
+
+import java.util.List;
+import java.util.UUID;
+
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.ArgumentMatchers.nullable;
+import static org.mockito.Mockito.when;
+import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.authentication;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.header;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
+
+@WebMvcTest(UserController.class)
+@AutoConfigureMockMvc(addFilters = false)
+@Import(ApiExceptionHandler.class)
+class UserControllerTest {
+
+    @Autowired
+    private MockMvc mockMvc;
+
+    @MockBean
+    private UserService userService;
+
+    @MockBean
+    private JwtAuthenticationFilter jwtAuthenticationFilter;
+
+    @Test
+    void getUsersReturnsStaffWithoutPasswordHash() throws Exception {
+        User overseer = user(UserRole.OVERSEER);
+        UUID staffId = UUID.randomUUID();
+        when(userService.getUsers(eq(UserRole.STAFF), nullable(User.class)))
+                .thenReturn(new UserListResponse(List.of(
+                        new UserResponse(staffId, "Test Staff", "staff@test.com", UserRole.STAFF)
+                )));
+
+        mockMvc.perform(get("/api/users")
+                        .with(authentication(authenticationToken(overseer)))
+                        .queryParam("role", "STAFF"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.users[0].id").value(staffId.toString()))
+                .andExpect(jsonPath("$.users[0].fullName").value("Test Staff"))
+                .andExpect(jsonPath("$.users[0].email").value("staff@test.com"))
+                .andExpect(jsonPath("$.users[0].role").value("STAFF"))
+                .andExpect(jsonPath("$.users[0].passwordHash").doesNotExist());
+    }
+
+    @Test
+    void meReturnsCurrentUserWithoutPasswordHash() throws Exception {
+        User citizen = user(UserRole.CITIZEN);
+        when(userService.getCurrentUser(nullable(User.class)))
+                .thenReturn(new UserResponse(citizen.getId(), "Test Citizen", "citizen@test.com", UserRole.CITIZEN));
+
+        mockMvc.perform(get("/api/users/me")
+                        .with(authentication(authenticationToken(citizen))))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.id").value(citizen.getId().toString()))
+                .andExpect(jsonPath("$.fullName").value("Test Citizen"))
+                .andExpect(jsonPath("$.email").value("citizen@test.com"))
+                .andExpect(jsonPath("$.role").value("CITIZEN"))
+                .andExpect(jsonPath("$.passwordHash").doesNotExist());
+    }
+
+    @Test
+    void postUsersCreatesStaffWithoutPasswordHash() throws Exception {
+        User overseer = user(UserRole.OVERSEER);
+        UUID staffId = UUID.randomUUID();
+        when(userService.createUser(any(CreateUserRequest.class), nullable(User.class)))
+                .thenReturn(new UserResponse(staffId, "New Staff", "new.staff@test.com", UserRole.STAFF));
+
+        mockMvc.perform(post("/api/users")
+                        .with(authentication(authenticationToken(overseer)))
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                {
+                                  "fullName": "New Staff",
+                                  "email": "new.staff@test.com",
+                                  "password": "correct-password",
+                                  "role": "STAFF"
+                                }
+                                """))
+                .andExpect(status().isCreated())
+                .andExpect(header().string(HttpHeaders.LOCATION, "/api/users/" + staffId))
+                .andExpect(jsonPath("$.id").value(staffId.toString()))
+                .andExpect(jsonPath("$.fullName").value("New Staff"))
+                .andExpect(jsonPath("$.email").value("new.staff@test.com"))
+                .andExpect(jsonPath("$.role").value("STAFF"))
+                .andExpect(jsonPath("$.passwordHash").doesNotExist());
+    }
+
+    private User user(UserRole role) {
+        User user = new User(role.name().toLowerCase() + "@example.local", role.name(), "hash", role);
+        user.setId(UUID.randomUUID());
+        return user;
+    }
+
+    private UsernamePasswordAuthenticationToken authenticationToken(User user) {
+        return new UsernamePasswordAuthenticationToken(
+                user,
+                null,
+                List.of(new SimpleGrantedAuthority("ROLE_" + user.getRole().name()))
+        );
+    }
+}

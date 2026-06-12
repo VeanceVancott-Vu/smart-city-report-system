@@ -143,8 +143,8 @@ public class TaskService {
             throw new IllegalArgumentException("Only in-progress tasks can be completed");
         }
 
-        CompleteTaskRequest safeRequest = request == null ? new CompleteTaskRequest(null, null) : request;
-        task.complete(Instant.now(clock), safeRequest.afterPhotoUrl(), safeRequest.staffNote());
+        String afterPhotoUrl = requireAfterPhotoUrl(request);
+        task.complete(Instant.now(clock), afterPhotoUrl, request.staffNote());
         return taskMapper.toResponse(task);
     }
 
@@ -241,6 +241,13 @@ public class TaskService {
     private boolean isAssignedTo(Task task, User currentUser) {
         return task.getAssignedStaff() != null
                 && task.getAssignedStaff().getId().equals(currentUser.getId());
+    }
+
+    private String requireAfterPhotoUrl(CompleteTaskRequest request) {
+        if (request == null || request.afterPhotoUrl() == null || request.afterPhotoUrl().isBlank()) {
+            throw new IllegalArgumentException("After photo is required");
+        }
+        return request.afterPhotoUrl().trim();
     }
 
     private void requireOverseer(User currentUser) {

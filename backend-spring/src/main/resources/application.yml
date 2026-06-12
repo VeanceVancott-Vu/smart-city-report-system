@@ -17,14 +17,21 @@ spring:
       hibernate:
         jdbc:
           time_zone: UTC
+  servlet:
+    multipart:
+      max-file-size: ${APP_FILE_MAX_UPLOAD_SIZE:5MB}
+      max-request-size: ${APP_FILE_MAX_UPLOAD_SIZE:5MB}
 
 server:
   port: ${SERVER_PORT:8080}
 
 jwt:
   secret: ${JWT_SECRET}
-  expiration-minutes: ${JWT_EXPIRATION_MINUTES:120}
+  expiration-minutes: ${JWT_EXPIRATION_MINUTES}
 
 app:
   cors:
-    allowed-origins: ${APP_CORS_ALLOWED_ORIGINS:http://localhost:5200,http://127.0.0.1:5200,http://localhost:5201,http://127.0.0.1:5201}
+    allowed-origins: ${APP_CORS_ALLOWED_ORIGINS}
+  files:
+    upload-dir: ${APP_FILE_UPLOAD_DIR}
+    max-upload-size: ${APP_FILE_MAX_UPLOAD_SIZE:5MB}

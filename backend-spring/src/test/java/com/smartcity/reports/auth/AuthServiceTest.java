@@ -2,6 +2,7 @@ package com.smartcity.reports.auth;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.smartcity.reports.common.DuplicateResourceException;
+import com.smartcity.reports.security.JwtProperties;
 import com.smartcity.reports.security.JwtService;
 import com.smartcity.reports.user.User;
 import com.smartcity.reports.user.UserRepository;
@@ -34,8 +35,7 @@ class AuthServiceTest {
     private final PasswordEncoder passwordEncoder = new BCryptPasswordEncoder();
     private final JwtService jwtService = new JwtService(
             new ObjectMapper(),
-            "test-secret-with-at-least-32-characters",
-            120
+            new JwtProperties("test-secret-with-at-least-32-characters", 120)
     );
 
     private AuthService authService;
@@ -50,8 +50,7 @@ class AuthServiceTest {
         RegisterRequest request = new RegisterRequest(
                 "Demo Citizen",
                 "DEMO.CITIZEN@example.local",
-                "correct-password",
-                UserRole.OVERSEER
+                "correct-password"
         );
 
         when(userRepository.existsByEmailIgnoreCase("demo.citizen@example.local")).thenReturn(false);
@@ -80,8 +79,7 @@ class AuthServiceTest {
         RegisterRequest request = new RegisterRequest(
                 "Demo Staff",
                 "staff@example.local",
-                "correct-password",
-                UserRole.STAFF
+                "correct-password"
         );
 
         when(userRepository.existsByEmailIgnoreCase("staff@example.local")).thenReturn(true);

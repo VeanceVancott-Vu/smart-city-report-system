@@ -73,7 +73,7 @@ class TaskServiceTest {
                 "District 1",
                 4,
                 staff.getId(),
-                "https://example.local/before.jpg",
+                "/uploads/report-before/before.jpg",
                 List.of(report.getId())
         );
 
@@ -202,14 +202,66 @@ class TaskServiceTest {
 
         TaskResponse response = taskService.completeTask(
                 taskId,
-                new CompleteTaskRequest("https://example.local/after.jpg", "Done"),
+                new CompleteTaskRequest("/uploads/task-after/after.jpg", "Done"),
                 staff
         );
 
         assertThat(response.status()).isEqualTo(TaskStatus.DONE);
         assertThat(response.submittedAt()).isEqualTo(NOW);
-        assertThat(response.afterPhotoUrl()).isEqualTo("https://example.local/after.jpg");
+        assertThat(response.afterPhotoUrl()).isEqualTo("/uploads/task-after/after.jpg");
         assertThat(response.staffNote()).isEqualTo("Done");
+        assertThat(response.aiConfidenceScore()).isNull();
+        assertThat(response.aiDecision()).isNull();
+    }
+
+    @Test
+    void completeTaskRequiresAfterPhotoUrl() {
+        User staff = user(UserRole.STAFF);
+        Task task = taskFor(user(UserRole.OVERSEER), staff);
+        UUID taskId = UUID.randomUUID();
+        task.start(NOW.minusSeconds(60));
+
+        when(taskRepository.findById(taskId)).thenReturn(Optional.of(task));
+
+        assertThatThrownBy(() -> taskService.completeTask(taskId, null, staff))
+                .isInstanceOf(IllegalArgumentException.class)
+                .hasMessage("After photo is required");
+    }
+
+    @Test
+    void completeTaskRequiresAssignedStaff() {
+        User assignedStaff = user(UserRole.STAFF);
+        User otherStaff = user(UserRole.STAFF);
+        Task task = taskFor(user(UserRole.OVERSEER), assignedStaff);
+        UUID taskId = UUID.randomUUID();
+        task.start(NOW.minusSeconds(60));
+
+        when(taskRepository.findById(taskId)).thenReturn(Optional.of(task));
+
+        assertThatThrownBy(() -> taskService.completeTask(
+                taskId,
+                new CompleteTaskRequest("/uploads/task-after/after.jpg", "Done"),
+                otherStaff
+        ))
+                .isInstanceOf(AccessDeniedException.class)
+                .hasMessage("Task is not assigned to this staff user");
+    }
+
+    @Test
+    void completeTaskRequiresInProgressStatus() {
+        User staff = user(UserRole.STAFF);
+        Task task = taskFor(user(UserRole.OVERSEER), staff);
+        UUID taskId = UUID.randomUUID();
+
+        when(taskRepository.findById(taskId)).thenReturn(Optional.of(task));
+
+        assertThatThrownBy(() -> taskService.completeTask(
+                taskId,
+                new CompleteTaskRequest("/uploads/task-after/after.jpg", "Done"),
+                staff
+        ))
+                .isInstanceOf(IllegalArgumentException.class)
+                .hasMessage("Only in-progress tasks can be completed");
     }
 
     @Test
@@ -275,7 +327,7 @@ class TaskServiceTest {
                 4,
                 staff,
                 overseer,
-                "https://example.local/before.jpg"
+                "/uploads/report-before/before.jpg"
         );
     }
 

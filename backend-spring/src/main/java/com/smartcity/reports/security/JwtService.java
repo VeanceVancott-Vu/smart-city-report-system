@@ -5,11 +5,11 @@ import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.smartcity.reports.user.User;
 import com.smartcity.reports.user.UserRole;
-import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 
 import javax.crypto.Mac;
 import javax.crypto.spec.SecretKeySpec;
+import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.security.MessageDigest;
 import java.time.Duration;
@@ -18,7 +18,6 @@ import java.util.Base64;
 import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.UUID;
-import java.io.IOException;
 
 @Service
 public class JwtService {
@@ -33,9 +32,10 @@ public class JwtService {
 
     public JwtService(
             ObjectMapper objectMapper,
-            @Value("${jwt.secret}") String secret,
-            @Value("${jwt.expiration-minutes}") long expirationMinutes
+            JwtProperties properties
     ) {
+        String secret = properties.secret();
+        long expirationMinutes = properties.expirationMinutes();
         if (secret == null || secret.length() < 32) {
             throw new IllegalStateException("JWT_SECRET must be at least 32 characters long");
         }

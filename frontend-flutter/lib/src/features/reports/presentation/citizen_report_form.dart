@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 
+import '../../../core/files/upload_file_picker.dart';
 import '../domain/report.dart';
 
 class CitizenReportForm extends StatefulWidget {
@@ -8,11 +9,17 @@ class CitizenReportForm extends StatefulWidget {
     this.initialReport,
     required this.submitLabel,
     required this.onSubmit,
+    required this.onUploadBeforePhoto,
   });
 
   final Report? initialReport;
   final String submitLabel;
   final Future<void> Function(ReportDraft draft) onSubmit;
+  final Future<String> Function({
+    required String filename,
+    required List<int> bytes,
+  })
+  onUploadBeforePhoto;
 
   @override
   State<CitizenReportForm> createState() => _CitizenReportFormState();
@@ -25,10 +32,12 @@ class _CitizenReportFormState extends State<CitizenReportForm> {
   late final TextEditingController _latitudeController;
   late final TextEditingController _longitudeController;
   late final TextEditingController _addressController;
-  late final TextEditingController _beforePhotoController;
 
   late ReportCategory _category;
   late bool _anonymous;
+  String? _beforePhotoUrl;
+  String? _beforePhotoError;
+  bool _isUploadingPhoto = false;
   bool _isSaving = false;
 
   @override
@@ -46,9 +55,7 @@ class _CitizenReportFormState extends State<CitizenReportForm> {
       text: (report?.longitude ?? 106.7009).toString(),
     );
     _addressController = TextEditingController(text: report?.addressText ?? '');
-    _beforePhotoController = TextEditingController(
-      text: report?.beforePhotoUrl ?? 'photo_placeholder.jpg',
-    );
+    _beforePhotoUrl = report?.beforePhotoUrl;
     _category = report?.category ?? ReportCategory.roadDamage;
     _anonymous = report?.anonymous ?? false;
   }
@@ -60,13 +67,16 @@ class _CitizenReportFormState extends State<CitizenReportForm> {
     _latitudeController.dispose();
     _longitudeController.dispose();
     _addressController.dispose();
-    _beforePhotoController.dispose();
     super.dispose();
   }
 
   Future<void> _submit() async {
     final formState = _formKey.currentState;
     if (formState == null || !formState.validate()) {
+      return;
+    }
+    if ((_beforePhotoUrl ?? '').trim().isEmpty) {
+      setState(() => _beforePhotoError = 'Upload a before photo first');
       return;
     }
 
@@ -82,7 +92,7 @@ class _CitizenReportFormState extends State<CitizenReportForm> {
           latitude: double.parse(_latitudeController.text.trim()),
           longitude: double.parse(_longitudeController.text.trim()),
           addressText: _nullableText(_addressController),
-          beforePhotoUrl: _nullableText(_beforePhotoController),
+          beforePhotoUrl: _beforePhotoUrl,
           anonymous: _anonymous,
         ),
       );
@@ -91,6 +101,57 @@ class _CitizenReportFormState extends State<CitizenReportForm> {
         setState(() => _isSaving = false);
       }
     }
+  }
+
+  Future<void> _pickAndUploadBeforePhoto() async {
+    if (_isSaving || _isUploadingPhoto) {
+      return;
+    }
+
+    setState(() {
+      _isUploadingPhoto = true;
+      _beforePhotoError = null;
+    });
+
+    try {
+      final pickedFile = await pickImageUploadFile();
+      if (pickedFile == null) {
+        return;
+      }
+
+      final fileUrl = await widget.onUploadBeforePhoto(
+        filename: pickedFile.filename,
+        bytes: pickedFile.bytes,
+      );
+      if (!mounted) {
+        return;
+      }
+      setState(() => _beforePhotoUrl = fileUrl);
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(const SnackBar(content: Text('Before photo uploaded')));
+    } on FilePickerException catch (error) {
+      _setPhotoError(error.message);
+    } catch (error) {
+      final message = error.toString();
+      _setPhotoError(
+        message.isEmpty ? 'Unable to upload before photo.' : message,
+      );
+    } finally {
+      if (mounted) {
+        setState(() => _isUploadingPhoto = false);
+      }
+    }
+  }
+
+  void _setPhotoError(String message) {
+    if (!mounted) {
+      return;
+    }
+    setState(() => _beforePhotoError = message);
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(content: Text(message), backgroundColor: Colors.red.shade700),
+    );
   }
 
   String? _nullableText(TextEditingController controller) {
@@ -204,13 +265,12 @@ class _CitizenReportFormState extends State<CitizenReportForm> {
             textInputAction: TextInputAction.next,
           ),
           const SizedBox(height: 12),
-          TextFormField(
-            controller: _beforePhotoController,
-            decoration: const InputDecoration(
-              labelText: 'Before photo URL',
-              prefixIcon: Icon(Icons.photo_outlined),
-            ),
-            textInputAction: TextInputAction.next,
+          _PhotoUploadField(
+            label: 'Before photo',
+            fileUrl: _beforePhotoUrl,
+            errorText: _beforePhotoError,
+            isUploading: _isUploadingPhoto,
+            onUpload: _pickAndUploadBeforePhoto,
           ),
           if (widget.initialReport == null) ...[
             const SizedBox(height: 8),
@@ -226,7 +286,7 @@ class _CitizenReportFormState extends State<CitizenReportForm> {
           ],
           const SizedBox(height: 20),
           FilledButton.icon(
-            onPressed: _isSaving ? null : _submit,
+            onPressed: _isSaving || _isUploadingPhoto ? null : _submit,
             icon: _isSaving
                 ? const SizedBox.square(
                     dimension: 18,
@@ -283,5 +343,57 @@ class _CitizenReportFormState extends State<CitizenReportForm> {
       return 'Use a number';
     }
     return null;
+  }
+}
+
+class _PhotoUploadField extends StatelessWidget {
+  const _PhotoUploadField({
+    required this.label,
+    required this.fileUrl,
+    required this.errorText,
+    required this.isUploading,
+    required this.onUpload,
+  });
+
+  final String label;
+  final String? fileUrl;
+  final String? errorText;
+  final bool isUploading;
+  final VoidCallback onUpload;
+
+  @override
+  Widget build(BuildContext context) {
+    final hasFile = (fileUrl ?? '').trim().isNotEmpty;
+    final colorScheme = Theme.of(context).colorScheme;
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(label, style: Theme.of(context).textTheme.titleSmall),
+        const SizedBox(height: 8),
+        OutlinedButton.icon(
+          onPressed: isUploading ? null : onUpload,
+          icon: isUploading
+              ? const SizedBox.square(
+                  dimension: 18,
+                  child: CircularProgressIndicator(strokeWidth: 2),
+                )
+              : const Icon(Icons.upload_file),
+          label: Text(hasFile ? 'Replace photo' : 'Upload photo'),
+        ),
+        if (hasFile) ...[
+          const SizedBox(height: 8),
+          Text(
+            fileUrl!,
+            style: TextStyle(color: colorScheme.primary),
+            overflow: TextOverflow.ellipsis,
+          ),
+        ],
+        if (errorText != null) ...[
+          const SizedBox(height: 8),
+          Text(errorText!, style: TextStyle(color: colorScheme.error)),
+        ],
+      ],
+    );
   }
 }

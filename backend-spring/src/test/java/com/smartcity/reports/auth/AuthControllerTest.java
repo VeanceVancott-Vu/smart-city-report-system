@@ -36,7 +36,8 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 @Import({SecurityConfig.class, ApiExceptionHandler.class, JwtService.class})
 @TestPropertySource(properties = {
         "jwt.secret=test-secret-with-at-least-32-characters",
-        "jwt.expiration-minutes=120"
+        "jwt.expiration-minutes=120",
+        "app.cors.allowed-origins=http://127.0.0.1:5200,http://localhost:5200"
 })
 class AuthControllerTest {
 
@@ -102,6 +103,18 @@ class AuthControllerTest {
                         .header(HttpHeaders.ACCESS_CONTROL_REQUEST_HEADERS, "content-type"))
                 .andExpect(status().isOk())
                 .andExpect(header().string(HttpHeaders.ACCESS_CONTROL_ALLOW_ORIGIN, "http://127.0.0.1:5200"))
+                .andExpect(header().string(HttpHeaders.ACCESS_CONTROL_ALLOW_METHODS, containsString("POST")))
+                .andExpect(header().string(HttpHeaders.ACCESS_CONTROL_ALLOW_HEADERS, containsString("content-type")));
+    }
+
+    @Test
+    void registerAllowsFlutterWebCorsPreflight() throws Exception {
+        mockMvc.perform(options("/api/auth/register")
+                        .header(HttpHeaders.ORIGIN, "http://localhost:5200")
+                        .header(HttpHeaders.ACCESS_CONTROL_REQUEST_METHOD, "POST")
+                        .header(HttpHeaders.ACCESS_CONTROL_REQUEST_HEADERS, "content-type"))
+                .andExpect(status().isOk())
+                .andExpect(header().string(HttpHeaders.ACCESS_CONTROL_ALLOW_ORIGIN, "http://localhost:5200"))
                 .andExpect(header().string(HttpHeaders.ACCESS_CONTROL_ALLOW_METHODS, containsString("POST")))
                 .andExpect(header().string(HttpHeaders.ACCESS_CONTROL_ALLOW_HEADERS, containsString("content-type")));
     }

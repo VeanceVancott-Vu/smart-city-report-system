@@ -2,11 +2,17 @@ import 'dart:convert';
 
 import 'package:http/http.dart' as http;
 
+import '../../../core/files/upload_content_type.dart';
 import '../../../core/services/api_service.dart';
 import '../../auth/data/token_storage.dart';
 import '../domain/report.dart';
 
 abstract class ReportApiService {
+  Future<String> uploadBeforePhoto({
+    required String filename,
+    required List<int> bytes,
+  });
+
   Future<List<Report>> fetchCitizenReports();
 
   Future<List<Report>> fetchReports();
@@ -40,6 +46,24 @@ class BackendReportApiService extends ApiService implements ReportApiService {
 
   final TokenStorage _tokenStorage;
   final http.Client _client;
+
+  @override
+  Future<String> uploadBeforePhoto({
+    required String filename,
+    required List<int> bytes,
+  }) async {
+    final response = await _uploadFile(
+      path: '/api/files/report-before',
+      filename: filename,
+      bytes: bytes,
+    );
+    final body = _decodeMap(response.body);
+    final fileUrl = body['fileUrl'];
+    if (fileUrl is String && fileUrl.isNotEmpty) {
+      return fileUrl;
+    }
+    throw const ReportApiException('Upload response did not include fileUrl.');
+  }
 
   @override
   Future<List<Report>> fetchCitizenReports() async {
@@ -168,7 +192,7 @@ class BackendReportApiService extends ApiService implements ReportApiService {
         : uri.replace(queryParameters: queryParameters);
   }
 
-  Future<Map<String, String>> _headers() async {
+  Future<Map<String, String>> _headers({bool includeContentType = true}) async {
     final token = await _tokenStorage.readToken();
     if (token == null || token.isEmpty) {
       throw const ReportApiException('Please log in again.');
@@ -176,9 +200,31 @@ class BackendReportApiService extends ApiService implements ReportApiService {
 
     return <String, String>{
       'Accept': 'application/json',
-      'Content-Type': 'application/json',
+      if (includeContentType) 'Content-Type': 'application/json',
       'Authorization': 'Bearer $token',
     };
+  }
+
+  Future<http.Response> _uploadFile({
+    required String path,
+    required String filename,
+    required List<int> bytes,
+  }) async {
+    final request = http.MultipartRequest('POST', _uri(path))
+      ..headers.addAll(await _headers(includeContentType: false))
+      ..files.add(
+        http.MultipartFile.fromBytes(
+          'file',
+          bytes,
+          filename: filename,
+          contentType: uploadContentTypeForFilename(filename),
+        ),
+      );
+
+    final streamedResponse = await _client.send(request);
+    final response = await http.Response.fromStream(streamedResponse);
+    _ensureSuccess(response);
+    return response;
   }
 
   void _ensureSuccess(http.Response response) {
@@ -199,6 +245,12 @@ class BackendReportApiService extends ApiService implements ReportApiService {
   String _errorMessage(http.Response response) {
     try {
       final body = _decodeMap(response.body);
+      final errors = body['errors'];
+      if (errors is Map<String, dynamic> && errors.isNotEmpty) {
+        return errors.entries
+            .map((entry) => '${entry.key}: ${entry.value}')
+            .join('\n');
+      }
       final message = body['message'] ?? body['error'] ?? body['detail'];
       if (message is String && message.isNotEmpty) {
         return message;
@@ -216,6 +268,18 @@ class MockReportApiService extends ApiService implements ReportApiService {
 
   final List<Report> _reports;
   final Set<String> _upvotedReportIds = <String>{};
+
+  @override
+  Future<String> uploadBeforePhoto({
+    required String filename,
+    required List<int> bytes,
+  }) async {
+    await Future<void>.delayed(const Duration(milliseconds: 100));
+    if (bytes.isEmpty) {
+      throw const ReportApiException('Selected image is empty.');
+    }
+    return '/uploads/report-before/$filename';
+  }
 
   @override
   Future<List<Report>> fetchCitizenReports() async {
@@ -390,7 +454,7 @@ class MockReportApiService extends ApiService implements ReportApiService {
         latitude: 10.7769,
         longitude: 106.7009,
         addressText: 'Nguyen Hue, District 1',
-        beforePhotoUrl: 'streetlight_before.jpg',
+        beforePhotoUrl: '/uploads/report-before/streetlight-before.jpg',
         anonymous: false,
         upvoteCount: 3,
         priorityScore: 3,
@@ -407,7 +471,7 @@ class MockReportApiService extends ApiService implements ReportApiService {
         latitude: 10.7827,
         longitude: 106.6994,
         addressText: 'Bus stop near Le Loi',
-        beforePhotoUrl: 'pothole_before.jpg',
+        beforePhotoUrl: '/uploads/report-before/pothole-before.jpg',
         anonymous: false,
         upvoteCount: 5,
         priorityScore: 5,
@@ -424,7 +488,7 @@ class MockReportApiService extends ApiService implements ReportApiService {
         latitude: 10.7712,
         longitude: 106.7043,
         addressText: 'Corner of Ham Nghi',
-        beforePhotoUrl: 'bin_before.jpg',
+        beforePhotoUrl: '/uploads/report-before/bin-before.jpg',
         anonymous: true,
         upvoteCount: 0,
         priorityScore: 0,

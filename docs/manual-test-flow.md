@@ -9,25 +9,27 @@ It intentionally does not test AI, offline sync, OAuth, rate limiting, or stress
 The commands below:
 
 1. Log in as a citizen.
-2. Create a report.
-3. View the citizen's own reports.
-4. Upvote the report and verify `priorityScore`.
-5. View open report map pins.
-6. Verify the citizen cannot access task APIs.
-7. Log in as an overseer.
-8. View all reports.
-9. Create a task from the report and assign staff.
-10. Log in as staff.
-11. View assigned tasks.
-12. Start the task.
-13. Complete the task.
-14. Verify staff cannot close the task.
-15. Use the overseer token again.
-16. Close the task.
-17. Verify the related report status becomes `FIXED`.
-18. Verify the fixed report is no longer returned as an open map pin.
+2. Upload a before photo.
+3. Create a report with the uploaded before photo URL.
+4. View the citizen's own reports.
+5. Upvote the report and verify `priorityScore`.
+6. View open report map pins.
+7. Verify the citizen cannot access task APIs.
+8. Log in as an overseer.
+9. View all reports.
+10. List active staff users as overseer.
+11. Create a task from the report and assign staff.
+12. Log in as staff.
+13. View assigned tasks.
+14. Start the task.
+15. Upload an after photo and complete the task.
+16. Verify staff cannot close the task.
+17. Use the overseer token again.
+18. Close the task.
+19. Verify the related report status becomes `FIXED`.
+20. Verify the fixed report is no longer returned as an open map pin.
 
-Because the backend does not have a staff-list endpoint yet, the script logs in as staff before task creation to capture `assignedStaffId`, then reuses that staff token for the staff workflow.
+The flow uses the overseer-only staff listing endpoint to capture `assignedStaffId`.
 
 ## 1. Start Local Services
 
@@ -37,7 +39,7 @@ Run this from the repository root:
 docker compose up -d postgres
 ```
 
-This starts the local PostgreSQL/PostGIS container used by the Spring Boot backend.
+This starts the local PostgreSQL/PostGIS container used by the Spring Boot backend. Make sure `.env` exists first; copy `.env.example` to `.env` for local defaults.
 
 In a second terminal, run:
 
@@ -52,12 +54,12 @@ This starts the Spring Boot backend with the `local` profile. Flyway runs automa
 Run these commands in a new PowerShell terminal:
 
 ```powershell
-$BASE = "http://localhost:8080"
+$BASE = if ($env:API_BASE_URL) { $env:API_BASE_URL } else { "http://localhost:8080" }
 $WORK = Join-Path $env:TEMP "smart-city-manual-flow"
 New-Item -ItemType Directory -Force $WORK | Out-Null
 ```
 
-This stores the base API URL and creates a temporary folder for JSON request bodies. Using files avoids PowerShell quoting problems with `curl.exe`.
+This stores the base API URL and creates a temporary folder for JSON request bodies. Set `API_BASE_URL` first if your backend is not running on the local default. Using files avoids PowerShell quoting problems with `curl.exe`.
 
 ## 3. Login As Citizen
 
@@ -85,7 +87,19 @@ CITIZEN
 ## 4. Create Report
 
 ```powershell
-@'
+$BEFORE_IMAGE = Join-Path $WORK "manual-before.png"
+[IO.File]::WriteAllBytes(
+  $BEFORE_IMAGE,
+  [Convert]::FromBase64String("iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8/x8AAwMCAO+/p9sAAAAASUVORK5CYII=")
+)
+
+$BEFORE_UPLOAD = curl.exe -s -X POST "$BASE/api/files/report-before" `
+  -H "Authorization: Bearer $CITIZEN_TOKEN" `
+  -F "file=@$BEFORE_IMAGE;type=image/png" | ConvertFrom-Json
+
+$BEFORE_PHOTO_URL = $BEFORE_UPLOAD.fileUrl
+
+$CREATE_REPORT_BODY = @'
 {
   "title": "Manual flow pothole",
   "description": "Large pothole blocking the right lane.",
@@ -93,10 +107,13 @@ CITIZEN
   "latitude": 10.762622,
   "longitude": 106.660172,
   "addressText": "District 1 test street",
-  "beforePhotoUrl": "https://example.local/manual-before.jpg",
+  "beforePhotoUrl": "__BEFORE_PHOTO_URL__",
   "anonymous": false
 }
-'@ | Set-Content -NoNewline "$WORK\create-report.json"
+'@
+
+$CREATE_REPORT_BODY.Replace("__BEFORE_PHOTO_URL__", $BEFORE_PHOTO_URL) |
+  Set-Content -NoNewline "$WORK\create-report.json"
 
 $REPORT = curl.exe -s -X POST "$BASE/api/reports" `
   -H "Content-Type: application/json" `
@@ -107,7 +124,7 @@ $REPORT_ID = $REPORT.id
 $REPORT | Select-Object id,title,status,category,upvoteCount,priorityScore
 ```
 
-This creates a new report as the citizen. New reports should start as `SUBMITTED` with `upvoteCount = 0` and `priorityScore = 0`.
+This uploads a before photo, then creates a new report as the citizen using the returned `/uploads/report-before/...` URL. New reports should start as `SUBMITTED` with `upvoteCount = 0` and `priorityScore = 0`.
 
 Expected status:
 
@@ -226,28 +243,27 @@ Expected result:
 The report id stored in $REPORT_ID is listed.
 ```
 
-## 11. Capture Staff Id For Assignment
+## 11. List Active Staff Users For Assignment
 
 ```powershell
-@'
-{ "email": "staff@test.com", "password": "Password123" }
-'@ | Set-Content -NoNewline "$WORK\login-staff.json"
+$STAFF_USERS = curl.exe -s "$BASE/api/users?role=STAFF" `
+  -H "Authorization: Bearer $OVERSEER_TOKEN" | ConvertFrom-Json
 
-$STAFF_LOGIN = curl.exe -s -X POST "$BASE/api/auth/login" `
-  -H "Content-Type: application/json" `
-  --data-binary "@$WORK\login-staff.json" | ConvertFrom-Json
+$STAFF_USERS.users | Select-Object id,fullName,email,role
 
-$STAFF_TOKEN = $STAFF_LOGIN.token
-$STAFF_ID = $STAFF_LOGIN.user.id
-$STAFF_LOGIN.user
+$STAFF = $STAFF_USERS.users | Where-Object { $_.email -eq "staff@test.com" } | Select-Object -First 1
+$STAFF_ID = $STAFF.id
+
+if (-not $STAFF_ID) {
+  throw "Expected staff@test.com in active staff listing"
+}
 ```
 
-This logs in with the seeded development staff user. The task create endpoint needs the staff user's UUID in `assignedStaffId`.
-
-Expected user role:
+Expected result:
 
 ```text
-STAFF
+staff@test.com is listed with role STAFF.
+No passwordHash field is returned.
 ```
 
 ## 12. Create Task From Report And Assign Staff
@@ -263,7 +279,7 @@ STAFF
   "addressText": "District 1 test street",
   "priorityScore": 0,
   "assignedStaffId": "$STAFF_ID",
-  "beforePhotoUrl": "https://example.local/manual-before.jpg",
+  "beforePhotoUrl": "$BEFORE_PHOTO_URL",
   "reportIds": ["$REPORT_ID"]
 }
 "@ | Set-Content -NoNewline "$WORK\create-task.json"
@@ -286,7 +302,30 @@ Expected task status:
 ASSIGNED
 ```
 
-## 13. View Assigned Tasks As Staff
+## 13. Login As Staff
+
+```powershell
+@'
+{ "email": "staff@test.com", "password": "Password123" }
+'@ | Set-Content -NoNewline "$WORK\login-staff.json"
+
+$STAFF_LOGIN = curl.exe -s -X POST "$BASE/api/auth/login" `
+  -H "Content-Type: application/json" `
+  --data-binary "@$WORK\login-staff.json" | ConvertFrom-Json
+
+$STAFF_TOKEN = $STAFF_LOGIN.token
+$STAFF_LOGIN.user
+```
+
+This logs in with the seeded development staff user.
+
+Expected user role:
+
+```text
+STAFF
+```
+
+## 14. View Assigned Tasks As Staff
 
 ```powershell
 $STAFF_TASKS = curl.exe -s "$BASE/api/tasks?assignedToMe=true" `
@@ -303,7 +342,7 @@ Expected result:
 The task id stored in $TASK_ID is listed with status ASSIGNED.
 ```
 
-## 14. Start Task As Staff
+## 15. Start Task As Staff
 
 ```powershell
 $STARTED_TASK = curl.exe -s -X PATCH "$BASE/api/tasks/$TASK_ID/start" `
@@ -320,15 +359,30 @@ Expected task status:
 IN_PROGRESS
 ```
 
-## 15. Complete Task As Staff
+## 16. Complete Task As Staff
 
 ```powershell
-@'
+$AFTER_IMAGE = Join-Path $WORK "manual-after.png"
+[IO.File]::WriteAllBytes(
+  $AFTER_IMAGE,
+  [Convert]::FromBase64String("iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8/x8AAwMCAO+/p9sAAAAASUVORK5CYII=")
+)
+
+$AFTER_UPLOAD = curl.exe -s -X POST "$BASE/api/files/task-after" `
+  -H "Authorization: Bearer $STAFF_TOKEN" `
+  -F "file=@$AFTER_IMAGE;type=image/png" | ConvertFrom-Json
+
+$AFTER_PHOTO_URL = $AFTER_UPLOAD.fileUrl
+
+$COMPLETE_TASK_BODY = @'
 {
-  "afterPhotoUrl": "https://example.local/manual-after.jpg",
+  "afterPhotoUrl": "__AFTER_PHOTO_URL__",
   "staffNote": "Manual flow repair completed."
 }
-'@ | Set-Content -NoNewline "$WORK\complete-task.json"
+'@
+
+$COMPLETE_TASK_BODY.Replace("__AFTER_PHOTO_URL__", $AFTER_PHOTO_URL) |
+  Set-Content -NoNewline "$WORK\complete-task.json"
 
 $DONE_TASK = curl.exe -s -X PATCH "$BASE/api/tasks/$TASK_ID/complete" `
   -H "Content-Type: application/json" `
@@ -338,7 +392,7 @@ $DONE_TASK = curl.exe -s -X PATCH "$BASE/api/tasks/$TASK_ID/complete" `
 $DONE_TASK | Select-Object id,status,submittedAt,afterPhotoUrl,staffNote
 ```
 
-This moves the task to `DONE`, sets `submittedAt`, and stores staff completion notes.
+This uploads an after photo, moves the task to `DONE`, sets `submittedAt`, and stores staff completion notes.
 
 Expected task status:
 
@@ -346,7 +400,7 @@ Expected task status:
 DONE
 ```
 
-## 16. Verify Staff Cannot Close Task
+## 17. Verify Staff Cannot Close Task
 
 ```powershell
 $STAFF_CLOSE_DENIED = curl.exe -s -X PATCH "$BASE/api/tasks/$TASK_ID/close" `
@@ -362,7 +416,7 @@ status  = 403
 message = Only overseers can manage tasks
 ```
 
-## 17. Close Task As Overseer
+## 18. Close Task As Overseer
 
 ```powershell
 $CLOSED_TASK = curl.exe -s -X PATCH "$BASE/api/tasks/$TASK_ID/close" `
@@ -379,7 +433,7 @@ Expected task status:
 CLOSED
 ```
 
-## 18. Verify Related Report Becomes Fixed
+## 19. Verify Related Report Becomes Fixed
 
 ```powershell
 $REPORT_AFTER_CLOSE = curl.exe -s "$BASE/api/reports/$REPORT_ID" `
@@ -402,7 +456,7 @@ Expected final output:
 Manual flow passed: report <report-id> is FIXED after closing task <task-id>
 ```
 
-## 19. Verify Fixed Report Leaves Open Map Pins
+## 20. Verify Fixed Report Leaves Open Map Pins
 
 ```powershell
 $MAP_PINS_AFTER_CLOSE = curl.exe -s "$BASE/api/reports/map?minLat=10.0&minLng=106.0&maxLat=11.0&maxLng=107.0" `

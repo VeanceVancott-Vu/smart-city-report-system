@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 
+import '../../../core/files/uploaded_photo_view.dart';
 import '../../../core/routing/app_routes.dart';
 import '../../tasks/data/task_api_service.dart';
 import '../../tasks/domain/task.dart';
@@ -194,13 +195,13 @@ class _OverseerTaskDetailScreenState extends State<OverseerTaskDetailScreen> {
             child: Text(task.assignedStaff?.fullName ?? 'Unassigned'),
           ),
           _Section(
-            title: 'Before photo URL',
-            child: Text(task.beforePhotoUrl ?? 'No photo URL'),
+            title: 'Before photo',
+            child: UploadedPhotoView(fileUrl: task.beforePhotoUrl),
           ),
           if ((task.afterPhotoUrl ?? '').trim().isNotEmpty)
             _Section(
-              title: 'After photo URL',
-              child: Text(task.afterPhotoUrl!),
+              title: 'After photo',
+              child: UploadedPhotoView(fileUrl: task.afterPhotoUrl),
             ),
           if ((task.staffNote ?? '').trim().isNotEmpty)
             _Section(title: 'Staff note', child: Text(task.staffNote!)),

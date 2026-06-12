@@ -1,0 +1,10 @@
+app:
+  cors:
+    allowed-origins: http://127.0.0.1:5200
+  files:
+    upload-dir: ./target/test-uploads
+    max-upload-size: 5MB
+
+jwt:
+  secret: test-secret-with-at-least-32-characters
+  expiration-minutes: 120

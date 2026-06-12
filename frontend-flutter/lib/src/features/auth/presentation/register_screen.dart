@@ -3,12 +3,14 @@ import 'package:flutter/material.dart';
 import '../../../core/routing/app_routes.dart';
 import '../data/auth_api_service.dart';
 import '../domain/current_user.dart';
+import 'package:logger/logger.dart';
+final logger = Logger();
 
 class RegisterScreen extends StatefulWidget {
   const RegisterScreen({super.key, required this.authApiService});
 
   final AuthApiService authApiService;
-
+ 
   @override
   State<RegisterScreen> createState() => _RegisterScreenState();
 }
@@ -50,12 +52,21 @@ class _RegisterScreenState extends State<RegisterScreen> {
       if (!mounted) {
         return;
       }
+
+      debugPrint('Full Session details: ${session.toString()}');
+
+
       _navigateForRole(session.user.role);
     } on AuthException catch (error) {
+      debugPrint('❌ AuthException: ${error.message}');
       _showError(error.message);
-    } catch (_) {
+    } 
+    catch (e, stackTrace) {
+      // Capture the generic error 'e' instead of using '_'
+      logger.e('Failed to register user', error: e, stackTrace: stackTrace);
       _showError('Unable to create account. Please try again.');
-    } finally {
+
+    }finally {
       if (mounted) {
         setState(() => _isSubmitting = false);
       }

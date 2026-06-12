@@ -7,6 +7,6 @@
   "addressText": "District 1",
   "priorityScore": 4,
   "assignedStaffId": "4c88f760-b4ee-450a-be1b-356e9b79a0d4",
-  "beforePhotoUrl": "https://example.local/before.jpg",
+  "beforePhotoUrl": "/uploads/report-before/before.jpg",
   "reportIds": ["3c6040c6-d36c-4997-8eda-674007dfd73a"]
 }

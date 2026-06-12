@@ -53,7 +53,7 @@ class ReportServiceTest {
                 10.762622,
                 106.660172,
                 "Near the park",
-                "https://example.local/before.jpg",
+                "/uploads/report-before/before.jpg",
                 null
         );
 
@@ -86,7 +86,7 @@ class ReportServiceTest {
                 10.762622,
                 106.660172,
                 null,
-                null,
+                "/uploads/report-before/before.jpg",
                 null
         );
 
@@ -99,6 +99,86 @@ class ReportServiceTest {
         assertThatThrownBy(() -> reportService.getReportsForMap(11, 106, 10, 107, user(UserRole.OVERSEER)))
                 .isInstanceOf(IllegalArgumentException.class)
                 .hasMessage("minLat must be less than or equal to maxLat");
+    }
+
+    @Test
+    void submittedReportCanReplaceBeforePhoto() {
+        UUID reportId = UUID.randomUUID();
+        Report report = reportFor(user(UserRole.CITIZEN));
+        report.setId(reportId);
+        report.setCreatedAt(Instant.parse("2026-06-08T05:00:00Z"));
+        report.setUpdatedAt(Instant.parse("2026-06-08T05:00:00Z"));
+
+        when(reportRepository.findById(reportId)).thenReturn(Optional.of(report));
+
+        ReportResponse response = reportService.updateReport(
+                reportId,
+                new UpdateReportRequest(
+                        "Updated pothole",
+                        "Large pothole in the right lane.",
+                        IssueCategory.ROAD_DAMAGE,
+                        10.762622,
+                        106.660172,
+                        null,
+                        "/uploads/report-before/replacement.png"
+                ),
+                report.getCreatedBy()
+        );
+
+        assertThat(response.beforePhotoUrl()).isEqualTo("/uploads/report-before/replacement.png");
+    }
+
+    @Test
+    void fixedReportCannotReplaceBeforePhoto() {
+        UUID reportId = UUID.randomUUID();
+        Report report = reportFor(user(UserRole.CITIZEN));
+        report.fix();
+
+        when(reportRepository.findById(reportId)).thenReturn(Optional.of(report));
+
+        assertThatThrownBy(() -> reportService.updateReport(
+                reportId,
+                new UpdateReportRequest(
+                        "Updated pothole",
+                        "Large pothole in the right lane.",
+                        IssueCategory.ROAD_DAMAGE,
+                        10.762622,
+                        106.660172,
+                        null,
+                        "/uploads/report-before/replacement.png"
+                ),
+                user(UserRole.OVERSEER)
+        ))
+                .isInstanceOf(IllegalArgumentException.class)
+                .hasMessage("Before photo can only be replaced while report is SUBMITTED");
+    }
+
+    @Test
+    void fixedReportCanBeUpdatedWhenBeforePhotoIsUnchanged() {
+        UUID reportId = UUID.randomUUID();
+        Report report = reportFor(user(UserRole.CITIZEN));
+        report.setId(reportId);
+        report.setCreatedAt(Instant.parse("2026-06-08T05:00:00Z"));
+        report.setUpdatedAt(Instant.parse("2026-06-08T05:00:00Z"));
+        report.fix();
+
+        when(reportRepository.findById(reportId)).thenReturn(Optional.of(report));
+
+        ReportResponse response = reportService.updateReport(
+                reportId,
+                new UpdateReportRequest(
+                        "Updated pothole",
+                        "Large pothole in the right lane.",
+                        IssueCategory.ROAD_DAMAGE,
+                        10.762622,
+                        106.660172,
+                        null,
+                        report.getBeforePhotoUrl()
+                ),
+                user(UserRole.OVERSEER)
+        );
+
+        assertThat(response.beforePhotoUrl()).isEqualTo(report.getBeforePhotoUrl());
     }
 
     @Test
@@ -286,7 +366,7 @@ class ReportServiceTest {
                 10.762622,
                 106.660172,
                 null,
-                null,
+                "/uploads/report-before/before.jpg",
                 false,
                 user
         );

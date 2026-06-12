@@ -13,6 +13,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Objects;
 import java.util.UUID;
 
 @Service
@@ -84,6 +85,7 @@ public class ReportService {
         requireAuthenticated(currentUser);
         Report report = getReportEntity(id);
         ensureCanEdit(report, currentUser);
+        ensureBeforePhotoCanBeReplaced(report, request.beforePhotoUrl());
 
         report.updateDetails(
                 request.title(),
@@ -219,6 +221,15 @@ public class ReportService {
             return;
         }
         throw new AccessDeniedException("Report cannot be edited by this user");
+    }
+
+    private void ensureBeforePhotoCanBeReplaced(Report report, String requestedBeforePhotoUrl) {
+        if (Objects.equals(report.getBeforePhotoUrl(), requestedBeforePhotoUrl)) {
+            return;
+        }
+        if (report.getStatus() != ReportStatus.SUBMITTED) {
+            throw new IllegalArgumentException("Before photo can only be replaced while report is SUBMITTED");
+        }
     }
 
     private void ensureCanCancel(Report report, User currentUser) {

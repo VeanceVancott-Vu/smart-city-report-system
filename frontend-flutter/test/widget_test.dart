@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:smart_city_report_frontend/src/app.dart';
 import 'package:smart_city_report_frontend/src/features/auth/data/auth_api_service.dart';
@@ -8,8 +9,40 @@ import 'package:smart_city_report_frontend/src/features/reports/data/report_api_
 import 'package:smart_city_report_frontend/src/features/reports/domain/report.dart';
 import 'package:smart_city_report_frontend/src/features/tasks/data/task_api_service.dart';
 import 'package:smart_city_report_frontend/src/features/tasks/domain/task.dart';
+import 'package:smart_city_report_frontend/src/features/users/data/user_api_service.dart';
+import 'package:smart_city_report_frontend/src/features/users/domain/app_user.dart';
 
 void main() {
+  const filePickerChannel = MethodChannel(
+    'miguelruivo.flutter.plugins.filepicker',
+    StandardMethodCodec(),
+  );
+
+  setUp(() {
+    TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger
+        .setMockMethodCallHandler(filePickerChannel, (call) async {
+          if (call.method != 'custom') {
+            return null;
+          }
+
+          final bytes = Uint8List.fromList(<int>[137, 80, 78, 71]);
+          return <Map<String, Object?>>[
+            <String, Object?>{
+              'name': 'picked.png',
+              'path': null,
+              'bytes': bytes,
+              'size': bytes.length,
+              'identifier': null,
+            },
+          ];
+        });
+  });
+
+  tearDown(() {
+    TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger
+        .setMockMethodCallHandler(filePickerChannel, null);
+  });
+
   test('parses backend report user summary displayName', () {
     final report = Report.fromJson({
       'id': '11111111-1111-1111-1111-000000000001',
@@ -20,7 +53,7 @@ void main() {
       'latitude': 10.7769,
       'longitude': 106.7009,
       'addressText': 'Nguyen Hue',
-      'beforePhotoUrl': 'photo_placeholder.jpg',
+      'beforePhotoUrl': '/uploads/report-before/blocked-drain.jpg',
       'anonymous': false,
       'upvoteCount': 0,
       'priorityScore': 0,
@@ -50,7 +83,7 @@ void main() {
         addressText: 'Nguyen Hue',
         priorityScore: 3,
         assignedStaffId: null,
-        beforePhotoUrl: 'streetlight_before.jpg',
+        beforePhotoUrl: '/uploads/report-before/streetlight-before.jpg',
         afterPhotoUrl: null,
         staffNote: null,
         reportIds: ['11111111-1111-1111-1111-000000000004'],
@@ -73,15 +106,38 @@ void main() {
     final completed = await taskApiService.completeTask(
       taskId,
       const TaskCompletionDraft(
-        afterPhotoUrl: 'https://example.local/after.jpg',
+        afterPhotoUrl: '/uploads/task-after/after.jpg',
         staffNote: 'Done',
       ),
     );
 
     expect(completed.status, TaskStatus.done);
-    expect(completed.afterPhotoUrl, 'https://example.local/after.jpg');
+    expect(completed.afterPhotoUrl, '/uploads/task-after/after.jpg');
     expect(completed.staffNote, 'Done');
   });
+
+  test(
+    'mock user service creates and returns staff dropdown options',
+    () async {
+      final userApiService = MockUserApiService();
+      await userApiService.createUser(
+        const UserDraft(
+          fullName: 'New Staff',
+          email: 'new.staff@test.com',
+          password: 'Password123',
+          role: UserRole.staff,
+        ),
+      );
+
+      final users = await userApiService.fetchStaffUsers();
+
+      expect(users, hasLength(2));
+      expect(users.first.fullName, 'Test Staff');
+      expect(users.first.email, 'staff@test.com');
+      expect(users.last.fullName, 'New Staff');
+      expect(users.last.email, 'new.staff@test.com');
+    },
+  );
 
   testWidgets('logs in a citizen and opens citizen home', (tester) async {
     await tester.pumpWidget(
@@ -130,6 +186,11 @@ void main() {
     );
     await tester.drag(find.byType(ListView), const Offset(0, -500));
     await tester.pumpAndSettle();
+    await tester.tap(find.text('Upload photo'));
+    await tester.pumpAndSettle();
+    await tester.pump(const Duration(seconds: 4));
+    await tester.pumpAndSettle();
+    await tester.ensureVisible(find.text('Submit report'));
     await tester.tap(find.text('Submit report'));
     await tester.pumpAndSettle();
 
@@ -184,15 +245,13 @@ void main() {
 
     expect(find.text('Complete Task'), findsOneWidget);
 
-    await tester.enterText(
-      find.byType(EditableText).at(0),
-      'https://example.local/after.jpg',
-    );
-    await tester.enterText(find.byType(EditableText).at(1), 'Done');
+    await tester.tap(find.text('Upload photo'));
+    await tester.pumpAndSettle();
+    await tester.enterText(find.byType(EditableText).first, 'Done');
     await tester.tap(find.text('Complete task'));
     await tester.pumpAndSettle();
 
-    expect(find.text('https://example.local/after.jpg'), findsOneWidget);
+    expect(find.text('/uploads/task-after/picked.png'), findsOneWidget);
     expect(find.text('Done'), findsWidgets);
   });
 
@@ -208,6 +267,7 @@ void main() {
         authApiService: authApiService,
         reportApiService: MockReportApiService(),
         taskApiService: MockTaskApiService(),
+        userApiService: MockUserApiService(),
       ),
     );
     await tester.pumpAndSettle();
@@ -233,6 +293,7 @@ void main() {
         authApiService: authApiService,
         reportApiService: MockReportApiService(),
         taskApiService: MockTaskApiService(),
+        userApiService: MockUserApiService(),
       ),
     );
     await tester.pumpAndSettle();

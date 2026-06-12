@@ -1,10 +1,11 @@
 package com.smartcity.reports.config;
 
 import com.smartcity.reports.security.JwtAuthenticationFilter;
+import com.smartcity.reports.security.JwtProperties;
 import com.smartcity.reports.user.UserRepository;
 import jakarta.servlet.DispatcherType;
 import jakarta.servlet.http.HttpServletResponse;
-import org.springframework.beans.factory.annotation.Value;
+import org.springframework.boot.context.properties.EnableConfigurationProperties;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.http.HttpMethod;
@@ -25,11 +26,11 @@ import org.springframework.web.cors.CorsConfiguration;
 import org.springframework.web.cors.CorsConfigurationSource;
 import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
 
-import java.util.Arrays;
 import java.util.List;
 
 @Configuration
 @EnableWebSecurity
+@EnableConfigurationProperties({CorsProperties.class, JwtProperties.class})
 public class SecurityConfig {
 
     @Bean
@@ -48,10 +49,13 @@ public class SecurityConfig {
                         .dispatcherTypeMatchers(DispatcherType.ERROR).permitAll()
                         .requestMatchers("/error").permitAll()
                         .requestMatchers(HttpMethod.OPTIONS, "/**").permitAll()
+                        .requestMatchers(HttpMethod.GET, "/uploads/**").permitAll()
                         .requestMatchers(HttpMethod.POST, "/api/auth/register", "/api/auth/login").permitAll()
                         .requestMatchers(HttpMethod.GET, "/api/auth/me").authenticated()
+                        .requestMatchers("/api/files", "/api/files/**").authenticated()
                         .requestMatchers("/api/reports", "/api/reports/**").authenticated()
                         .requestMatchers("/api/tasks", "/api/tasks/**").authenticated()
+                        .requestMatchers("/api/users", "/api/users/**").authenticated()
                         .anyRequest().denyAll())
                 .addFilterBefore(jwtAuthenticationFilter, UsernamePasswordAuthenticationFilter.class)
                 .build();
@@ -64,11 +68,10 @@ public class SecurityConfig {
 
     @Bean
     CorsConfigurationSource corsConfigurationSource(
-            @Value("${app.cors.allowed-origins:http://localhost:5200,http://127.0.0.1:5200,http://localhost:5201,http://127.0.0.1:5201}")
-            String allowedOrigins
+            CorsProperties corsProperties
     ) {
         CorsConfiguration configuration = new CorsConfiguration();
-        configuration.setAllowedOrigins(splitCsv(allowedOrigins));
+        configuration.setAllowedOrigins(cleanOrigins(corsProperties.allowedOrigins()));
         configuration.setAllowedMethods(List.of("GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"));
         configuration.setAllowedHeaders(List.of("Authorization", "Content-Type", "Accept"));
         configuration.setExposedHeaders(List.of("Location"));
@@ -102,8 +105,11 @@ public class SecurityConfig {
         };
     }
 
-    private List<String> splitCsv(String value) {
-        return Arrays.stream(value.split(","))
+    private List<String> cleanOrigins(List<String> origins) {
+        if (origins == null) {
+            return List.of();
+        }
+        return origins.stream()
                 .map(String::trim)
                 .filter(origin -> !origin.isBlank())
                 .toList();

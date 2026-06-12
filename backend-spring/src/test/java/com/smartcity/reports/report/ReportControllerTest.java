@@ -69,7 +69,7 @@ class ReportControllerTest {
                                   "latitude": 10.762622,
                                   "longitude": 106.660172,
                                   "addressText": "Near the park",
-                                  "beforePhotoUrl": "https://example.local/before.jpg"
+                                  "beforePhotoUrl": "/uploads/report-before/before.jpg"
                                 }
                                 """))
                 .andExpect(status().isCreated())
@@ -99,7 +99,31 @@ class ReportControllerTest {
                                 """))
                 .andExpect(status().isBadRequest())
                 .andExpect(jsonPath("$.message").value("Validation failed"))
-                .andExpect(jsonPath("$.errors.title").exists());
+                .andExpect(jsonPath("$.errors.title").value("Title is required"))
+                .andExpect(jsonPath("$.errors.beforePhotoUrl").value("Before photo is required"));
+    }
+
+    @Test
+    void createReportValidatesUploadedBeforePhotoUrl() throws Exception {
+        User citizen = user(UserRole.CITIZEN);
+
+        mockMvc.perform(post("/api/reports")
+                        .with(authentication(authenticationToken(citizen)))
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                {
+                                  "title": "Broken street light",
+                                  "description": "The street light near the park is not working.",
+                                  "category": "STREET_LIGHT",
+                                  "latitude": 10.762622,
+                                  "longitude": 106.660172,
+                                  "beforePhotoUrl": "before.jpg"
+                                }
+                                """))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.message").value("Validation failed"))
+                .andExpect(jsonPath("$.errors.beforePhotoUrl")
+                        .value("Before photo must be uploaded with /api/files/report-before"));
     }
 
     @Test
@@ -118,7 +142,8 @@ class ReportControllerTest {
                                   "description": "The street light near the park is not working.",
                                   "category": "STREET_LIGHT",
                                   "latitude": 10.762622,
-                                  "longitude": 106.660172
+                                  "longitude": 106.660172,
+                                  "beforePhotoUrl": "/uploads/report-before/before.jpg"
                                 }
                                 """))
                 .andExpect(status().isForbidden())
@@ -185,7 +210,7 @@ class ReportControllerTest {
                                   "latitude": 10.762622,
                                   "longitude": 106.660172,
                                   "addressText": "District 1",
-                                  "beforePhotoUrl": "https://example.local/before.jpg"
+                                  "beforePhotoUrl": "/uploads/report-before/before.jpg"
                                 }
                                 """))
                 .andExpect(status().isOk())
@@ -205,7 +230,7 @@ class ReportControllerTest {
                 10.762622,
                 106.660172,
                 "District 1",
-                "https://example.local/before.jpg",
+                "/uploads/report-before/before.jpg",
                 false,
                 0,
                 0,
@@ -234,7 +259,7 @@ class ReportControllerTest {
                 10.762622,
                 106.660172,
                 "District 1",
-                "https://example.local/before.jpg",
+                "/uploads/report-before/before.jpg",
                 false,
                 0,
                 0,
@@ -335,7 +360,7 @@ class ReportControllerTest {
                 10.762622,
                 106.660172,
                 "Near the park",
-                "https://example.local/before.jpg",
+                "/uploads/report-before/before.jpg",
                 false,
                 upvoteCount,
                 priorityScore,

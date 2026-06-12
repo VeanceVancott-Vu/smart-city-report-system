@@ -14,6 +14,7 @@ class AppRoutes {
   static const createReport = citizenCreateReport;
   static const overseerMap = '/overseer/map';
   static const overseerReports = '/overseer/reports';
+  static const overseerCreateUser = '/overseer/users/create';
   static const overseerReportDetail = '/overseer/reports/detail';
   static const overseerTasks = '/overseer/tasks';
   static const overseerCreateTask = '/overseer/tasks/create';

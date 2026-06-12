@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 
+import '../../../core/files/uploaded_photo_view.dart';
 import '../../../core/routing/app_routes.dart';
 import '../data/report_api_service.dart';
 import '../domain/report.dart';
@@ -161,7 +162,10 @@ class _CitizenReportDetailScreenState extends State<CitizenReportDetailScreen> {
               ],
             ),
           ),
-          _Section(title: 'Before photo URL', child: Text(report.photoLabel)),
+          _Section(
+            title: 'Before photo',
+            child: UploadedPhotoView(fileUrl: report.beforePhotoUrl),
+          ),
           _Section(
             title: 'Submitted',
             child: Text(_formatDateTime(report.createdAt)),

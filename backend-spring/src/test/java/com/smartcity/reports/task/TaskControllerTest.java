@@ -71,7 +71,7 @@ class TaskControllerTest {
                                   "addressText": "District 1",
                                   "priorityScore": 4,
                                   "assignedStaffId": "%s",
-                                  "beforePhotoUrl": "https://example.local/before.jpg",
+                                  "beforePhotoUrl": "/uploads/report-before/before.jpg",
                                   "reportIds": ["%s"]
                                 }
                                 """.formatted(staffId, reportId)))
@@ -118,7 +118,7 @@ class TaskControllerTest {
                                   "longitude": 106.660172,
                                   "addressText": "District 1",
                                   "priorityScore": 4,
-                                  "beforePhotoUrl": "https://example.local/before.jpg",
+                                  "beforePhotoUrl": "/uploads/report-before/before.jpg",
                                   "afterPhotoUrl": null,
                                   "staffNote": null,
                                   "reportIds": []
@@ -177,12 +177,53 @@ class TaskControllerTest {
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("""
                                 {
-                                  "afterPhotoUrl": "https://example.local/after.jpg",
+                                  "afterPhotoUrl": "/uploads/task-after/after.jpg",
                                   "staffNote": "Done"
                                 }
                                 """))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.status").value("DONE"));
+                .andExpect(jsonPath("$.status").value("DONE"))
+                .andExpect(jsonPath("$.afterPhotoUrl").value("/uploads/task-after/after.jpg"))
+                .andExpect(jsonPath("$.aiConfidenceScore").doesNotExist())
+                .andExpect(jsonPath("$.aiDecision").doesNotExist());
+    }
+
+    @Test
+    void completeTaskValidatesAfterPhotoUrlRequired() throws Exception {
+        UUID taskId = UUID.randomUUID();
+        User staff = user(UserRole.STAFF);
+
+        mockMvc.perform(patch("/api/tasks/{id}/complete", taskId)
+                        .with(authentication(authenticationToken(staff)))
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                {
+                                  "staffNote": "Done"
+                                }
+                                """))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.message").value("Validation failed"))
+                .andExpect(jsonPath("$.errors.afterPhotoUrl").value("After photo is required"));
+    }
+
+    @Test
+    void completeTaskValidatesAfterPhotoUrlComesFromUploadEndpoint() throws Exception {
+        UUID taskId = UUID.randomUUID();
+        User staff = user(UserRole.STAFF);
+
+        mockMvc.perform(patch("/api/tasks/{id}/complete", taskId)
+                        .with(authentication(authenticationToken(staff)))
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                {
+                                  "afterPhotoUrl": "after.jpg",
+                                  "staffNote": "Done"
+                                }
+                                """))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.message").value("Validation failed"))
+                .andExpect(jsonPath("$.errors.afterPhotoUrl")
+                        .value("After photo must be uploaded with /api/files/task-after"));
     }
 
     @Test
@@ -231,6 +272,8 @@ class TaskControllerTest {
         UserSummaryResponse assignedStaff = staffId == null
                 ? null
                 : new UserSummaryResponse(staffId, "Staff", UserRole.STAFF);
+        String afterPhotoUrl = status == TaskStatus.DONE ? "/uploads/task-after/after.jpg" : null;
+        String staffNote = status == TaskStatus.DONE ? "Done" : null;
 
         return new TaskResponse(
                 taskId,
@@ -244,9 +287,9 @@ class TaskControllerTest {
                 4,
                 assignedStaff,
                 new UserSummaryResponse(UUID.randomUUID(), "Overseer", UserRole.OVERSEER),
-                "https://example.local/before.jpg",
-                null,
-                null,
+                "/uploads/report-before/before.jpg",
+                afterPhotoUrl,
+                staffNote,
                 null,
                 null,
                 Instant.parse("2026-06-09T04:00:00Z"),

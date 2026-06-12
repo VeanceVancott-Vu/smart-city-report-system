@@ -200,12 +200,12 @@ public class Task {
     public void complete(Instant now, String afterPhotoUrl, String staffNote) {
         status = TaskStatus.DONE;
         submittedAt = now;
-        if (afterPhotoUrl != null) {
-            this.afterPhotoUrl = afterPhotoUrl;
-        }
+        this.afterPhotoUrl = afterPhotoUrl;
         if (staffNote != null) {
             this.staffNote = staffNote;
         }
+        aiConfidenceScore = null;
+        aiDecision = null;
     }
 
     public void close(Instant now) {

@@ -20,6 +20,8 @@ import 'features/tasks/data/task_api_service.dart';
 import 'features/tasks/presentation/staff_complete_task_screen.dart';
 import 'features/tasks/presentation/staff_task_detail_screen.dart';
 import 'features/tasks/presentation/staff_task_inbox_screen.dart';
+import 'features/users/data/user_api_service.dart';
+import 'features/users/presentation/overseer_create_user_screen.dart';
 
 class SmartCityReportApp extends StatelessWidget {
   SmartCityReportApp({
@@ -27,13 +29,16 @@ class SmartCityReportApp extends StatelessWidget {
     AuthApiService? authApiService,
     ReportApiService? reportApiService,
     TaskApiService? taskApiService,
+    UserApiService? userApiService,
   }) : authApiService = authApiService ?? BackendAuthApiService(),
        reportApiService = reportApiService ?? BackendReportApiService(),
-       taskApiService = taskApiService ?? BackendTaskApiService();
+       taskApiService = taskApiService ?? BackendTaskApiService(),
+       userApiService = userApiService ?? BackendUserApiService();
 
   final AuthApiService authApiService;
   final ReportApiService reportApiService;
   final TaskApiService taskApiService;
+  final UserApiService userApiService;
 
   @override
   Widget build(BuildContext context) {
@@ -72,7 +77,10 @@ class SmartCityReportApp extends StatelessWidget {
           authApiService: authApiService,
           reportApiService: reportApiService,
           taskApiService: taskApiService,
+          userApiService: userApiService,
         ),
+        AppRoutes.overseerCreateUser: (_) =>
+            OverseerCreateUserScreen(userApiService: userApiService),
         AppRoutes.citizenCreateReport: (_) =>
             CitizenCreateReportScreen(reportApiService: reportApiService),
         AppRoutes.citizenReportDetail: (_) =>
@@ -81,12 +89,16 @@ class SmartCityReportApp extends StatelessWidget {
             CitizenEditReportScreen(reportApiService: reportApiService),
         AppRoutes.overseerReportDetail: (_) =>
             OverseerReportDetailScreen(reportApiService: reportApiService),
-        AppRoutes.overseerCreateTask: (_) =>
-            OverseerCreateTaskScreen(taskApiService: taskApiService),
+        AppRoutes.overseerCreateTask: (_) => OverseerCreateTaskScreen(
+          taskApiService: taskApiService,
+          userApiService: userApiService,
+        ),
         AppRoutes.overseerTaskDetail: (_) =>
             OverseerTaskDetailScreen(taskApiService: taskApiService),
-        AppRoutes.overseerAssignStaff: (_) =>
-            OverseerAssignStaffScreen(taskApiService: taskApiService),
+        AppRoutes.overseerAssignStaff: (_) => OverseerAssignStaffScreen(
+          taskApiService: taskApiService,
+          userApiService: userApiService,
+        ),
         AppRoutes.overseerMap: (_) => const OverseerMapScreen(),
         AppRoutes.staffTasks: (_) =>
             StaffTaskInboxScreen(taskApiService: taskApiService),
