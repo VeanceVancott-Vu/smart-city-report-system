@@ -104,7 +104,7 @@ public class ReportService {
         requireAuthenticated(currentUser);
         Report report = getReportEntity(id);
         ensureCanCancel(report, currentUser);
-        report.cancel();
+        reportRepository.delete(report);
         return reportMapper.toResponse(report);
     }
 

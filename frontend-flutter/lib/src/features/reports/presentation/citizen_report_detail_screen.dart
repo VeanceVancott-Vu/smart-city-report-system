@@ -47,7 +47,7 @@ class _CitizenReportDetailScreenState extends State<CitizenReportDetailScreen> {
     }
   }
 
-  Future<void> _cancelReport() async {
+  Future<void> _deleteReport() async {
     try {
       final report = await widget.reportApiService.cancelReport(_reportId);
       if (!mounted) {
@@ -55,12 +55,12 @@ class _CitizenReportDetailScreenState extends State<CitizenReportDetailScreen> {
       }
       ScaffoldMessenger.of(
         context,
-      ).showSnackBar(SnackBar(content: Text('${report.title} cancelled')));
-      setState(_loadReport);
+      ).showSnackBar(SnackBar(content: Text('${report.title} deleted')));
+      Navigator.of(context).pop(true);
     } on ReportApiException catch (error) {
       _showError(error.message);
     } catch (_) {
-      _showError('Unable to cancel report.');
+      _showError('Unable to delete report.');
     }
   }
 
@@ -92,9 +92,9 @@ class _CitizenReportDetailScreenState extends State<CitizenReportDetailScreen> {
                 ),
               if (report != null && report.status.canCitizenCancel)
                 IconButton(
-                  tooltip: 'Cancel',
-                  onPressed: _cancelReport,
-                  icon: const Icon(Icons.cancel_outlined),
+                  tooltip: 'Delete',
+                  onPressed: _deleteReport,
+                  icon: const Icon(Icons.delete_outline),
                 ),
             ],
           ),

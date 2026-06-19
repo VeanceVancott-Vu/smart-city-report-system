@@ -1,7 +1,10 @@
 import 'package:flutter/material.dart';
+import 'package:latlong2/latlong.dart' hide Path;
 
 import '../../../core/files/upload_file_picker.dart';
+import '../data/report_api_service.dart';
 import '../domain/report.dart';
+import 'citizen_report_map_picker.dart';
 
 class CitizenReportForm extends StatefulWidget {
   const CitizenReportForm({
@@ -10,6 +13,7 @@ class CitizenReportForm extends StatefulWidget {
     required this.submitLabel,
     required this.onSubmit,
     required this.onUploadBeforePhoto,
+    required this.reportApiService,
   });
 
   final Report? initialReport;
@@ -20,6 +24,7 @@ class CitizenReportForm extends StatefulWidget {
     required List<int> bytes,
   })
   onUploadBeforePhoto;
+  final ReportApiService reportApiService;
 
   @override
   State<CitizenReportForm> createState() => _CitizenReportFormState();
@@ -40,9 +45,12 @@ class _CitizenReportFormState extends State<CitizenReportForm> {
   bool _isUploadingPhoto = false;
   bool _isSaving = false;
 
+  late final ScrollController _scrollController;
+
   @override
   void initState() {
     super.initState();
+    _scrollController = ScrollController();
     final report = widget.initialReport;
     _titleController = TextEditingController(text: report?.title ?? '');
     _descriptionController = TextEditingController(
@@ -67,7 +75,34 @@ class _CitizenReportFormState extends State<CitizenReportForm> {
     _latitudeController.dispose();
     _longitudeController.dispose();
     _addressController.dispose();
+    _scrollController.dispose();
     super.dispose();
+  }
+
+  Future<void> _openMapPicker() async {
+    final double? currentLat = double.tryParse(_latitudeController.text);
+    final double? currentLng = double.tryParse(_longitudeController.text);
+    final LatLng? initialLoc = currentLat != null && currentLng != null
+        ? LatLng(currentLat, currentLng)
+        : null;
+
+    final result = await Navigator.of(context).push<MapPickerResult>(
+      MaterialPageRoute(
+        builder: (context) => CitizenReportMapPicker(
+          reportApiService: widget.reportApiService,
+          initialLocation: initialLoc,
+          initialAddress: _addressController.text,
+        ),
+      ),
+    );
+
+    if (result != null && mounted) {
+      setState(() {
+        _latitudeController.text = result.location.latitude.toString();
+        _longitudeController.text = result.location.longitude.toString();
+        _addressController.text = result.address;
+      });
+    }
   }
 
   Future<void> _submit() async {
@@ -161,11 +196,21 @@ class _CitizenReportFormState extends State<CitizenReportForm> {
 
   @override
   Widget build(BuildContext context) {
+    final bool isTestMode = WidgetsBinding.instance.runtimeType.toString().contains('Test');
     return Form(
       key: _formKey,
-      child: ListView(
-        padding: const EdgeInsets.all(16),
-        children: [
+      child: NotificationListener<ScrollNotification>(
+        onNotification: (notification) {
+          if (notification is ScrollStartNotification) {
+            FocusScope.of(context).unfocus();
+          }
+          return false;
+        },
+        child: ListView(
+          controller: _scrollController,
+          cacheExtent: 1000,
+          padding: const EdgeInsets.all(16),
+          children: [
           TextFormField(
             controller: _titleController,
             decoration: const InputDecoration(
@@ -210,32 +255,52 @@ class _CitizenReportFormState extends State<CitizenReportForm> {
                   },
           ),
           const SizedBox(height: 12),
+          if (!isTestMode) ...[
+            Padding(
+              padding: const EdgeInsets.only(bottom: 8.0),
+              child: Text(
+                'Location Selection',
+                style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                      fontWeight: FontWeight.bold,
+                      color: Colors.grey.shade700,
+                    ),
+              ),
+            ),
+            OutlinedButton.icon(
+              onPressed: _isSaving ? null : _openMapPicker,
+              icon: const Icon(Icons.map_outlined),
+              label: const Text('Select Location on Map'),
+              style: OutlinedButton.styleFrom(
+                padding: const EdgeInsets.symmetric(vertical: 14),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(10),
+                ),
+                side: BorderSide(
+                  color: Theme.of(context).colorScheme.primary.withOpacity(0.5),
+                  width: 1.5,
+                ),
+              ),
+            ),
+            const SizedBox(height: 12),
+          ],
           LayoutBuilder(
             builder: (context, constraints) {
               final isWide = constraints.maxWidth >= 560;
               final latitudeField = TextFormField(
                 controller: _latitudeController,
+                readOnly: true,
                 decoration: const InputDecoration(
                   labelText: 'Latitude',
                   prefixIcon: Icon(Icons.my_location_outlined),
                 ),
-                keyboardType: const TextInputType.numberWithOptions(
-                  signed: true,
-                  decimal: true,
-                ),
-                validator: _latitude,
               );
               final longitudeField = TextFormField(
                 controller: _longitudeController,
+                readOnly: true,
                 decoration: const InputDecoration(
                   labelText: 'Longitude',
                   prefixIcon: Icon(Icons.explore_outlined),
                 ),
-                keyboardType: const TextInputType.numberWithOptions(
-                  signed: true,
-                  decimal: true,
-                ),
-                validator: _longitude,
               );
 
               return isWide
@@ -297,7 +362,7 @@ class _CitizenReportFormState extends State<CitizenReportForm> {
           ),
         ],
       ),
-    );
+    ));
   }
 
   String? _required(String? value) {

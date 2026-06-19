@@ -26,7 +26,7 @@ class _CitizenHomeScreenState extends State<CitizenHomeScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final titles = ['My Reports', 'Open Pins'];
+    final titles = ['My Reports', 'Pins Map'];
 
     return Scaffold(
       appBar: AppBar(

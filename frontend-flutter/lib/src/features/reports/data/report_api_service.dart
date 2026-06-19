@@ -359,12 +359,8 @@ class MockReportApiService extends ApiService implements ReportApiService {
       throw const ReportApiException('Report not found.');
     }
 
-    final cancelled = _reports[index].copyWith(
-      status: ReportStatus.cancelled,
-      updatedAt: DateTime.now(),
-    );
-    _reports[index] = cancelled;
-    return cancelled;
+    final removed = _reports.removeAt(index);
+    return removed;
   }
 
   @override

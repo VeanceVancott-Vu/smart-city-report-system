@@ -91,6 +91,7 @@ class _CitizenEditReportScreenState extends State<CitizenEditReportScreen> {
               submitLabel: 'Save changes',
               onSubmit: _updateReport,
               onUploadBeforePhoto: widget.reportApiService.uploadBeforePhoto,
+              reportApiService: widget.reportApiService,
             );
           },
         ),

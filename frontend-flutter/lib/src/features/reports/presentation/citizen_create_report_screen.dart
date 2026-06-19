@@ -18,6 +18,7 @@ class CitizenCreateReportScreen extends StatelessWidget {
           submitLabel: 'Submit report',
           onSubmit: (draft) => _createReport(context, draft),
           onUploadBeforePhoto: reportApiService.uploadBeforePhoto,
+          reportApiService: reportApiService,
         ),
       ),
     );
