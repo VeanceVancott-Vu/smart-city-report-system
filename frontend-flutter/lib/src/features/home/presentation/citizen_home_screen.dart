@@ -46,7 +46,10 @@ class _CitizenHomeScreenState extends State<CitizenHomeScreen> {
             key: widget._reportListKey,
             reportApiService: widget.reportApiService,
           ),
-          CitizenMapScreen(reportApiService: widget.reportApiService),
+          CitizenMapScreen(
+            reportApiService: widget.reportApiService,
+            authApiService: widget.authApiService,
+          ),
         ],
       ),
       floatingActionButton: _selectedIndex == 0

@@ -379,7 +379,8 @@ class ReportControllerTest {
                 10.762622,
                 106.660172,
                 3,
-                3
+                3,
+                UUID.randomUUID()
         );
     }
 }

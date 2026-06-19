@@ -391,6 +391,7 @@ class MockReportApiService extends ApiService implements ReportApiService {
             longitude: report.longitude,
             upvoteCount: report.upvoteCount,
             priorityScore: report.priorityScore,
+            creatorId: report.createdBy?.id ?? '',
           ),
         )
         .toList(growable: false);
@@ -399,6 +400,10 @@ class MockReportApiService extends ApiService implements ReportApiService {
   @override
   Future<ReportUpvoteSummary> upvoteReport(String id) async {
     await Future<void>.delayed(const Duration(milliseconds: 100));
+    final report = _findReport(id);
+    if (report.createdBy?.id == _demoUser.id) {
+      throw const ReportApiException('Creators cannot upvote their own reports');
+    }
     _upvotedReportIds.add(id);
     return _syncUpvote(id, hasUpvoted: true);
   }

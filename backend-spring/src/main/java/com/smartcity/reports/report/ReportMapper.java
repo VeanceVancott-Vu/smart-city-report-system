@@ -36,7 +36,8 @@ class ReportMapper {
                 report.getLatitude(),
                 report.getLongitude(),
                 report.getUpvoteCount(),
-                report.getPriorityScore()
+                report.getPriorityScore(),
+                report.getCreatedBy().getId()
         );
     }
 

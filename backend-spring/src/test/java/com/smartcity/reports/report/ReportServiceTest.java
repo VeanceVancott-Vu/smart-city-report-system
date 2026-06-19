@@ -303,6 +303,20 @@ class ReportServiceTest {
     }
 
     @Test
+    void upvoteReportRejectsSelfUpvote() {
+        UUID reportId = UUID.randomUUID();
+        User currentUser = user(UserRole.CITIZEN);
+        Report report = reportFor(currentUser);
+        report.setId(reportId);
+
+        when(reportRepository.findById(reportId)).thenReturn(Optional.of(report));
+
+        assertThatThrownBy(() -> reportService.upvoteReport(reportId, currentUser))
+                .isInstanceOf(IllegalArgumentException.class)
+                .hasMessage("Creators cannot upvote their own reports");
+    }
+
+    @Test
     void upvoteReportRejectsCancelledReport() {
         UUID reportId = UUID.randomUUID();
         Report report = reportFor(user(UserRole.CITIZEN));

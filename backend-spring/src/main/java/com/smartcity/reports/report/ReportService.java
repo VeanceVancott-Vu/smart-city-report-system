@@ -126,6 +126,9 @@ public class ReportService {
         requireCitizen(currentUser, "Only citizens can upvote reports");
         Report report = getReportEntity(id);
         ensureCanReceiveUpvote(report);
+        if (isOwner(report, currentUser)) {
+            throw new IllegalArgumentException("Creators cannot upvote their own reports");
+        }
 
         reportUpvoteRepository.insertIfAbsent(id, currentUser.getId());
         return syncUpvoteSummary(report, true);

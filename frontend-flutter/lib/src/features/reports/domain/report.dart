@@ -227,6 +227,7 @@ class ReportMapPin {
     required this.longitude,
     required this.upvoteCount,
     required this.priorityScore,
+    required this.creatorId,
   });
 
   final String id;
@@ -237,6 +238,7 @@ class ReportMapPin {
   final double longitude;
   final int upvoteCount;
   final int priorityScore;
+  final String creatorId;
 
   factory ReportMapPin.fromJson(Map<String, dynamic> json) {
     return ReportMapPin(
@@ -248,6 +250,7 @@ class ReportMapPin {
       longitude: (json['longitude'] as num).toDouble(),
       upvoteCount: json['upvoteCount'] as int? ?? 0,
       priorityScore: json['priorityScore'] as int? ?? 0,
+      creatorId: json['creatorId'] as String? ?? '',
     );
   }
 
@@ -261,6 +264,7 @@ class ReportMapPin {
       longitude: longitude,
       upvoteCount: upvoteCount ?? this.upvoteCount,
       priorityScore: priorityScore ?? this.priorityScore,
+      creatorId: creatorId,
     );
   }
 }

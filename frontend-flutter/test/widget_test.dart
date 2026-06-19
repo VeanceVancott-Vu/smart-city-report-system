@@ -70,6 +70,27 @@ void main() {
     expect(report.createdBy?.role, 'CITIZEN');
   });
 
+  test('parses ReportMapPin creatorId correctly', () {
+    final pin = ReportMapPin.fromJson({
+      'id': '11111111-1111-1111-1111-000000000001',
+      'title': 'Blocked drain',
+      'category': 'DRAINAGE',
+      'status': 'SUBMITTED',
+      'latitude': 10.7769,
+      'longitude': 106.7009,
+      'upvoteCount': 2,
+      'priorityScore': 2,
+      'creatorId': 'user-1234',
+    });
+
+    expect(pin.creatorId, 'user-1234');
+    expect(pin.upvoteCount, 2);
+
+    final copied = pin.copyWith(upvoteCount: 5);
+    expect(copied.upvoteCount, 5);
+    expect(copied.creatorId, 'user-1234');
+  });
+
   test('mock task service creates task from selected reports', () async {
     final taskApiService = MockTaskApiService();
 

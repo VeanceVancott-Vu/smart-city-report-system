@@ -8,11 +8,18 @@ import 'package:latlong2/latlong.dart' hide Path;
 
 import '../data/report_api_service.dart';
 import '../domain/report.dart';
+import '../../auth/data/auth_api_service.dart';
+import '../../auth/domain/current_user.dart';
 
 class CitizenMapScreen extends StatefulWidget {
-  const CitizenMapScreen({super.key, required this.reportApiService});
+  const CitizenMapScreen({
+    super.key,
+    required this.reportApiService,
+    required this.authApiService,
+  });
 
   final ReportApiService reportApiService;
+  final AuthApiService authApiService;
 
   @override
   State<CitizenMapScreen> createState() => _CitizenMapScreenState();
@@ -20,6 +27,10 @@ class CitizenMapScreen extends StatefulWidget {
 
 class _CitizenMapScreenState extends State<CitizenMapScreen> {
   final Set<String> _upvotedReportIds = <String>{};
+
+  CurrentUser? _currentUser;
+  ReportCategory? _selectedCategory;
+  bool _hideOwnReports = false;
 
   double _minLat = 10.60;
   double _minLng = 106.50;
@@ -51,6 +62,18 @@ class _CitizenMapScreenState extends State<CitizenMapScreen> {
     super.initState();
     _mapController = MapController();
     _pinsFuture = _loadPins();
+    _loadCurrentUser();
+  }
+
+  Future<void> _loadCurrentUser() async {
+    try {
+      final user = await widget.authApiService.getCurrentUser();
+      if (mounted) {
+        setState(() {
+          _currentUser = user;
+        });
+      }
+    } catch (_) {}
   }
 
   @override
@@ -260,6 +283,74 @@ class _CitizenMapScreenState extends State<CitizenMapScreen> {
             ],
           ),
         ),
+        Padding(
+          padding: const EdgeInsets.fromLTRB(16, 0, 16, 8),
+          child: SingleChildScrollView(
+            scrollDirection: Axis.horizontal,
+            child: Row(
+              children: [
+                FilterChip(
+                  label: const Text('All Types'),
+                  selected: _selectedCategory == null,
+                  onSelected: (selected) {
+                    setState(() {
+                      _selectedCategory = null;
+                    });
+                  },
+                  selectedColor: const Color(0xFFE2F3EE),
+                  checkmarkColor: const Color(0xFF00796B),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(20),
+                    side: const BorderSide(color: Color(0xFFDDE5E2)),
+                  ),
+                ),
+                const SizedBox(width: 8),
+                ...ReportCategory.values.map((category) {
+                  final isSelected = _selectedCategory == category;
+                  return Padding(
+                    padding: const EdgeInsets.only(right: 8),
+                    child: FilterChip(
+                      label: Text(category.label),
+                      selected: isSelected,
+                      onSelected: (selected) {
+                        setState(() {
+                          _selectedCategory = selected ? category : null;
+                        });
+                      },
+                      selectedColor: const Color(0xFFE2F3EE),
+                      checkmarkColor: const Color(0xFF00796B),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(20),
+                        side: const BorderSide(color: Color(0xFFDDE5E2)),
+                      ),
+                    ),
+                  );
+                }),
+                if (_currentUser != null)
+                  FilterChip(
+                    avatar: Icon(
+                      _hideOwnReports ? Icons.person_off : Icons.person_off_outlined,
+                      size: 16,
+                      color: _hideOwnReports ? const Color(0xFF00796B) : Colors.grey,
+                    ),
+                    label: const Text('Hide My Reports'),
+                    selected: _hideOwnReports,
+                    onSelected: (selected) {
+                      setState(() {
+                        _hideOwnReports = selected;
+                      });
+                    },
+                    selectedColor: const Color(0xFFE2F3EE),
+                    checkmarkColor: const Color(0xFF00796B),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(20),
+                      side: const BorderSide(color: Color(0xFFDDE5E2)),
+                    ),
+                  ),
+              ],
+            ),
+          ),
+        ),
         if (_errorMessage != null)
           Padding(
             padding: const EdgeInsets.fromLTRB(16, 0, 16, 8),
@@ -287,6 +378,15 @@ class _CitizenMapScreenState extends State<CitizenMapScreen> {
               }
 
               final pins = _pins.isNotEmpty ? _pins : (snapshot.data ?? const <ReportMapPin>[]);
+              final filteredPins = pins.where((pin) {
+                if (_selectedCategory != null && pin.category != _selectedCategory) {
+                  return false;
+                }
+                if (_hideOwnReports && _currentUser != null && pin.creatorId == _currentUser!.id) {
+                  return false;
+                }
+                return true;
+              }).toList();
 
               if (_isMapView) {
                 return Stack(
@@ -326,7 +426,7 @@ class _CitizenMapScreenState extends State<CitizenMapScreen> {
                               ),
                               MarkerLayer(
                                 markers: [
-                                  ...pins.map((pin) {
+                                  ...filteredPins.map((pin) {
                                     return Marker(
                                       point: LatLng(pin.latitude, pin.longitude),
                                       width: 80,
@@ -391,7 +491,7 @@ class _CitizenMapScreenState extends State<CitizenMapScreen> {
                           ),
                           if (_searchQuery.isNotEmpty && _searchFocusNode.hasFocus)
                             _SearchSuggestions(
-                              pins: pins,
+                              pins: filteredPins,
                               addresses: _addressSuggestions,
                               query: _searchQuery,
                               isSearchingAddress: _isSearchingAddress,
@@ -439,13 +539,14 @@ class _CitizenMapScreenState extends State<CitizenMapScreen> {
                               _selectedPin = null;
                             });
                           },
+                          showUpvote: _currentUser == null || _selectedPin!.creatorId != _currentUser!.id,
                         ),
                       ),
                   ],
                 );
               }
 
-              if (pins.isEmpty) {
+              if (filteredPins.isEmpty) {
                 return RefreshIndicator(
                   onRefresh: refresh,
                   child: ListView(
@@ -463,12 +564,13 @@ class _CitizenMapScreenState extends State<CitizenMapScreen> {
                 onRefresh: refresh,
                 child: ListView.separated(
                   padding: const EdgeInsets.fromLTRB(16, 0, 16, 96),
-                  itemCount: pins.length,
+                  itemCount: filteredPins.length,
                   separatorBuilder: (_, _) => const SizedBox(height: 10),
                   itemBuilder: (context, index) => _PinTile(
-                    pin: pins[index],
-                    hasUpvoted: _upvotedReportIds.contains(pins[index].id),
-                    onUpvote: () => _toggleUpvote(pins[index]),
+                    pin: filteredPins[index],
+                    hasUpvoted: _upvotedReportIds.contains(filteredPins[index].id),
+                    onUpvote: () => _toggleUpvote(filteredPins[index]),
+                    showUpvote: _currentUser == null || filteredPins[index].creatorId != _currentUser!.id,
                   ),
                 ),
               );
@@ -665,11 +767,13 @@ class _PinTile extends StatelessWidget {
     required this.pin,
     required this.hasUpvoted,
     required this.onUpvote,
+    required this.showUpvote,
   });
 
   final ReportMapPin pin;
   final bool hasUpvoted;
   final VoidCallback onUpvote;
+  final bool showUpvote;
 
   @override
   Widget build(BuildContext context) {
@@ -724,19 +828,21 @@ class _PinTile extends StatelessWidget {
                 ),
               ],
             ),
-            const SizedBox(height: 12),
-            Align(
-              alignment: Alignment.centerRight,
-              child: OutlinedButton.icon(
-                onPressed: onUpvote,
-                icon: Icon(
-                  hasUpvoted
-                      ? Icons.thumb_down_alt_outlined
-                      : Icons.thumb_up_alt_outlined,
+            if (showUpvote) ...[
+              const SizedBox(height: 12),
+              Align(
+                alignment: Alignment.centerRight,
+                child: OutlinedButton.icon(
+                  onPressed: onUpvote,
+                  icon: Icon(
+                    hasUpvoted
+                        ? Icons.thumb_down_alt_outlined
+                        : Icons.thumb_up_alt_outlined,
+                  ),
+                  label: Text(hasUpvoted ? 'Remove upvote' : 'I see this too'),
                 ),
-                label: Text(hasUpvoted ? 'Remove upvote' : 'I see this too'),
               ),
-            ),
+            ],
           ],
         ),
       ),
@@ -975,12 +1081,14 @@ class _SelectedPinCard extends StatelessWidget {
     required this.hasUpvoted,
     required this.onUpvote,
     required this.onClose,
+    required this.showUpvote,
   });
 
   final ReportMapPin pin;
   final bool hasUpvoted;
   final VoidCallback onUpvote;
   final VoidCallback onClose;
+  final bool showUpvote;
 
   @override
   Widget build(BuildContext context) {
@@ -1070,25 +1178,27 @@ class _SelectedPinCard extends StatelessWidget {
                 ),
               ],
             ),
-            const SizedBox(height: 16),
-            Align(
-              alignment: Alignment.centerRight,
-              child: FilledButton.icon(
-                onPressed: onUpvote,
-                style: FilledButton.styleFrom(
-                  backgroundColor: color,
-                  foregroundColor: Colors.white,
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(8),
+            if (showUpvote) ...[
+              const SizedBox(height: 16),
+              Align(
+                alignment: Alignment.centerRight,
+                child: FilledButton.icon(
+                  onPressed: onUpvote,
+                  style: FilledButton.styleFrom(
+                    backgroundColor: color,
+                    foregroundColor: Colors.white,
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(8),
+                    ),
                   ),
+                  icon: Icon(
+                    hasUpvoted ? Icons.thumb_down_alt_outlined : Icons.thumb_up_alt_outlined,
+                    size: 16,
+                  ),
+                  label: Text(hasUpvoted ? 'Remove upvote' : 'I see this too'),
                 ),
-                icon: Icon(
-                  hasUpvoted ? Icons.thumb_down_alt_outlined : Icons.thumb_up_alt_outlined,
-                  size: 16,
-                ),
-                label: Text(hasUpvoted ? 'Remove upvote' : 'I see this too'),
               ),
-            ),
+            ],
           ],
         ),
       ),

@@ -12,6 +12,7 @@ public record ReportMapPinResponse(
         double latitude,
         double longitude,
         int upvoteCount,
-        int priorityScore
+        int priorityScore,
+        UUID creatorId
 ) {
 }
