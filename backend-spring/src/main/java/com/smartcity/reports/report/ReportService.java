@@ -153,8 +153,13 @@ public class ReportService {
     ) {
         requireAuthenticated(currentUser);
         validateBounds(minLat, minLng, maxLat, maxLng);
-        return reportRepository.findSubmittedWithinBounds(minLat, minLng, maxLat, maxLng)
-                .stream()
+        List<Report> reports;
+        if (currentUser.getRole() == UserRole.CITIZEN) {
+            reports = reportRepository.findSubmittedWithinBounds(minLat, minLng, maxLat, maxLng);
+        } else {
+            reports = reportRepository.findWithinBounds(minLat, minLng, maxLat, maxLng);
+        }
+        return reports.stream()
                 .map(reportMapper::toMapPinResponse)
                 .toList();
     }

@@ -158,3 +158,15 @@ SPRING_PROFILES_ACTIVE=prod
 ```
 
 Production must not use `local` or `dev`. With `prod`, `DevUserSeeder` is not loaded and demo users are not created.
+
+citizen
+vu08112005@gmail.com 
+08112005
+
+overseer
+overseer@test.com
+Password123
+
+staff
+staff@test.com
+Password123

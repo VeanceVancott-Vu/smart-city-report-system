@@ -30,11 +30,14 @@ abstract class ReportApiService {
     required double minLng,
     required double maxLat,
     required double maxLng,
+    bool includeAllStatuses = false,
   });
 
   Future<ReportUpvoteSummary> upvoteReport(String id);
 
   Future<ReportUpvoteSummary> removeUpvote(String id);
+
+  Future<Report> fixReport(String id);
 }
 
 class BackendReportApiService extends ApiService implements ReportApiService {
@@ -139,6 +142,7 @@ class BackendReportApiService extends ApiService implements ReportApiService {
     required double minLng,
     required double maxLat,
     required double maxLng,
+    bool includeAllStatuses = false,
   }) async {
     final response = await _client.get(
       _uri('/api/reports/map', <String, String>{
@@ -156,10 +160,24 @@ class BackendReportApiService extends ApiService implements ReportApiService {
       throw const ReportApiException('Expected a JSON array response.');
     }
 
-    return decoded
-        .map((item) => ReportMapPin.fromJson(item as Map<String, dynamic>))
-        .where((pin) => pin.status.canUpvote)
-        .toList(growable: false);
+    final list = decoded
+        .map((item) => ReportMapPin.fromJson(item as Map<String, dynamic>));
+
+    if (includeAllStatuses) {
+      return list.toList(growable: false);
+    } else {
+      return list.where((pin) => pin.status.canUpvote).toList(growable: false);
+    }
+  }
+
+  @override
+  Future<Report> fixReport(String id) async {
+    final response = await _client.patch(
+      _uri('/api/reports/$id/fix'),
+      headers: await _headers(),
+    );
+    _ensureSuccess(response);
+    return Report.fromJson(_decodeMap(response.body));
   }
 
   @override
@@ -369,13 +387,14 @@ class MockReportApiService extends ApiService implements ReportApiService {
     required double minLng,
     required double maxLat,
     required double maxLng,
+    bool includeAllStatuses = false,
   }) async {
     await Future<void>.delayed(const Duration(milliseconds: 100));
 
     return _reports
         .where(
           (report) =>
-              report.status.canUpvote &&
+              (includeAllStatuses || report.status.canUpvote) &&
               report.latitude >= minLat &&
               report.latitude <= maxLat &&
               report.longitude >= minLng &&
@@ -395,6 +414,22 @@ class MockReportApiService extends ApiService implements ReportApiService {
           ),
         )
         .toList(growable: false);
+  }
+
+  @override
+  Future<Report> fixReport(String id) async {
+    await Future<void>.delayed(const Duration(milliseconds: 100));
+    final index = _reports.indexWhere((report) => report.id == id);
+    if (index == -1) {
+      throw const ReportApiException('Report not found.');
+    }
+    final existing = _reports[index];
+    final updated = existing.copyWith(
+      status: ReportStatus.fixed,
+      updatedAt: DateTime.now(),
+    );
+    _reports[index] = updated;
+    return updated;
   }
 
   @override

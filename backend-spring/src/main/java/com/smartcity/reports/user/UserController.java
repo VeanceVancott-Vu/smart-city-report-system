@@ -30,6 +30,13 @@ public class UserController {
         return userService.getUsers(role, currentUser);
     }
 
+    @GetMapping("/staff-summary")
+    public StaffListResponse getStaffSummary(
+            @AuthenticationPrincipal User currentUser
+    ) {
+        return userService.getStaffSummary(currentUser);
+    }
+
     @GetMapping("/me")
     public UserResponse me(@AuthenticationPrincipal User currentUser) {
         return userService.getCurrentUser(currentUser);

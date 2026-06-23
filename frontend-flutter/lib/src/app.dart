@@ -99,7 +99,10 @@ class SmartCityReportApp extends StatelessWidget {
           taskApiService: taskApiService,
           userApiService: userApiService,
         ),
-        AppRoutes.overseerMap: (_) => const OverseerMapScreen(),
+        AppRoutes.overseerMap: (_) => OverseerMapScreen(
+          reportApiService: reportApiService,
+          authApiService: authApiService,
+        ),
         AppRoutes.staffTasks: (_) =>
             StaffTaskInboxScreen(taskApiService: taskApiService),
         AppRoutes.staffTaskDetail: (_) =>

@@ -7,6 +7,8 @@ import '../../overseer/presentation/overseer_task_list_screen.dart';
 import '../../reports/data/report_api_service.dart';
 import '../../tasks/data/task_api_service.dart';
 import '../../users/data/user_api_service.dart';
+import '../../map/presentation/overseer_map_screen.dart';
+import '../../users/presentation/overseer_staff_list_screen.dart';
 
 class OverseerHomeScreen extends StatefulWidget {
   const OverseerHomeScreen({
@@ -31,7 +33,7 @@ class _OverseerHomeScreenState extends State<OverseerHomeScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final titles = ['Report Dashboard', 'Tasks'];
+    final titles = ['Report Dashboard', 'City Map', 'Tasks', 'Staff'];
 
     return Scaffold(
       appBar: AppBar(
@@ -57,7 +59,12 @@ class _OverseerHomeScreenState extends State<OverseerHomeScreen> {
           OverseerReportDashboardScreen(
             reportApiService: widget.reportApiService,
           ),
+          OverseerMapScreen(
+            reportApiService: widget.reportApiService,
+            authApiService: widget.authApiService,
+          ),
           OverseerTaskListScreen(taskApiService: widget.taskApiService),
+          OverseerStaffListScreen(userApiService: widget.userApiService),
         ],
       ),
       bottomNavigationBar: NavigationBar(
@@ -72,9 +79,19 @@ class _OverseerHomeScreenState extends State<OverseerHomeScreen> {
             label: 'Reports',
           ),
           NavigationDestination(
+            icon: Icon(Icons.map_outlined),
+            selectedIcon: Icon(Icons.map),
+            label: 'Map',
+          ),
+          NavigationDestination(
             icon: Icon(Icons.assignment_outlined),
             selectedIcon: Icon(Icons.assignment),
             label: 'Tasks',
+          ),
+          NavigationDestination(
+            icon: Icon(Icons.people_outline),
+            selectedIcon: Icon(Icons.people),
+            label: 'Staff',
           ),
         ],
       ),

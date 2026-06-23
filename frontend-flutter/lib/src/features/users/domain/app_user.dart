@@ -1,4 +1,5 @@
 import '../../auth/domain/current_user.dart';
+import '../../tasks/domain/task.dart';
 
 class AppUser {
   const AppUser({
@@ -43,5 +44,40 @@ class UserDraft {
       'password': password,
       'role': role.wireName,
     };
+  }
+}
+
+class StaffSummary {
+  const StaffSummary({
+    required this.id,
+    required this.fullName,
+    required this.email,
+    required this.active,
+    required this.activeTasksCount,
+    required this.completedTasksCount,
+    required this.tasks,
+  });
+
+  final String id;
+  final String fullName;
+  final String email;
+  final bool active;
+  final int activeTasksCount;
+  final int completedTasksCount;
+  final List<Task> tasks;
+
+  factory StaffSummary.fromJson(Map<String, dynamic> json) {
+    final tasksList = json['tasks'] as List<dynamic>? ?? const <dynamic>[];
+    return StaffSummary(
+      id: json['id'] as String,
+      fullName: json['fullName'] as String,
+      email: json['email'] as String,
+      active: json['active'] as bool? ?? true,
+      activeTasksCount: json['activeTasksCount'] as int? ?? 0,
+      completedTasksCount: json['completedTasksCount'] as int? ?? 0,
+      tasks: tasksList
+          .map((t) => Task.fromJson(t as Map<String, dynamic>))
+          .toList(),
+    );
   }
 }

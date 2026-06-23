@@ -10,6 +10,8 @@ import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.security.access.AccessDeniedException;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
+import com.smartcity.reports.task.TaskRepository;
+import com.smartcity.reports.task.TaskMapper;
 
 import java.util.List;
 import java.util.UUID;
@@ -26,13 +28,19 @@ class UserServiceTest {
     @Mock
     private UserRepository userRepository;
 
+    @Mock
+    private TaskRepository taskRepository;
+
+    @Mock
+    private TaskMapper taskMapper;
+
     private final PasswordEncoder passwordEncoder = new BCryptPasswordEncoder();
 
     private UserService userService;
 
     @BeforeEach
     void setUp() {
-        userService = new UserService(userRepository, passwordEncoder);
+        userService = new UserService(userRepository, passwordEncoder, taskRepository, taskMapper);
     }
 
     @Test
@@ -171,6 +179,23 @@ class UserServiceTest {
         assertThatThrownBy(() -> userService.createUser(request, user(UserRole.OVERSEER)))
                 .isInstanceOf(DuplicateResourceException.class)
                 .hasMessage("Email is already registered");
+    }
+
+    @Test
+    void overseerCanGetStaffSummary() {
+        User overseer = user(UserRole.OVERSEER);
+        User staff = user(UserRole.STAFF);
+        when(userRepository.findByRoleOrderByFullNameAsc(UserRole.STAFF))
+                .thenReturn(List.of(staff));
+        when(taskRepository.findByAssignedStaff_IdOrderByCreatedAtDesc(staff.getId()))
+                .thenReturn(List.of());
+
+        StaffListResponse response = userService.getStaffSummary(overseer);
+
+        assertThat(response.staff()).hasSize(1);
+        assertThat(response.staff().get(0).id()).isEqualTo(staff.getId());
+        assertThat(response.staff().get(0).activeTasksCount()).isZero();
+        assertThat(response.staff().get(0).completedTasksCount()).isZero();
     }
 
     private User user(UserRole role) {

@@ -6,11 +6,15 @@ import '../../../core/services/api_service.dart';
 import '../../auth/data/token_storage.dart';
 import '../../auth/domain/current_user.dart';
 import '../domain/app_user.dart';
+import '../../tasks/domain/task.dart';
+import '../../reports/domain/report.dart';
 
 abstract class UserApiService {
   Future<List<AppUser>> fetchStaffUsers();
 
   Future<AppUser> createUser(UserDraft draft);
+
+  Future<List<StaffSummary>> fetchStaffSummary();
 }
 
 class BackendUserApiService extends ApiService implements UserApiService {
@@ -47,6 +51,21 @@ class BackendUserApiService extends ApiService implements UserApiService {
     );
     _ensureSuccess(response);
     return AppUser.fromJson(_decodeMap(response.body));
+  }
+
+  @override
+  Future<List<StaffSummary>> fetchStaffSummary() async {
+    final response = await _client.get(
+      _uri('/api/users/staff-summary'),
+      headers: await _headers(),
+    );
+    _ensureSuccess(response);
+
+    final body = _decodeMap(response.body);
+    final list = body['staff'] as List<dynamic>? ?? const <dynamic>[];
+    return list
+        .map((item) => StaffSummary.fromJson(item as Map<String, dynamic>))
+        .toList(growable: false);
   }
 
   Uri _uri(String path) {
@@ -134,6 +153,133 @@ class MockUserApiService extends ApiService implements UserApiService {
     );
     _users.add(user);
     return user;
+  }
+
+  @override
+  Future<List<StaffSummary>> fetchStaffSummary() async {
+    await Future<void>.delayed(const Duration(milliseconds: 100));
+    final now = DateTime.now();
+    return [
+      StaffSummary(
+        id: '44444444-4444-4444-4444-444444444444',
+        fullName: 'Test Staff',
+        email: 'staff@test.com',
+        active: true,
+        activeTasksCount: 1,
+        completedTasksCount: 1,
+        tasks: [
+          Task(
+            id: 'mock-task-1',
+            title: 'Fix broken streetlight near Nguyen Hue',
+            description: 'Streetlight is completely off.',
+            category: ReportCategory.streetLight,
+            status: TaskStatus.inProgress,
+            latitude: 10.7769,
+            longitude: 106.7009,
+            addressText: 'Nguyen Hue, District 1',
+            priorityScore: 3,
+            assignedStaff: const ReportUserSummary(
+              id: '44444444-4444-4444-4444-444444444444',
+              fullName: 'Test Staff',
+              role: 'STAFF',
+            ),
+            createdByOverseer: const ReportUserSummary(
+              id: 'overseer-id',
+              fullName: 'Test Overseer',
+              role: 'OVERSEER',
+            ),
+            beforePhotoUrl: null,
+            afterPhotoUrl: null,
+            staffNote: null,
+            aiConfidenceScore: null,
+            aiDecision: null,
+            startedAt: now.subtract(const Duration(hours: 2)),
+            submittedAt: null,
+            reviewedAt: null,
+            closedAt: null,
+            createdAt: now.subtract(const Duration(days: 1)),
+            updatedAt: now,
+            reportIds: const [],
+          ),
+          Task(
+            id: 'mock-task-2',
+            title: 'Pothole repairs at Le Loi',
+            description: 'Fill the large pothole in the left lane.',
+            category: ReportCategory.roadDamage,
+            status: TaskStatus.done,
+            latitude: 10.7827,
+            longitude: 106.6994,
+            addressText: 'Le Loi, District 1',
+            priorityScore: 5,
+            assignedStaff: const ReportUserSummary(
+              id: '44444444-4444-4444-4444-444444444444',
+              fullName: 'Test Staff',
+              role: 'STAFF',
+            ),
+            createdByOverseer: const ReportUserSummary(
+              id: 'overseer-id',
+              fullName: 'Test Overseer',
+              role: 'OVERSEER',
+            ),
+            beforePhotoUrl: null,
+            afterPhotoUrl: '/uploads/report-after/pothole-after.jpg',
+            staffNote: 'Completed successfully',
+            aiConfidenceScore: null,
+            aiDecision: null,
+            startedAt: now.subtract(const Duration(days: 2)),
+            submittedAt: now.subtract(const Duration(days: 1)),
+            reviewedAt: null,
+            closedAt: null,
+            createdAt: now.subtract(const Duration(days: 3)),
+            updatedAt: now.subtract(const Duration(days: 1)),
+            reportIds: const [],
+          ),
+        ],
+      ),
+      StaffSummary(
+        id: '44444444-4444-4444-4444-444444444445',
+        fullName: 'Inactive Staff Member',
+        email: 'inactive.staff@test.com',
+        active: false,
+        activeTasksCount: 0,
+        completedTasksCount: 1,
+        tasks: [
+          Task(
+            id: 'mock-task-3',
+            title: 'Clean road garbage at Ham Nghi',
+            description: 'Garbage pile needs sweeping.',
+            category: ReportCategory.garbage,
+            status: TaskStatus.closed,
+            latitude: 10.7712,
+            longitude: 106.7043,
+            addressText: 'Ham Nghi, District 1',
+            priorityScore: 1,
+            assignedStaff: const ReportUserSummary(
+              id: '44444444-4444-4444-4444-444444444445',
+              fullName: 'Inactive Staff Member',
+              role: 'STAFF',
+            ),
+            createdByOverseer: const ReportUserSummary(
+              id: 'overseer-id',
+              fullName: 'Test Overseer',
+              role: 'OVERSEER',
+            ),
+            beforePhotoUrl: null,
+            afterPhotoUrl: null,
+            staffNote: 'Cleaned up completely.',
+            aiConfidenceScore: null,
+            aiDecision: null,
+            startedAt: now.subtract(const Duration(days: 5)),
+            submittedAt: now.subtract(const Duration(days: 4)),
+            reviewedAt: now.subtract(const Duration(days: 4)),
+            closedAt: now.subtract(const Duration(days: 4)),
+            createdAt: now.subtract(const Duration(days: 6)),
+            updatedAt: now.subtract(const Duration(days: 4)),
+            reportIds: const [],
+          ),
+        ],
+      ),
+    ];
   }
 }
 

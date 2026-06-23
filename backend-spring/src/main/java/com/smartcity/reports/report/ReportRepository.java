@@ -26,4 +26,20 @@ public interface ReportRepository extends JpaRepository<Report, UUID>, JpaSpecif
             @Param("maxLat") double maxLat,
             @Param("maxLng") double maxLng
     );
+
+    @Query(value = """
+            SELECT *
+            FROM reports
+            WHERE ST_Intersects(
+                location,
+                ST_MakeEnvelope(:minLng, :minLat, :maxLng, :maxLat, 4326)
+            )
+            ORDER BY priority_score DESC, upvote_count DESC, created_at DESC
+            """, nativeQuery = true)
+    List<Report> findWithinBounds(
+            @Param("minLat") double minLat,
+            @Param("minLng") double minLng,
+            @Param("maxLat") double maxLat,
+            @Param("maxLng") double maxLng
+    );
 }

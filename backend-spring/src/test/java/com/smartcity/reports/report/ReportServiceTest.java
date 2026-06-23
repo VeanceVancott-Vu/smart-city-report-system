@@ -207,6 +207,30 @@ class ReportServiceTest {
     }
 
     @Test
+    void getReportsForMapReturnsAllPinsForOverseer() {
+        User overseer = user(UserRole.OVERSEER);
+        User otherCitizen = user(UserRole.CITIZEN);
+        Report report = reportFor(otherCitizen);
+        report.setId(UUID.randomUUID());
+
+        when(reportRepository.findWithinBounds(10.7, 106.6, 10.8, 106.8))
+                .thenReturn(List.of(report));
+
+        List<ReportMapPinResponse> response = reportService.getReportsForMap(
+                10.7,
+                106.6,
+                10.8,
+                106.8,
+                overseer
+        );
+
+        assertThat(response).hasSize(1);
+        assertThat(response.get(0).id()).isEqualTo(report.getId());
+        assertThat(response.get(0).title()).isEqualTo("Pothole");
+        verify(reportRepository).findWithinBounds(10.7, 106.6, 10.8, 106.8);
+    }
+
+    @Test
     void citizenCannotViewAnotherUsersReport() {
         UUID reportId = UUID.randomUUID();
         Report report = reportFor(user(UserRole.CITIZEN));

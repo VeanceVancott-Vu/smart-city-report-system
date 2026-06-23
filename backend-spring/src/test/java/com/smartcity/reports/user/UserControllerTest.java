@@ -63,6 +63,35 @@ class UserControllerTest {
     }
 
     @Test
+    void getStaffSummaryReturnsSummaryPayload() throws Exception {
+        User overseer = user(UserRole.OVERSEER);
+        UUID staffId = UUID.randomUUID();
+        when(userService.getStaffSummary(nullable(User.class)))
+                .thenReturn(new StaffListResponse(List.of(
+                        new StaffSummaryResponse(
+                                staffId,
+                                "Test Staff",
+                                "staff@test.com",
+                                true,
+                                2,
+                                5,
+                                List.of()
+                        )
+                )));
+
+        mockMvc.perform(get("/api/users/staff-summary")
+                        .with(authentication(authenticationToken(overseer))))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.staff[0].id").value(staffId.toString()))
+                .andExpect(jsonPath("$.staff[0].fullName").value("Test Staff"))
+                .andExpect(jsonPath("$.staff[0].email").value("staff@test.com"))
+                .andExpect(jsonPath("$.staff[0].active").value(true))
+                .andExpect(jsonPath("$.staff[0].activeTasksCount").value(2))
+                .andExpect(jsonPath("$.staff[0].completedTasksCount").value(5))
+                .andExpect(jsonPath("$.staff[0].tasks").isArray());
+    }
+
+    @Test
     void meReturnsCurrentUserWithoutPasswordHash() throws Exception {
         User citizen = user(UserRole.CITIZEN);
         when(userService.getCurrentUser(nullable(User.class)))

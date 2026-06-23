@@ -6,9 +6,9 @@ import com.smartcity.reports.user.User;
 import org.springframework.stereotype.Component;
 
 @Component
-class TaskMapper {
+public class TaskMapper {
 
-    TaskResponse toResponse(Task task) {
+    public TaskResponse toResponse(Task task) {
         return new TaskResponse(
                 task.getId(),
                 task.getTitle(),
