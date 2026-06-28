@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:latlong2/latlong.dart' hide Path;
 
 import '../../../core/files/upload_file_picker.dart';
+import '../../../core/ui/app_feedback.dart';
 import '../data/report_api_service.dart';
 import '../domain/report.dart';
 import 'citizen_report_map_picker.dart';
@@ -112,6 +113,11 @@ class _CitizenReportFormState extends State<CitizenReportForm> {
     }
     if ((_beforePhotoUrl ?? '').trim().isEmpty) {
       setState(() => _beforePhotoError = 'Upload a before photo first');
+      AppFeedback.showError(
+        context,
+        title: 'Before photo required',
+        message: 'Upload a photo before submitting the report.',
+      );
       return;
     }
 
@@ -162,9 +168,7 @@ class _CitizenReportFormState extends State<CitizenReportForm> {
         return;
       }
       setState(() => _beforePhotoUrl = fileUrl);
-      ScaffoldMessenger.of(
-        context,
-      ).showSnackBar(const SnackBar(content: Text('Before photo uploaded')));
+      AppFeedback.showSuccess(context, title: 'Before photo uploaded');
     } on FilePickerException catch (error) {
       _setPhotoError(error.message);
     } catch (error) {
@@ -184,8 +188,10 @@ class _CitizenReportFormState extends State<CitizenReportForm> {
       return;
     }
     setState(() => _beforePhotoError = message);
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(content: Text(message), backgroundColor: Colors.red.shade700),
+    AppFeedback.showError(
+      context,
+      title: 'Photo upload failed',
+      message: message,
     );
   }
 
@@ -196,7 +202,9 @@ class _CitizenReportFormState extends State<CitizenReportForm> {
 
   @override
   Widget build(BuildContext context) {
-    final bool isTestMode = WidgetsBinding.instance.runtimeType.toString().contains('Test');
+    final bool isTestMode = WidgetsBinding.instance.runtimeType
+        .toString()
+        .contains('Test');
     return Form(
       key: _formKey,
       child: NotificationListener<ScrollNotification>(
@@ -211,158 +219,161 @@ class _CitizenReportFormState extends State<CitizenReportForm> {
           cacheExtent: 1000,
           padding: const EdgeInsets.all(16),
           children: [
-          TextFormField(
-            controller: _titleController,
-            decoration: const InputDecoration(
-              labelText: 'Title',
-              prefixIcon: Icon(Icons.title),
-            ),
-            textInputAction: TextInputAction.next,
-            validator: _required,
-          ),
-          const SizedBox(height: 12),
-          TextFormField(
-            controller: _descriptionController,
-            decoration: const InputDecoration(
-              labelText: 'Description',
-              prefixIcon: Icon(Icons.notes_outlined),
-            ),
-            minLines: 3,
-            maxLines: 5,
-            validator: _required,
-          ),
-          const SizedBox(height: 12),
-          DropdownButtonFormField<ReportCategory>(
-            value: _category,
-            decoration: const InputDecoration(
-              labelText: 'Category',
-              prefixIcon: Icon(Icons.category_outlined),
-            ),
-            items: ReportCategory.values
-                .map(
-                  (category) => DropdownMenuItem<ReportCategory>(
-                    value: category,
-                    child: Text(category.label),
-                  ),
-                )
-                .toList(growable: false),
-            onChanged: _isSaving
-                ? null
-                : (category) {
-                    if (category != null) {
-                      setState(() => _category = category);
-                    }
-                  },
-          ),
-          const SizedBox(height: 12),
-          if (!isTestMode) ...[
-            Padding(
-              padding: const EdgeInsets.only(bottom: 8.0),
-              child: Text(
-                'Location Selection',
-                style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                      fontWeight: FontWeight.bold,
-                      color: Colors.grey.shade700,
-                    ),
+            TextFormField(
+              controller: _titleController,
+              decoration: const InputDecoration(
+                labelText: 'Title',
+                prefixIcon: Icon(Icons.title),
               ),
-            ),
-            OutlinedButton.icon(
-              onPressed: _isSaving ? null : _openMapPicker,
-              icon: const Icon(Icons.map_outlined),
-              label: const Text('Select Location on Map'),
-              style: OutlinedButton.styleFrom(
-                padding: const EdgeInsets.symmetric(vertical: 14),
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(10),
-                ),
-                side: BorderSide(
-                  color: Theme.of(context).colorScheme.primary.withOpacity(0.5),
-                  width: 1.5,
-                ),
-              ),
+              textInputAction: TextInputAction.next,
+              validator: _required,
             ),
             const SizedBox(height: 12),
-          ],
-          LayoutBuilder(
-            builder: (context, constraints) {
-              final isWide = constraints.maxWidth >= 560;
-              final latitudeField = TextFormField(
-                controller: _latitudeController,
-                readOnly: true,
-                decoration: const InputDecoration(
-                  labelText: 'Latitude',
-                  prefixIcon: Icon(Icons.my_location_outlined),
-                ),
-              );
-              final longitudeField = TextFormField(
-                controller: _longitudeController,
-                readOnly: true,
-                decoration: const InputDecoration(
-                  labelText: 'Longitude',
-                  prefixIcon: Icon(Icons.explore_outlined),
-                ),
-              );
-
-              return isWide
-                  ? Row(
-                      children: [
-                        Expanded(child: latitudeField),
-                        const SizedBox(width: 12),
-                        Expanded(child: longitudeField),
-                      ],
-                    )
-                  : Column(
-                      children: [
-                        latitudeField,
-                        const SizedBox(height: 12),
-                        longitudeField,
-                      ],
-                    );
-            },
-          ),
-          const SizedBox(height: 12),
-          TextFormField(
-            controller: _addressController,
-            decoration: const InputDecoration(
-              labelText: 'Address text',
-              prefixIcon: Icon(Icons.place_outlined),
+            TextFormField(
+              controller: _descriptionController,
+              decoration: const InputDecoration(
+                labelText: 'Description',
+                prefixIcon: Icon(Icons.notes_outlined),
+              ),
+              minLines: 3,
+              maxLines: 5,
+              validator: _required,
             ),
-            textInputAction: TextInputAction.next,
-          ),
-          const SizedBox(height: 12),
-          _PhotoUploadField(
-            label: 'Before photo',
-            fileUrl: _beforePhotoUrl,
-            errorText: _beforePhotoError,
-            isUploading: _isUploadingPhoto,
-            onUpload: _pickAndUploadBeforePhoto,
-          ),
-          if (widget.initialReport == null) ...[
-            const SizedBox(height: 8),
-            CheckboxListTile(
-              value: _anonymous,
+            const SizedBox(height: 12),
+            DropdownButtonFormField<ReportCategory>(
+              value: _category,
+              decoration: const InputDecoration(
+                labelText: 'Category',
+                prefixIcon: Icon(Icons.category_outlined),
+              ),
+              items: ReportCategory.values
+                  .map(
+                    (category) => DropdownMenuItem<ReportCategory>(
+                      value: category,
+                      child: Text(category.label),
+                    ),
+                  )
+                  .toList(growable: false),
               onChanged: _isSaving
                   ? null
-                  : (value) => setState(() => _anonymous = value ?? false),
-              title: const Text('Submit anonymously'),
-              controlAffinity: ListTileControlAffinity.leading,
-              contentPadding: EdgeInsets.zero,
+                  : (category) {
+                      if (category != null) {
+                        setState(() => _category = category);
+                      }
+                    },
+            ),
+            const SizedBox(height: 12),
+            if (!isTestMode) ...[
+              Padding(
+                padding: const EdgeInsets.only(bottom: 8.0),
+                child: Text(
+                  'Location Selection',
+                  style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                    fontWeight: FontWeight.bold,
+                    color: Colors.grey.shade700,
+                  ),
+                ),
+              ),
+              OutlinedButton.icon(
+                onPressed: _isSaving ? null : _openMapPicker,
+                icon: const Icon(Icons.map_outlined),
+                label: const Text('Select Location on Map'),
+                style: OutlinedButton.styleFrom(
+                  padding: const EdgeInsets.symmetric(vertical: 14),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(10),
+                  ),
+                  side: BorderSide(
+                    color: Theme.of(
+                      context,
+                    ).colorScheme.primary.withOpacity(0.5),
+                    width: 1.5,
+                  ),
+                ),
+              ),
+              const SizedBox(height: 12),
+            ],
+            LayoutBuilder(
+              builder: (context, constraints) {
+                final isWide = constraints.maxWidth >= 560;
+                final latitudeField = TextFormField(
+                  controller: _latitudeController,
+                  readOnly: true,
+                  decoration: const InputDecoration(
+                    labelText: 'Latitude',
+                    prefixIcon: Icon(Icons.my_location_outlined),
+                  ),
+                );
+                final longitudeField = TextFormField(
+                  controller: _longitudeController,
+                  readOnly: true,
+                  decoration: const InputDecoration(
+                    labelText: 'Longitude',
+                    prefixIcon: Icon(Icons.explore_outlined),
+                  ),
+                );
+
+                return isWide
+                    ? Row(
+                        children: [
+                          Expanded(child: latitudeField),
+                          const SizedBox(width: 12),
+                          Expanded(child: longitudeField),
+                        ],
+                      )
+                    : Column(
+                        children: [
+                          latitudeField,
+                          const SizedBox(height: 12),
+                          longitudeField,
+                        ],
+                      );
+              },
+            ),
+            const SizedBox(height: 12),
+            TextFormField(
+              controller: _addressController,
+              decoration: const InputDecoration(
+                labelText: 'Address text',
+                prefixIcon: Icon(Icons.place_outlined),
+              ),
+              textInputAction: TextInputAction.next,
+            ),
+            const SizedBox(height: 12),
+            _PhotoUploadField(
+              label: 'Before photo',
+              fileUrl: _beforePhotoUrl,
+              errorText: _beforePhotoError,
+              isUploading: _isUploadingPhoto,
+              onUpload: _pickAndUploadBeforePhoto,
+            ),
+            if (widget.initialReport == null) ...[
+              const SizedBox(height: 8),
+              CheckboxListTile(
+                value: _anonymous,
+                onChanged: _isSaving
+                    ? null
+                    : (value) => setState(() => _anonymous = value ?? false),
+                title: const Text('Submit anonymously'),
+                controlAffinity: ListTileControlAffinity.leading,
+                contentPadding: EdgeInsets.zero,
+              ),
+            ],
+            const SizedBox(height: 20),
+            FilledButton.icon(
+              onPressed: _isSaving || _isUploadingPhoto ? null : _submit,
+              icon: _isSaving
+                  ? const SizedBox.square(
+                      dimension: 18,
+                      child: CircularProgressIndicator(strokeWidth: 2),
+                    )
+                  : const Icon(Icons.save_outlined),
+              label: Text(widget.submitLabel),
             ),
           ],
-          const SizedBox(height: 20),
-          FilledButton.icon(
-            onPressed: _isSaving || _isUploadingPhoto ? null : _submit,
-            icon: _isSaving
-                ? const SizedBox.square(
-                    dimension: 18,
-                    child: CircularProgressIndicator(strokeWidth: 2),
-                  )
-                : const Icon(Icons.save_outlined),
-            label: Text(widget.submitLabel),
-          ),
-        ],
+        ),
       ),
-    ));
+    );
   }
 
   String? _required(String? value) {

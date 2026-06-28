@@ -2,9 +2,12 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:smart_city_report_frontend/src/app.dart';
+import 'package:smart_city_report_frontend/src/core/routing/app_routes.dart';
 import 'package:smart_city_report_frontend/src/features/auth/data/auth_api_service.dart';
 import 'package:smart_city_report_frontend/src/features/auth/domain/auth_session.dart';
 import 'package:smart_city_report_frontend/src/features/auth/domain/current_user.dart';
+import 'package:smart_city_report_frontend/src/features/overseer/presentation/overseer_create_task_screen.dart';
+import 'package:smart_city_report_frontend/src/features/overseer/presentation/overseer_report_dashboard_screen.dart';
 import 'package:smart_city_report_frontend/src/features/reports/data/report_api_service.dart';
 import 'package:smart_city_report_frontend/src/features/reports/domain/report.dart';
 import 'package:smart_city_report_frontend/src/features/tasks/data/task_api_service.dart';
@@ -15,6 +18,10 @@ import 'package:smart_city_report_frontend/src/features/users/domain/app_user.da
 void main() {
   const filePickerChannel = MethodChannel(
     'miguelruivo.flutter.plugins.filepicker',
+    StandardMethodCodec(),
+  );
+  const pathProviderChannel = MethodChannel(
+    'plugins.flutter.io/path_provider',
     StandardMethodCodec(),
   );
 
@@ -36,11 +43,22 @@ void main() {
             },
           ];
         });
+    TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger
+        .setMockMethodCallHandler(pathProviderChannel, (call) async {
+          switch (call.method) {
+            case 'getApplicationCacheDirectory':
+            case 'getTemporaryDirectory':
+              return '.dart_tool/test-cache';
+          }
+          return null;
+        });
   });
 
   tearDown(() {
     TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger
         .setMockMethodCallHandler(filePickerChannel, null);
+    TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger
+        .setMockMethodCallHandler(pathProviderChannel, null);
   });
 
   test('parses backend report user summary displayName', () {
@@ -216,7 +234,8 @@ void main() {
     await tester.pumpAndSettle();
 
     expect(find.text('My Reports'), findsOneWidget);
-    expect(find.text('Blocked drain'), findsOneWidget);
+    expect(find.text('Report submitted'), findsOneWidget);
+    expect(find.text('Blocked drain'), findsWidgets);
   });
 
   testWidgets('routes staff users to staff home after login', (tester) async {
@@ -302,30 +321,168 @@ void main() {
     expect(find.text('Log in'), findsOneWidget);
   });
 
-  testWidgets('overseer can open task creation from selected reports', (
-    tester,
-  ) async {
+  testWidgets('overseer task tab refreshes when selected', (tester) async {
     final authApiService = FakeAuthApiService(
       currentUser: fakeUser(UserRole.overseer),
     );
+    final taskApiService = MockTaskApiService();
 
     await tester.pumpWidget(
       SmartCityReportApp(
         authApiService: authApiService,
         reportApiService: MockReportApiService(),
-        taskApiService: MockTaskApiService(),
+        taskApiService: taskApiService,
         userApiService: MockUserApiService(),
       ),
     );
     await tester.pumpAndSettle();
 
-    await tester.tap(find.byType(Checkbox).first);
-    await tester.pumpAndSettle();
-    await tester.tap(find.text('Create task'));
-    await tester.pumpAndSettle();
+    expect(find.text('Report Dashboard'), findsOneWidget);
+    expect(find.text('Fresh drainage task'), findsNothing);
 
-    expect(find.text('Create Task'), findsOneWidget);
+    await tester.runAsync(
+      () => taskApiService.createTask(
+        const TaskDraft(
+          title: 'Fresh drainage task',
+          description: 'Clear the blocked drain from the linked report.',
+          category: ReportCategory.drainage,
+          latitude: 10.7769,
+          longitude: 106.7009,
+          addressText: 'Nguyen Hue',
+          priorityScore: 2,
+          assignedStaffId: null,
+          beforePhotoUrl: null,
+          afterPhotoUrl: null,
+          staffNote: null,
+          reportIds: ['11111111-1111-1111-1111-000000000004'],
+        ),
+      ),
+    );
+
+    await tester.tap(find.text('Tasks'));
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 500));
+    await tester.pump();
+
+    expect(find.text('Fresh drainage task'), findsOneWidget);
   });
+  testWidgets('linked report item opens report details', (tester) async {
+    await tester.pumpWidget(
+      MaterialApp(
+        onGenerateRoute: (settings) {
+          if (settings.name == AppRoutes.overseerReportDetail) {
+            return MaterialPageRoute<void>(
+              settings: settings,
+              builder: (_) => Scaffold(
+                appBar: AppBar(title: const Text('Report Details')),
+                body: Text('Report detail ${settings.arguments}'),
+              ),
+            );
+          }
+
+          return MaterialPageRoute<void>(
+            settings: const RouteSettings(
+              arguments: OverseerTaskFormArgs(
+                reportIds: ['11111111-1111-1111-1111-000000000004'],
+              ),
+            ),
+            builder: (_) => OverseerCreateTaskScreen(
+              taskApiService: MockTaskApiService(),
+              reportApiService: MockReportApiService(),
+              userApiService: MockUserApiService(),
+            ),
+          );
+        },
+      ),
+    );
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 500));
+    await tester.pump();
+
+    await tester.ensureVisible(find.text('Broken streetlight near Nguyen Hue'));
+    await tester.pump();
+    await tester.tap(find.text('Broken streetlight near Nguyen Hue'));
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 500));
+
+    expect(find.text('Report Details'), findsOneWidget);
+    expect(
+      find.text('Report detail 11111111-1111-1111-1111-000000000004'),
+      findsOneWidget,
+    );
+  });
+  testWidgets(
+    'overseer creates a task from selected reports with report data',
+    (tester) async {
+      final taskApiService = MockTaskApiService();
+
+      await tester.pumpWidget(
+        MaterialApp(
+          onGenerateRoute: (settings) {
+            if (settings.name == AppRoutes.overseerReportDetail) {
+              return MaterialPageRoute<void>(
+                settings: settings,
+                builder: (_) => Scaffold(
+                  appBar: AppBar(title: const Text('Report Details')),
+                  body: Text('Report detail ${settings.arguments}'),
+                ),
+              );
+            }
+
+            return MaterialPageRoute<void>(
+              settings: const RouteSettings(
+                arguments: OverseerTaskFormArgs(
+                  reportIds: ['11111111-1111-1111-1111-000000000004'],
+                ),
+              ),
+              builder: (_) => OverseerCreateTaskScreen(
+                taskApiService: taskApiService,
+                reportApiService: MockReportApiService(),
+                userApiService: MockUserApiService(),
+              ),
+            );
+          },
+        ),
+      );
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 500));
+      await tester.pump();
+
+      expect(find.text('Create Task'), findsOneWidget);
+      expect(find.text('Linked reports'), findsOneWidget);
+      expect(find.text('Broken streetlight near Nguyen Hue'), findsOneWidget);
+      expect(find.text('Report IDs'), findsNothing);
+      expect(find.text('Assigned staff'), findsNothing);
+
+      await tester.enterText(find.byType(EditableText).at(0), 'Repair light');
+      await tester.enterText(
+        find.byType(EditableText).at(1),
+        'Replace the broken lamp.',
+      );
+      await tester.ensureVisible(
+        find.byKey(const Key('overseerTaskSubmitButton')),
+      );
+      await tester.tap(find.byKey(const Key('overseerTaskSubmitButton')));
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 500));
+      await tester.pump();
+
+      final tasks = await tester.runAsync(taskApiService.fetchTasks);
+      expect(tasks, isNotNull);
+      final createdTask = tasks!.first;
+      expect(createdTask.title, 'Repair light');
+      expect(createdTask.description, 'Replace the broken lamp.');
+      expect(createdTask.status, TaskStatus.newTask);
+      expect(createdTask.category, ReportCategory.streetLight);
+      expect(createdTask.latitude, 10.7769);
+      expect(createdTask.longitude, 106.7009);
+      expect(createdTask.priorityScore, 3);
+      expect(
+        createdTask.reportIds,
+        contains('11111111-1111-1111-1111-000000000004'),
+      );
+    },
+  );
 }
 
 class FakeAuthApiService implements AuthApiService {

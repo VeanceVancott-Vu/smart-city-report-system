@@ -29,6 +29,7 @@ class OverseerHomeScreen extends StatefulWidget {
 }
 
 class _OverseerHomeScreenState extends State<OverseerHomeScreen> {
+  final _taskListKey = GlobalKey<OverseerTaskListScreenState>();
   int _selectedIndex = 0;
 
   @override
@@ -63,7 +64,10 @@ class _OverseerHomeScreenState extends State<OverseerHomeScreen> {
             reportApiService: widget.reportApiService,
             authApiService: widget.authApiService,
           ),
-          OverseerTaskListScreen(taskApiService: widget.taskApiService),
+          OverseerTaskListScreen(
+            key: _taskListKey,
+            taskApiService: widget.taskApiService,
+          ),
           OverseerStaffListScreen(userApiService: widget.userApiService),
         ],
       ),
@@ -71,6 +75,9 @@ class _OverseerHomeScreenState extends State<OverseerHomeScreen> {
         selectedIndex: _selectedIndex,
         onDestinationSelected: (index) {
           setState(() => _selectedIndex = index);
+          if (index == 2) {
+            _taskListKey.currentState?.reload();
+          }
         },
         destinations: const [
           NavigationDestination(

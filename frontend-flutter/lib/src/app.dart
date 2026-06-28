@@ -91,6 +91,7 @@ class SmartCityReportApp extends StatelessWidget {
             OverseerReportDetailScreen(reportApiService: reportApiService),
         AppRoutes.overseerCreateTask: (_) => OverseerCreateTaskScreen(
           taskApiService: taskApiService,
+          reportApiService: reportApiService,
           userApiService: userApiService,
         ),
         AppRoutes.overseerTaskDetail: (_) =>

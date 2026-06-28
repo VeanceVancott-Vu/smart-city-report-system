@@ -36,13 +36,6 @@ docker compose ps
 mvn -f backend-spring/pom.xml spring-boot:run "-Dspring-boot.run.profiles=local"
 ```
 
-The `local` profile runs Flyway migrations and seeds demo users:
-
-```text
-citizen@test.com  / Password123
-staff@test.com    / Password123
-overseer@test.com / Password123
-```
 
 Demo users are created only by `DevUserSeeder`, which is active for the `local` and `dev` Spring profiles. A production run must not activate either profile.
 

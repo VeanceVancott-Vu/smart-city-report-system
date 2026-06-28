@@ -1,5 +1,10 @@
+import 'dart:math' as math;
+
 import 'package:flutter/material.dart';
 
+import '../../../core/routing/app_routes.dart';
+import '../../../core/ui/app_feedback.dart';
+import '../../reports/data/report_api_service.dart';
 import '../../reports/domain/report.dart';
 import '../../tasks/data/task_api_service.dart';
 import '../../tasks/domain/task.dart';
@@ -11,10 +16,12 @@ class OverseerCreateTaskScreen extends StatefulWidget {
   const OverseerCreateTaskScreen({
     super.key,
     required this.taskApiService,
+    required this.reportApiService,
     required this.userApiService,
   });
 
   final TaskApiService taskApiService;
+  final ReportApiService reportApiService;
   final UserApiService userApiService;
 
   @override
@@ -33,21 +40,23 @@ class _OverseerCreateTaskScreenState extends State<OverseerCreateTaskScreen> {
   final _reportIdsController = TextEditingController();
 
   ReportCategory _category = ReportCategory.roadDamage;
-  late Future<List<AppUser>> _staffFuture;
+  Future<List<AppUser>> _staffFuture = Future<List<AppUser>>.value(
+    const <AppUser>[],
+  );
   OverseerTaskFormArgs? _args;
   Task? _loadedTask;
+  List<Report> _linkedReports = const <Report>[];
   String? _selectedStaffId;
+  String? _linkedReportsError;
   bool _didReadArgs = false;
   bool _isLoading = false;
+  bool _isLoadingReports = false;
   bool _isSaving = false;
 
   bool get _isEditing => (_args?.taskId ?? '').isNotEmpty;
 
-  @override
-  void initState() {
-    super.initState();
-    _loadStaff();
-  }
+  bool get _isReportLinkedCreate =>
+      !_isEditing && (_args?.reportIds.isNotEmpty ?? false);
 
   void _loadStaff() {
     _staffFuture = widget.userApiService.fetchStaffUsers();
@@ -74,7 +83,12 @@ class _OverseerCreateTaskScreenState extends State<OverseerCreateTaskScreen> {
 
     _reportIdsController.text = _args!.reportIds.join('\n');
     if (_isEditing) {
+      _loadStaff();
       _loadTask(_args!.taskId!);
+    } else if (_isReportLinkedCreate) {
+      _loadLinkedReports(_args!.reportIds);
+    } else {
+      _loadStaff();
     }
   }
 
@@ -118,6 +132,78 @@ class _OverseerCreateTaskScreenState extends State<OverseerCreateTaskScreen> {
     }
   }
 
+  Future<void> _loadLinkedReports(Iterable<String> rawReportIds) async {
+    final reportIds = _cleanReportIds(rawReportIds);
+    if (reportIds.isEmpty) {
+      setState(() {
+        _linkedReports = const <Report>[];
+        _linkedReportsError = 'No reports were selected.';
+      });
+      return;
+    }
+
+    setState(() {
+      _isLoadingReports = true;
+      _linkedReportsError = null;
+    });
+
+    try {
+      final reports = await Future.wait(
+        reportIds.map(widget.reportApiService.fetchReport),
+      );
+      if (!mounted) {
+        return;
+      }
+      setState(() {
+        _linkedReports = reports;
+        _applyReportDefaults(reports);
+      });
+    } on ReportApiException catch (error) {
+      if (mounted) {
+        setState(() => _linkedReportsError = error.message);
+      }
+    } catch (_) {
+      if (mounted) {
+        setState(() => _linkedReportsError = 'Unable to load linked reports.');
+      }
+    } finally {
+      if (mounted) {
+        setState(() => _isLoadingReports = false);
+      }
+    }
+  }
+
+  Future<void> _retryLoadLinkedReports() async {
+    await _loadLinkedReports(_args?.reportIds ?? const <String>[]);
+  }
+
+  Future<void> _openLinkedReport(Report report) async {
+    FocusScope.of(context).unfocus();
+    final changed = await Navigator.of(
+      context,
+    ).pushNamed(AppRoutes.overseerReportDetail, arguments: report.id);
+    if (!mounted) {
+      return;
+    }
+    if (changed == true) {
+      await _loadLinkedReports(_linkedReports.map((report) => report.id));
+    }
+  }
+
+  void _applyReportDefaults(List<Report> reports) {
+    if (reports.isEmpty) {
+      return;
+    }
+
+    final anchor = _anchorReport(reports);
+    _category = anchor.category;
+    _latitudeController.text = anchor.latitude.toString();
+    _longitudeController.text = anchor.longitude.toString();
+    _addressController.text = anchor.addressText?.trim() ?? '';
+    _priorityController.text = _priorityScoreForReports(reports).toString();
+    _reportIdsController.text = reports.map((report) => report.id).join('\n');
+  }
+
   Future<void> _save() async {
     final formState = _formKey.currentState;
     if (formState == null || !formState.validate()) {
@@ -127,20 +213,22 @@ class _OverseerCreateTaskScreenState extends State<OverseerCreateTaskScreen> {
     FocusScope.of(context).unfocus();
     setState(() => _isSaving = true);
 
-    final draft = TaskDraft(
-      title: _titleController.text.trim(),
-      description: _descriptionController.text.trim(),
-      category: _category,
-      latitude: double.parse(_latitudeController.text.trim()),
-      longitude: double.parse(_longitudeController.text.trim()),
-      addressText: _nullableText(_addressController),
-      priorityScore: int.parse(_priorityController.text.trim()),
-      assignedStaffId: _selectedStaffId,
-      beforePhotoUrl: _loadedTask?.beforePhotoUrl,
-      afterPhotoUrl: _loadedTask?.afterPhotoUrl,
-      staffNote: _loadedTask?.staffNote,
-      reportIds: _reportIds(),
-    );
+    final draft = _isReportLinkedCreate && _linkedReports.isNotEmpty
+        ? _draftFromLinkedReports()
+        : TaskDraft(
+            title: _titleController.text.trim(),
+            description: _descriptionController.text.trim(),
+            category: _category,
+            latitude: double.parse(_latitudeController.text.trim()),
+            longitude: double.parse(_longitudeController.text.trim()),
+            addressText: _nullableText(_addressController),
+            priorityScore: int.parse(_priorityController.text.trim()),
+            assignedStaffId: _selectedStaffId,
+            beforePhotoUrl: _loadedTask?.beforePhotoUrl,
+            afterPhotoUrl: _loadedTask?.afterPhotoUrl,
+            staffNote: _loadedTask?.staffNote,
+            reportIds: _reportIds(),
+          );
 
     try {
       final task = _isEditing
@@ -149,14 +237,24 @@ class _OverseerCreateTaskScreenState extends State<OverseerCreateTaskScreen> {
       if (!mounted) {
         return;
       }
-      ScaffoldMessenger.of(
+      AppFeedback.showSuccess(
         context,
-      ).showSnackBar(SnackBar(content: Text('${task.title} saved')));
+        title: _isEditing ? 'Task updated' : 'Task created',
+        message: task.title,
+      );
       Navigator.of(context).pop(true);
     } on TaskApiException catch (error) {
-      _showError(error.message);
+      await AppFeedback.showErrorDialog(
+        context,
+        title: _isEditing ? 'Could not update task' : 'Could not create task',
+        message: error.message,
+      );
     } catch (_) {
-      _showError('Unable to save task.');
+      await AppFeedback.showErrorDialog(
+        context,
+        title: _isEditing ? 'Could not update task' : 'Could not create task',
+        message: 'Unable to save task.',
+      );
     } finally {
       if (mounted) {
         setState(() => _isSaving = false);
@@ -164,9 +262,34 @@ class _OverseerCreateTaskScreenState extends State<OverseerCreateTaskScreen> {
     }
   }
 
+  TaskDraft _draftFromLinkedReports() {
+    final anchor = _anchorReport(_linkedReports);
+    return TaskDraft(
+      title: _titleController.text.trim(),
+      description: _descriptionController.text.trim(),
+      category: anchor.category,
+      latitude: anchor.latitude,
+      longitude: anchor.longitude,
+      addressText: _nullableAddress(anchor.addressText),
+      priorityScore: _priorityScoreForReports(_linkedReports),
+      assignedStaffId: null,
+      beforePhotoUrl: _firstReportPhotoUrl(_linkedReports),
+      afterPhotoUrl: null,
+      staffNote: null,
+      reportIds: _linkedReports
+          .map((report) => report.id)
+          .toList(growable: false),
+    );
+  }
+
   String? _nullableText(TextEditingController controller) {
     final value = controller.text.trim();
     return value.isEmpty ? null : value;
+  }
+
+  String? _nullableAddress(String? value) {
+    final trimmed = value?.trim();
+    return trimmed == null || trimmed.isEmpty ? null : trimmed;
   }
 
   List<String> _reportIds() {
@@ -177,226 +300,450 @@ class _OverseerCreateTaskScreenState extends State<OverseerCreateTaskScreen> {
         .toList(growable: false);
   }
 
+  List<String> _cleanReportIds(Iterable<String> rawIds) {
+    final seen = <String>{};
+    final reportIds = <String>[];
+    for (final rawId in rawIds) {
+      final id = rawId.trim();
+      if (id.isEmpty || seen.contains(id)) {
+        continue;
+      }
+      seen.add(id);
+      reportIds.add(id);
+    }
+    return reportIds;
+  }
+
+  Report _anchorReport(List<Report> reports) {
+    return reports.reduce((best, report) {
+      if (report.priorityScore != best.priorityScore) {
+        return report.priorityScore > best.priorityScore ? report : best;
+      }
+      if (report.upvoteCount != best.upvoteCount) {
+        return report.upvoteCount > best.upvoteCount ? report : best;
+      }
+      return report.createdAt.isAfter(best.createdAt) ? report : best;
+    });
+  }
+
+  int _priorityScoreForReports(List<Report> reports) {
+    return reports.fold<int>(
+      0,
+      (highest, report) => math.max(highest, report.priorityScore),
+    );
+  }
+
+  String? _firstReportPhotoUrl(List<Report> reports) {
+    for (final report in reports) {
+      final photoUrl = report.beforePhotoUrl?.trim();
+      if (photoUrl != null && photoUrl.isNotEmpty) {
+        return photoUrl;
+      }
+    }
+    return null;
+  }
+
   void _showError(String message) {
     if (!mounted) {
       return;
     }
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(content: Text(message), backgroundColor: Colors.red.shade700),
+    AppFeedback.showError(
+      context,
+      title: 'Something went wrong',
+      message: message,
     );
   }
 
   @override
   Widget build(BuildContext context) {
+    final isBusy = _isLoading || _isLoadingReports;
     return Scaffold(
       appBar: AppBar(title: Text(_isEditing ? 'Edit Task' : 'Create Task')),
       body: SafeArea(
-        child: _isLoading
+        child: isBusy
             ? const Center(child: CircularProgressIndicator())
-            : FutureBuilder<List<AppUser>>(
-                future: _staffFuture,
-                builder: (context, snapshot) {
-                  if (snapshot.connectionState != ConnectionState.done) {
-                    return const Center(child: CircularProgressIndicator());
-                  }
-
-                  if (snapshot.hasError) {
-                    return _ErrorState(
-                      message: 'Unable to load staff users.',
-                      onRetry: _retryLoadStaff,
-                    );
-                  }
-
-                  final staffUsers = snapshot.data ?? const <AppUser>[];
-                  if (staffUsers.isEmpty) {
-                    return const Center(
-                      child: Padding(
-                        padding: EdgeInsets.all(24),
-                        child: Text('No active staff users found.'),
-                      ),
-                    );
-                  }
-
-                  final selectedStaffId =
-                      staffUsers.any((staff) => staff.id == _selectedStaffId)
-                      ? _selectedStaffId
-                      : null;
-
-                  return Form(
-                    key: _formKey,
-                    child: ListView(
-                      padding: const EdgeInsets.all(16),
-                      children: [
-                        TextFormField(
-                          controller: _titleController,
-                          decoration: const InputDecoration(
-                            labelText: 'Title',
-                            prefixIcon: Icon(Icons.title),
-                          ),
-                          validator: _required,
-                        ),
-                        const SizedBox(height: 12),
-                        TextFormField(
-                          controller: _descriptionController,
-                          decoration: const InputDecoration(
-                            labelText: 'Description',
-                            prefixIcon: Icon(Icons.notes_outlined),
-                          ),
-                          minLines: 3,
-                          maxLines: 5,
-                          validator: _required,
-                        ),
-                        const SizedBox(height: 12),
-                        DropdownButtonFormField<ReportCategory>(
-                          value: _category,
-                          decoration: const InputDecoration(
-                            labelText: 'Category',
-                            prefixIcon: Icon(Icons.category_outlined),
-                          ),
-                          items: ReportCategory.values
-                              .map(
-                                (category) => DropdownMenuItem<ReportCategory>(
-                                  value: category,
-                                  child: Text(category.label),
-                                ),
-                              )
-                              .toList(growable: false),
-                          onChanged: _isSaving
-                              ? null
-                              : (category) {
-                                  if (category != null) {
-                                    setState(() => _category = category);
-                                  }
-                                },
-                        ),
-                        const SizedBox(height: 12),
-                        LayoutBuilder(
-                          builder: (context, constraints) {
-                            final isWide = constraints.maxWidth >= 560;
-                            final latitude = TextFormField(
-                              controller: _latitudeController,
-                              decoration: const InputDecoration(
-                                labelText: 'Latitude',
-                                prefixIcon: Icon(Icons.my_location_outlined),
-                              ),
-                              keyboardType:
-                                  const TextInputType.numberWithOptions(
-                                    signed: true,
-                                    decimal: true,
-                                  ),
-                              validator: _latitude,
-                            );
-                            final longitude = TextFormField(
-                              controller: _longitudeController,
-                              decoration: const InputDecoration(
-                                labelText: 'Longitude',
-                                prefixIcon: Icon(Icons.explore_outlined),
-                              ),
-                              keyboardType:
-                                  const TextInputType.numberWithOptions(
-                                    signed: true,
-                                    decimal: true,
-                                  ),
-                              validator: _longitude,
-                            );
-
-                            return isWide
-                                ? Row(
-                                    children: [
-                                      Expanded(child: latitude),
-                                      const SizedBox(width: 12),
-                                      Expanded(child: longitude),
-                                    ],
-                                  )
-                                : Column(
-                                    children: [
-                                      latitude,
-                                      const SizedBox(height: 12),
-                                      longitude,
-                                    ],
-                                  );
-                          },
-                        ),
-                        const SizedBox(height: 12),
-                        TextFormField(
-                          controller: _addressController,
-                          decoration: const InputDecoration(
-                            labelText: 'Address text',
-                            prefixIcon: Icon(Icons.place_outlined),
-                          ),
-                        ),
-                        const SizedBox(height: 12),
-                        TextFormField(
-                          controller: _priorityController,
-                          decoration: const InputDecoration(
-                            labelText: 'Priority score',
-                            prefixIcon: Icon(Icons.trending_up),
-                          ),
-                          keyboardType: TextInputType.number,
-                          validator: _nonNegativeInt,
-                        ),
-                        const SizedBox(height: 12),
-                        DropdownButtonFormField<String>(
-                          value: selectedStaffId,
-                          decoration: const InputDecoration(
-                            labelText: 'Assigned staff',
-                            prefixIcon: Icon(Icons.person_outline),
-                          ),
-                          items: staffUsers
-                              .map(
-                                (staff) => DropdownMenuItem<String>(
-                                  value: staff.id,
-                                  child: Text(
-                                    '${staff.fullName} (${staff.email})',
-                                    overflow: TextOverflow.ellipsis,
-                                  ),
-                                ),
-                              )
-                              .toList(growable: false),
-                          onChanged: _isSaving
-                              ? null
-                              : (staffId) {
-                                  setState(() => _selectedStaffId = staffId);
-                                },
-                          validator: (value) {
-                            if ((value ?? '').isEmpty) {
-                              return 'Required';
-                            }
-                            return null;
-                          },
-                        ),
-                        const SizedBox(height: 12),
-                        TextFormField(
-                          controller: _reportIdsController,
-                          decoration: const InputDecoration(
-                            labelText: 'Report IDs',
-                            prefixIcon: Icon(Icons.link_outlined),
-                          ),
-                          minLines: 2,
-                          maxLines: 5,
-                        ),
-                        const SizedBox(height: 20),
-                        FilledButton.icon(
-                          key: const Key('overseerTaskSubmitButton'),
-                          onPressed: _isSaving ? null : _save,
-                          icon: _isSaving
-                              ? const SizedBox.square(
-                                  dimension: 18,
-                                  child: CircularProgressIndicator(
-                                    strokeWidth: 2,
-                                  ),
-                                )
-                              : const Icon(Icons.save_outlined),
-                          label: Text(
-                            _isEditing ? 'Save changes' : 'Create task',
-                          ),
-                        ),
-                      ],
-                    ),
-                  );
-                },
-              ),
+            : _buildBody(),
       ),
+    );
+  }
+
+  Widget _buildBody() {
+    if (_isReportLinkedCreate) {
+      if (_linkedReportsError != null) {
+        return _ErrorState(
+          message: _linkedReportsError!,
+          onRetry: _retryLoadLinkedReports,
+        );
+      }
+      if (_linkedReports.isEmpty) {
+        return _ErrorState(
+          message: 'No reports were selected.',
+          onRetry: _retryLoadLinkedReports,
+        );
+      }
+      return _buildLinkedReportTaskForm();
+    }
+
+    return FutureBuilder<List<AppUser>>(
+      future: _staffFuture,
+      builder: (context, snapshot) {
+        if (snapshot.connectionState != ConnectionState.done) {
+          return const Center(child: CircularProgressIndicator());
+        }
+
+        if (snapshot.hasError) {
+          return _ErrorState(
+            message: 'Unable to load staff users.',
+            onRetry: _retryLoadStaff,
+          );
+        }
+
+        final staffUsers = snapshot.data ?? const <AppUser>[];
+        if (staffUsers.isEmpty) {
+          return const Center(
+            child: Padding(
+              padding: EdgeInsets.all(24),
+              child: Text('No active staff users found.'),
+            ),
+          );
+        }
+
+        final selectedStaffId =
+            staffUsers.any((staff) => staff.id == _selectedStaffId)
+            ? _selectedStaffId
+            : null;
+
+        return _buildFullTaskForm(
+          staffUsers: staffUsers,
+          selectedStaffId: selectedStaffId,
+        );
+      },
+    );
+  }
+
+  Widget _buildLinkedReportTaskForm() {
+    return Form(
+      key: _formKey,
+      child: LayoutBuilder(
+        builder: (context, constraints) {
+          final isWide = constraints.maxWidth >= 900;
+          final taskBrief = _buildLinkedTaskBrief(context);
+          final linkedReports = _buildLinkedReportsList(context);
+
+          return ListView(
+            padding: const EdgeInsets.all(16),
+            children: [
+              if (isWide)
+                Row(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Expanded(flex: 5, child: taskBrief),
+                    const SizedBox(width: 24),
+                    Expanded(flex: 4, child: linkedReports),
+                  ],
+                )
+              else ...[
+                taskBrief,
+                const SizedBox(height: 24),
+                linkedReports,
+              ],
+            ],
+          );
+        },
+      ),
+    );
+  }
+
+  Widget _buildLinkedTaskBrief(BuildContext context) {
+    final theme = Theme.of(context);
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        Text(
+          'Task brief',
+          style: theme.textTheme.titleLarge?.copyWith(
+            fontWeight: FontWeight.w800,
+          ),
+        ),
+        const SizedBox(height: 16),
+        TextFormField(
+          controller: _titleController,
+          decoration: const InputDecoration(
+            labelText: 'Task title',
+            prefixIcon: Icon(Icons.title),
+          ),
+          validator: _required,
+        ),
+        const SizedBox(height: 12),
+        TextFormField(
+          controller: _descriptionController,
+          decoration: const InputDecoration(
+            labelText: 'Task description',
+            prefixIcon: Icon(Icons.notes_outlined),
+          ),
+          minLines: 5,
+          maxLines: 8,
+          validator: _required,
+        ),
+        const SizedBox(height: 16),
+        _buildDerivedTaskDetails(context),
+        const SizedBox(height: 20),
+        _buildSubmitButton(),
+      ],
+    );
+  }
+
+  Widget _buildDerivedTaskDetails(BuildContext context) {
+    final theme = Theme.of(context);
+    final anchor = _anchorReport(_linkedReports);
+    final priorityScore = _priorityScoreForReports(_linkedReports);
+    final photoUrl = _firstReportPhotoUrl(_linkedReports);
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          'Task data',
+          style: theme.textTheme.titleMedium?.copyWith(
+            fontWeight: FontWeight.w800,
+          ),
+        ),
+        const SizedBox(height: 10),
+        Wrap(
+          spacing: 8,
+          runSpacing: 8,
+          children: [
+            _InfoPill(
+              icon: Icons.category_outlined,
+              label: anchor.category.label,
+              color: _categoryColor(anchor.category),
+            ),
+            _InfoPill(
+              icon: Icons.place_outlined,
+              label: _reportLocationLabel(anchor),
+              color: const Color(0xFF0F766E),
+            ),
+            _InfoPill(
+              icon: Icons.trending_up,
+              label: 'Priority $priorityScore',
+              color: const Color(0xFFE67E22),
+            ),
+            _InfoPill(
+              icon: Icons.photo_outlined,
+              label: photoUrl == null ? 'No photo' : 'Report photo',
+              color: const Color(0xFF2563EB),
+            ),
+          ],
+        ),
+      ],
+    );
+  }
+
+  Widget _buildLinkedReportsList(BuildContext context) {
+    final theme = Theme.of(context);
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Row(
+          children: [
+            const Icon(Icons.link_outlined, color: Color(0xFF0F766E)),
+            const SizedBox(width: 8),
+            Expanded(
+              child: Text(
+                'Linked reports',
+                style: theme.textTheme.titleLarge?.copyWith(
+                  fontWeight: FontWeight.w800,
+                ),
+              ),
+            ),
+            _CountBadge(count: _linkedReports.length),
+          ],
+        ),
+        const SizedBox(height: 12),
+        for (final report in _linkedReports) ...[
+          _LinkedReportTile(
+            report: report,
+            onOpen: () => _openLinkedReport(report),
+          ),
+          const SizedBox(height: 10),
+        ],
+      ],
+    );
+  }
+
+  Widget _buildFullTaskForm({
+    required List<AppUser> staffUsers,
+    required String? selectedStaffId,
+  }) {
+    return Form(
+      key: _formKey,
+      child: ListView(
+        padding: const EdgeInsets.all(16),
+        children: [
+          TextFormField(
+            controller: _titleController,
+            decoration: const InputDecoration(
+              labelText: 'Title',
+              prefixIcon: Icon(Icons.title),
+            ),
+            validator: _required,
+          ),
+          const SizedBox(height: 12),
+          TextFormField(
+            controller: _descriptionController,
+            decoration: const InputDecoration(
+              labelText: 'Description',
+              prefixIcon: Icon(Icons.notes_outlined),
+            ),
+            minLines: 3,
+            maxLines: 5,
+            validator: _required,
+          ),
+          const SizedBox(height: 12),
+          DropdownButtonFormField<ReportCategory>(
+            value: _category,
+            decoration: const InputDecoration(
+              labelText: 'Category',
+              prefixIcon: Icon(Icons.category_outlined),
+            ),
+            items: ReportCategory.values
+                .map(
+                  (category) => DropdownMenuItem<ReportCategory>(
+                    value: category,
+                    child: Text(category.label),
+                  ),
+                )
+                .toList(growable: false),
+            onChanged: _isSaving
+                ? null
+                : (category) {
+                    if (category != null) {
+                      setState(() => _category = category);
+                    }
+                  },
+          ),
+          const SizedBox(height: 12),
+          LayoutBuilder(
+            builder: (context, constraints) {
+              final isWide = constraints.maxWidth >= 560;
+              final latitude = TextFormField(
+                controller: _latitudeController,
+                decoration: const InputDecoration(
+                  labelText: 'Latitude',
+                  prefixIcon: Icon(Icons.my_location_outlined),
+                ),
+                keyboardType: const TextInputType.numberWithOptions(
+                  signed: true,
+                  decimal: true,
+                ),
+                validator: _latitude,
+              );
+              final longitude = TextFormField(
+                controller: _longitudeController,
+                decoration: const InputDecoration(
+                  labelText: 'Longitude',
+                  prefixIcon: Icon(Icons.explore_outlined),
+                ),
+                keyboardType: const TextInputType.numberWithOptions(
+                  signed: true,
+                  decimal: true,
+                ),
+                validator: _longitude,
+              );
+
+              return isWide
+                  ? Row(
+                      children: [
+                        Expanded(child: latitude),
+                        const SizedBox(width: 12),
+                        Expanded(child: longitude),
+                      ],
+                    )
+                  : Column(
+                      children: [
+                        latitude,
+                        const SizedBox(height: 12),
+                        longitude,
+                      ],
+                    );
+            },
+          ),
+          const SizedBox(height: 12),
+          TextFormField(
+            controller: _addressController,
+            decoration: const InputDecoration(
+              labelText: 'Address text',
+              prefixIcon: Icon(Icons.place_outlined),
+            ),
+          ),
+          const SizedBox(height: 12),
+          TextFormField(
+            controller: _priorityController,
+            decoration: const InputDecoration(
+              labelText: 'Priority score',
+              prefixIcon: Icon(Icons.trending_up),
+            ),
+            keyboardType: TextInputType.number,
+            validator: _nonNegativeInt,
+          ),
+          const SizedBox(height: 12),
+          DropdownButtonFormField<String>(
+            value: selectedStaffId,
+            decoration: const InputDecoration(
+              labelText: 'Assigned staff',
+              prefixIcon: Icon(Icons.person_outline),
+            ),
+            items: staffUsers
+                .map(
+                  (staff) => DropdownMenuItem<String>(
+                    value: staff.id,
+                    child: Text(
+                      '${staff.fullName} (${staff.email})',
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                  ),
+                )
+                .toList(growable: false),
+            onChanged: _isSaving
+                ? null
+                : (staffId) {
+                    setState(() => _selectedStaffId = staffId);
+                  },
+            validator: (value) {
+              if ((value ?? '').isEmpty) {
+                return 'Required';
+              }
+              return null;
+            },
+          ),
+          const SizedBox(height: 12),
+          TextFormField(
+            controller: _reportIdsController,
+            decoration: const InputDecoration(
+              labelText: 'Report IDs',
+              prefixIcon: Icon(Icons.link_outlined),
+            ),
+            minLines: 2,
+            maxLines: 5,
+          ),
+          const SizedBox(height: 20),
+          _buildSubmitButton(),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildSubmitButton() {
+    return FilledButton.icon(
+      key: const Key('overseerTaskSubmitButton'),
+      onPressed: _isSaving ? null : _save,
+      icon: _isSaving
+          ? const SizedBox.square(
+              dimension: 18,
+              child: CircularProgressIndicator(strokeWidth: 2),
+            )
+          : const Icon(Icons.save_outlined),
+      label: Text(_isEditing ? 'Save changes' : 'Create task'),
     );
   }
 
@@ -450,6 +797,205 @@ class _OverseerCreateTaskScreenState extends State<OverseerCreateTaskScreen> {
   }
 }
 
+class _LinkedReportTile extends StatelessWidget {
+  const _LinkedReportTile({required this.report, required this.onOpen});
+
+  final Report report;
+  final VoidCallback onOpen;
+
+  @override
+  Widget build(BuildContext context) {
+    final categoryColor = _categoryColor(report.category);
+    return Card(
+      elevation: 0,
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(8),
+        side: const BorderSide(color: Color(0xFFDDE5E2)),
+      ),
+      child: InkWell(
+        borderRadius: BorderRadius.circular(8),
+        onTap: onOpen,
+        child: Padding(
+          padding: const EdgeInsets.all(12),
+          child: Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Container(
+                width: 40,
+                height: 40,
+                decoration: BoxDecoration(
+                  color: categoryColor.withValues(alpha: 0.1),
+                  borderRadius: BorderRadius.circular(8),
+                ),
+                child: Icon(
+                  _categoryIcon(report.category),
+                  color: categoryColor,
+                ),
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Row(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Expanded(
+                          child: Text(
+                            report.title,
+                            maxLines: 2,
+                            overflow: TextOverflow.ellipsis,
+                            style: Theme.of(context).textTheme.titleSmall
+                                ?.copyWith(fontWeight: FontWeight.w800),
+                          ),
+                        ),
+                        const SizedBox(width: 8),
+                        _StatusPill(status: report.status),
+                      ],
+                    ),
+                    const SizedBox(height: 6),
+                    Text(
+                      report.description,
+                      maxLines: 2,
+                      overflow: TextOverflow.ellipsis,
+                      style: Theme.of(context).textTheme.bodySmall,
+                    ),
+                    const SizedBox(height: 10),
+                    Wrap(
+                      spacing: 8,
+                      runSpacing: 8,
+                      children: [
+                        _InfoPill(
+                          icon: Icons.category_outlined,
+                          label: report.category.label,
+                          color: categoryColor,
+                        ),
+                        _InfoPill(
+                          icon: Icons.place_outlined,
+                          label: _reportLocationLabel(report),
+                          color: const Color(0xFF0F766E),
+                        ),
+                        _InfoPill(
+                          icon: Icons.trending_up,
+                          label: 'Priority ${report.priorityScore}',
+                          color: const Color(0xFFE67E22),
+                        ),
+                        _InfoPill(
+                          icon: Icons.thumb_up_alt_outlined,
+                          label: '${report.upvoteCount}',
+                          color: const Color(0xFF2563EB),
+                        ),
+                      ],
+                    ),
+                  ],
+                ),
+              ),
+              const SizedBox(width: 8),
+              Icon(
+                Icons.chevron_right,
+                color: Theme.of(context).colorScheme.outline,
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class _InfoPill extends StatelessWidget {
+  const _InfoPill({
+    required this.icon,
+    required this.label,
+    required this.color,
+  });
+
+  final IconData icon;
+  final String label;
+  final Color color;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      constraints: const BoxConstraints(maxWidth: 280),
+      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+      decoration: BoxDecoration(
+        color: color.withValues(alpha: 0.08),
+        borderRadius: BorderRadius.circular(8),
+        border: Border.all(color: color.withValues(alpha: 0.18)),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Icon(icon, size: 16, color: color),
+          const SizedBox(width: 6),
+          Flexible(
+            child: Text(
+              label,
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+              style: Theme.of(context).textTheme.labelMedium?.copyWith(
+                color: color,
+                fontWeight: FontWeight.w700,
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _StatusPill extends StatelessWidget {
+  const _StatusPill({required this.status});
+
+  final ReportStatus status;
+
+  @override
+  Widget build(BuildContext context) {
+    final color = _statusColor(status);
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+      decoration: BoxDecoration(
+        color: color.withValues(alpha: 0.1),
+        borderRadius: BorderRadius.circular(999),
+        border: Border.all(color: color.withValues(alpha: 0.2)),
+      ),
+      child: Text(
+        status.label,
+        style: Theme.of(context).textTheme.labelSmall?.copyWith(
+          color: color,
+          fontWeight: FontWeight.w800,
+        ),
+      ),
+    );
+  }
+}
+
+class _CountBadge extends StatelessWidget {
+  const _CountBadge({required this.count});
+
+  final int count;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 7),
+      decoration: BoxDecoration(
+        color: const Color(0xFFE2F3EE),
+        borderRadius: BorderRadius.circular(999),
+      ),
+      child: Text(
+        count.toString(),
+        style: Theme.of(context).textTheme.labelLarge?.copyWith(
+          color: const Color(0xFF0F766E),
+          fontWeight: FontWeight.w800,
+        ),
+      ),
+    );
+  }
+}
+
 class _ErrorState extends StatelessWidget {
   const _ErrorState({required this.message, required this.onRetry});
 
@@ -476,4 +1022,46 @@ class _ErrorState extends StatelessWidget {
       ),
     );
   }
+}
+
+String _reportLocationLabel(Report report) {
+  final address = report.addressText?.trim();
+  if (address != null && address.isNotEmpty) {
+    return address;
+  }
+  return '${report.latitude.toStringAsFixed(4)}, ${report.longitude.toStringAsFixed(4)}';
+}
+
+Color _categoryColor(ReportCategory category) {
+  return switch (category) {
+    ReportCategory.roadDamage => const Color(0xFFFF5722),
+    ReportCategory.streetLight => const Color(0xFFF59E0B),
+    ReportCategory.garbage => const Color(0xFF8D6E63),
+    ReportCategory.waterLeak => const Color(0xFF0284C7),
+    ReportCategory.drainage => const Color(0xFF0F766E),
+    ReportCategory.trafficSign => const Color(0xFFDC2626),
+    ReportCategory.treeBlockage => const Color(0xFF2E7D32),
+    ReportCategory.other => const Color(0xFF607D8B),
+  };
+}
+
+Color _statusColor(ReportStatus status) {
+  return switch (status) {
+    ReportStatus.submitted => const Color(0xFFE91E63),
+    ReportStatus.fixed => const Color(0xFF0F766E),
+    ReportStatus.cancelled => const Color(0xFF78909C),
+  };
+}
+
+IconData _categoryIcon(ReportCategory category) {
+  return switch (category) {
+    ReportCategory.roadDamage => Icons.construction,
+    ReportCategory.streetLight => Icons.lightbulb_outline,
+    ReportCategory.garbage => Icons.delete_outline,
+    ReportCategory.waterLeak => Icons.water_drop_outlined,
+    ReportCategory.drainage => Icons.waves_outlined,
+    ReportCategory.trafficSign => Icons.traffic_outlined,
+    ReportCategory.treeBlockage => Icons.park,
+    ReportCategory.other => Icons.help_outline,
+  };
 }

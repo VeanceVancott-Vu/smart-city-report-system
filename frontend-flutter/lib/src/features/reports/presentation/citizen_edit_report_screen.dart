@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 
+import '../../../core/ui/app_feedback.dart';
 import '../data/report_api_service.dart';
 import '../domain/report.dart';
 import 'citizen_report_form.dart';
@@ -34,23 +35,27 @@ class _CitizenEditReportScreenState extends State<CitizenEditReportScreen> {
       if (!mounted) {
         return;
       }
-      ScaffoldMessenger.of(
+      AppFeedback.showSuccess(
         context,
-      ).showSnackBar(SnackBar(content: Text('${report.title} updated')));
+        title: 'Report updated',
+        message: report.title,
+      );
       Navigator.of(context).pop(true);
     } on ReportApiException catch (error) {
-      _showError(error.message);
+      await _showError(error.message);
     } catch (_) {
-      _showError('Unable to update report.');
+      await _showError('Unable to update report.');
     }
   }
 
-  void _showError(String message) {
+  Future<void> _showError(String message) async {
     if (!mounted) {
       return;
     }
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(content: Text(message), backgroundColor: Colors.red.shade700),
+    await AppFeedback.showErrorDialog(
+      context,
+      title: 'Could not update report',
+      message: message,
     );
   }
 

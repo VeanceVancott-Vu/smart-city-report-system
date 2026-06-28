@@ -6,6 +6,7 @@ import 'package:flutter_map/flutter_map.dart';
 import 'package:http/http.dart' as http;
 import 'package:latlong2/latlong.dart' hide Path;
 
+import '../../../core/ui/app_feedback.dart';
 import '../data/report_api_service.dart';
 import '../domain/report.dart';
 import '../../auth/data/auth_api_service.dart';
@@ -114,12 +115,15 @@ class _CitizenMapScreenState extends State<CitizenMapScreen> {
       final url = Uri.parse(
         'https://nominatim.openstreetmap.org/search?q=$encodedQuery&format=json&limit=5&accept-language=en',
       );
-      final response = await http.get(
-        url,
-        headers: const {
-          'User-Agent': 'SmartCityReportSystem/1.0 (contact: admin@smartcity.com)',
-        },
-      ).timeout(const Duration(seconds: 4));
+      final response = await http
+          .get(
+            url,
+            headers: const {
+              'User-Agent':
+                  'SmartCityReportSystem/1.0 (contact: admin@smartcity.com)',
+            },
+          )
+          .timeout(const Duration(seconds: 4));
 
       if (response.statusCode == 200) {
         final List<dynamic> data = jsonDecode(response.body);
@@ -225,6 +229,11 @@ class _CitizenMapScreenState extends State<CitizenMapScreen> {
       return;
     }
     setState(() => _errorMessage = message);
+    AppFeedback.showError(
+      context,
+      title: 'Unable to update report',
+      message: message,
+    );
   }
 
   @override
@@ -239,9 +248,9 @@ class _CitizenMapScreenState extends State<CitizenMapScreen> {
               Text(
                 _isMapView ? 'Map View' : 'Report List View',
                 style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                      fontWeight: FontWeight.bold,
-                      color: Colors.grey.shade800,
-                    ),
+                  fontWeight: FontWeight.bold,
+                  color: Colors.grey.shade800,
+                ),
               ),
               Row(
                 children: [
@@ -329,9 +338,13 @@ class _CitizenMapScreenState extends State<CitizenMapScreen> {
                 if (_currentUser != null)
                   FilterChip(
                     avatar: Icon(
-                      _hideOwnReports ? Icons.person_off : Icons.person_off_outlined,
+                      _hideOwnReports
+                          ? Icons.person_off
+                          : Icons.person_off_outlined,
                       size: 16,
-                      color: _hideOwnReports ? const Color(0xFF00796B) : Colors.grey,
+                      color: _hideOwnReports
+                          ? const Color(0xFF00796B)
+                          : Colors.grey,
                     ),
                     label: const Text('Hide My Reports'),
                     selected: _hideOwnReports,
@@ -366,7 +379,8 @@ class _CitizenMapScreenState extends State<CitizenMapScreen> {
           child: FutureBuilder<List<ReportMapPin>>(
             future: _pinsFuture,
             builder: (context, snapshot) {
-              if (snapshot.connectionState != ConnectionState.done && _pins.isEmpty) {
+              if (snapshot.connectionState != ConnectionState.done &&
+                  _pins.isEmpty) {
                 return const Center(child: CircularProgressIndicator());
               }
 
@@ -377,12 +391,17 @@ class _CitizenMapScreenState extends State<CitizenMapScreen> {
                 );
               }
 
-              final pins = _pins.isNotEmpty ? _pins : (snapshot.data ?? const <ReportMapPin>[]);
+              final pins = _pins.isNotEmpty
+                  ? _pins
+                  : (snapshot.data ?? const <ReportMapPin>[]);
               final filteredPins = pins.where((pin) {
-                if (_selectedCategory != null && pin.category != _selectedCategory) {
+                if (_selectedCategory != null &&
+                    pin.category != _selectedCategory) {
                   return false;
                 }
-                if (_hideOwnReports && _currentUser != null && pin.creatorId == _currentUser!.id) {
+                if (_hideOwnReports &&
+                    _currentUser != null &&
+                    pin.creatorId == _currentUser!.id) {
                   return false;
                 }
                 return true;
@@ -421,14 +440,18 @@ class _CitizenMapScreenState extends State<CitizenMapScreen> {
                             ),
                             children: [
                               TileLayer(
-                                urlTemplate: 'https://tile.openstreetmap.org/{z}/{x}/{y}.png',
+                                urlTemplate:
+                                    'https://tile.openstreetmap.org/{z}/{x}/{y}.png',
                                 userAgentPackageName: 'com.smartcity.report',
                               ),
                               MarkerLayer(
                                 markers: [
                                   ...filteredPins.map((pin) {
                                     return Marker(
-                                      point: LatLng(pin.latitude, pin.longitude),
+                                      point: LatLng(
+                                        pin.latitude,
+                                        pin.longitude,
+                                      ),
                                       width: 80,
                                       height: 80,
                                       child: GestureDetector(
@@ -441,7 +464,8 @@ class _CitizenMapScreenState extends State<CitizenMapScreen> {
                                         },
                                         child: _MapMarker(
                                           pin: pin,
-                                          isSelected: _selectedPin?.id == pin.id,
+                                          isSelected:
+                                              _selectedPin?.id == pin.id,
                                         ),
                                       ),
                                     );
@@ -452,7 +476,9 @@ class _CitizenMapScreenState extends State<CitizenMapScreen> {
                                       width: 145,
                                       height: 90,
                                       child: _SearchedPlaceMarker(
-                                        name: _searchedPlaceName ?? 'Searched location',
+                                        name:
+                                            _searchedPlaceName ??
+                                            'Searched location',
                                         onClear: () {
                                           setState(() {
                                             _searchedPlaceLocation = null;
@@ -489,7 +515,8 @@ class _CitizenMapScreenState extends State<CitizenMapScreen> {
                               });
                             },
                           ),
-                          if (_searchQuery.isNotEmpty && _searchFocusNode.hasFocus)
+                          if (_searchQuery.isNotEmpty &&
+                              _searchFocusNode.hasFocus)
                             _SearchSuggestions(
                               pins: filteredPins,
                               addresses: _addressSuggestions,
@@ -503,12 +530,18 @@ class _CitizenMapScreenState extends State<CitizenMapScreen> {
                                   _addressSuggestions = [];
                                   _searchFocusNode.unfocus();
                                 });
-                                _mapController.move(LatLng(pin.latitude, pin.longitude), 15.0);
+                                _mapController.move(
+                                  LatLng(pin.latitude, pin.longitude),
+                                  15.0,
+                                );
                               },
                               onSelectAddress: (addr) {
-                                final displayName = addr['display_name'] ?? 'Searched place';
-                                final lat = double.tryParse(addr['lat'] ?? '') ?? 0.0;
-                                final lon = double.tryParse(addr['lon'] ?? '') ?? 0.0;
+                                final displayName =
+                                    addr['display_name'] ?? 'Searched place';
+                                final lat =
+                                    double.tryParse(addr['lat'] ?? '') ?? 0.0;
+                                final lon =
+                                    double.tryParse(addr['lon'] ?? '') ?? 0.0;
                                 final point = LatLng(lat, lon);
 
                                 setState(() {
@@ -532,14 +565,18 @@ class _CitizenMapScreenState extends State<CitizenMapScreen> {
                         bottom: 28,
                         child: _SelectedPinCard(
                           pin: _selectedPin!,
-                          hasUpvoted: _upvotedReportIds.contains(_selectedPin!.id),
+                          hasUpvoted: _upvotedReportIds.contains(
+                            _selectedPin!.id,
+                          ),
                           onUpvote: () => _toggleUpvote(_selectedPin!),
                           onClose: () {
                             setState(() {
                               _selectedPin = null;
                             });
                           },
-                          showUpvote: _currentUser == null || _selectedPin!.creatorId != _currentUser!.id,
+                          showUpvote:
+                              _currentUser == null ||
+                              _selectedPin!.creatorId != _currentUser!.id,
                         ),
                       ),
                   ],
@@ -568,9 +605,13 @@ class _CitizenMapScreenState extends State<CitizenMapScreen> {
                   separatorBuilder: (_, _) => const SizedBox(height: 10),
                   itemBuilder: (context, index) => _PinTile(
                     pin: filteredPins[index],
-                    hasUpvoted: _upvotedReportIds.contains(filteredPins[index].id),
+                    hasUpvoted: _upvotedReportIds.contains(
+                      filteredPins[index].id,
+                    ),
                     onUpvote: () => _toggleUpvote(filteredPins[index]),
-                    showUpvote: _currentUser == null || filteredPins[index].creatorId != _currentUser!.id,
+                    showUpvote:
+                        _currentUser == null ||
+                        filteredPins[index].creatorId != _currentUser!.id,
                   ),
                 ),
               );
@@ -603,7 +644,11 @@ class _SearchBar extends StatelessWidget {
         borderRadius: BorderRadius.circular(12),
         border: Border.all(color: const Color(0xFFDDE5E2)),
         boxShadow: const [
-          BoxShadow(color: Color(0x11000000), blurRadius: 8, offset: Offset(0, 4)),
+          BoxShadow(
+            color: Color(0x11000000),
+            blurRadius: 8,
+            offset: Offset(0, 4),
+          ),
         ],
       ),
       child: TextField(
@@ -650,7 +695,9 @@ class _SearchSuggestions extends StatelessWidget {
   Widget build(BuildContext context) {
     final filteredPins = pins.where((pin) {
       final titleMatch = pin.title.toLowerCase().contains(query.toLowerCase());
-      final categoryMatch = pin.category.label.toLowerCase().contains(query.toLowerCase());
+      final categoryMatch = pin.category.label.toLowerCase().contains(
+        query.toLowerCase(),
+      );
       return titleMatch || categoryMatch;
     }).toList();
 
@@ -663,7 +710,11 @@ class _SearchSuggestions extends StatelessWidget {
           borderRadius: BorderRadius.circular(12),
           border: Border.all(color: const Color(0xFFDDE5E2)),
           boxShadow: const [
-            BoxShadow(color: Color(0x11000000), blurRadius: 8, offset: Offset(0, 4)),
+            BoxShadow(
+              color: Color(0x11000000),
+              blurRadius: 8,
+              offset: Offset(0, 4),
+            ),
           ],
         ),
         padding: const EdgeInsets.all(16),
@@ -682,7 +733,11 @@ class _SearchSuggestions extends StatelessWidget {
         borderRadius: BorderRadius.circular(12),
         border: Border.all(color: const Color(0xFFDDE5E2)),
         boxShadow: const [
-          BoxShadow(color: Color(0x11000000), blurRadius: 8, offset: Offset(0, 4)),
+          BoxShadow(
+            color: Color(0x11000000),
+            blurRadius: 8,
+            offset: Offset(0, 4),
+          ),
         ],
       ),
       child: ClipRRect(
@@ -696,7 +751,11 @@ class _SearchSuggestions extends StatelessWidget {
                 padding: EdgeInsets.fromLTRB(12, 8, 12, 4),
                 child: Text(
                   'REPORTS',
-                  style: TextStyle(fontSize: 10, fontWeight: FontWeight.bold, color: Colors.grey),
+                  style: TextStyle(
+                    fontSize: 10,
+                    fontWeight: FontWeight.bold,
+                    color: Colors.grey,
+                  ),
                 ),
               ),
               ...filteredPins.map((pin) {
@@ -709,11 +768,18 @@ class _SearchSuggestions extends StatelessWidget {
                     pin.title,
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
-                    style: const TextStyle(fontWeight: FontWeight.w600, fontSize: 13),
+                    style: const TextStyle(
+                      fontWeight: FontWeight.w600,
+                      fontSize: 13,
+                    ),
                   ),
                   subtitle: Text(
                     pin.category.label,
-                    style: TextStyle(color: color, fontSize: 11, fontWeight: FontWeight.bold),
+                    style: TextStyle(
+                      color: color,
+                      fontSize: 11,
+                      fontWeight: FontWeight.bold,
+                    ),
                   ),
                   onTap: () => onSelectPin(pin),
                 );
@@ -724,19 +790,30 @@ class _SearchSuggestions extends StatelessWidget {
                 padding: EdgeInsets.fromLTRB(12, 8, 12, 4),
                 child: Text(
                   'ADDRESSES & PLACES',
-                  style: TextStyle(fontSize: 10, fontWeight: FontWeight.bold, color: Colors.grey),
+                  style: TextStyle(
+                    fontSize: 10,
+                    fontWeight: FontWeight.bold,
+                    color: Colors.grey,
+                  ),
                 ),
               ),
               ...addresses.map((addr) {
                 final displayName = addr['display_name'] ?? '';
                 return ListTile(
                   dense: true,
-                  leading: const Icon(Icons.place, color: Colors.redAccent, size: 18),
+                  leading: const Icon(
+                    Icons.place,
+                    color: Colors.redAccent,
+                    size: 18,
+                  ),
                   title: Text(
                     displayName,
                     maxLines: 2,
                     overflow: TextOverflow.ellipsis,
-                    style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w500),
+                    style: const TextStyle(
+                      fontSize: 12,
+                      fontWeight: FontWeight.w500,
+                    ),
                   ),
                   onTap: () => onSelectAddress(addr),
                 );
@@ -759,8 +836,6 @@ class _SearchSuggestions extends StatelessWidget {
     );
   }
 }
-
-
 
 class _PinTile extends StatelessWidget {
   const _PinTile({
@@ -948,7 +1023,8 @@ class _MapMarker extends StatefulWidget {
   State<_MapMarker> createState() => _MapMarkerState();
 }
 
-class _MapMarkerState extends State<_MapMarker> with SingleTickerProviderStateMixin {
+class _MapMarkerState extends State<_MapMarker>
+    with SingleTickerProviderStateMixin {
   late AnimationController _controller;
 
   @override
@@ -1004,15 +1080,9 @@ class _MapMarkerState extends State<_MapMarker> with SingleTickerProviderStateMi
           ),
         TweenAnimationBuilder<double>(
           duration: const Duration(milliseconds: 250),
-          tween: Tween<double>(
-            begin: 1.0,
-            end: widget.isSelected ? 1.25 : 1.0,
-          ),
+          tween: Tween<double>(begin: 1.0, end: widget.isSelected ? 1.25 : 1.0),
           builder: (context, scale, child) {
-            return Transform.scale(
-              scale: scale,
-              child: child,
-            );
+            return Transform.scale(scale: scale, child: child);
           },
           child: Column(
             mainAxisSize: MainAxisSize.min,
@@ -1073,8 +1143,6 @@ class _PinTrianglePainter extends CustomPainter {
   bool shouldRepaint(covariant CustomPainter oldDelegate) => false;
 }
 
-
-
 class _SelectedPinCard extends StatelessWidget {
   const _SelectedPinCard({
     required this.pin,
@@ -1109,10 +1177,7 @@ class _SelectedPinCard extends StatelessWidget {
           gradient: LinearGradient(
             begin: Alignment.topLeft,
             end: Alignment.bottomRight,
-            colors: [
-              Colors.white.withOpacity(0.95),
-              color.withOpacity(0.05),
-            ],
+            colors: [Colors.white.withOpacity(0.95), color.withOpacity(0.05)],
           ),
         ),
         padding: const EdgeInsets.all(16),
@@ -1131,16 +1196,15 @@ class _SelectedPinCard extends StatelessWidget {
                         pin.title,
                         maxLines: 1,
                         overflow: TextOverflow.ellipsis,
-                        style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                              fontWeight: FontWeight.bold,
-                            ),
+                        style: Theme.of(context).textTheme.titleMedium
+                            ?.copyWith(fontWeight: FontWeight.bold),
                       ),
                       const SizedBox(height: 4),
                       Text(
                         'Category: ${pin.category.label}',
                         style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                              color: Colors.grey.shade600,
-                            ),
+                          color: Colors.grey.shade600,
+                        ),
                       ),
                     ],
                   ),
@@ -1163,7 +1227,8 @@ class _SelectedPinCard extends StatelessWidget {
               children: [
                 _MiniTag(
                   icon: Icons.place_outlined,
-                  label: '${pin.latitude.toStringAsFixed(4)}, ${pin.longitude.toStringAsFixed(4)}',
+                  label:
+                      '${pin.latitude.toStringAsFixed(4)}, ${pin.longitude.toStringAsFixed(4)}',
                   color: color,
                 ),
                 _MiniTag(
@@ -1192,7 +1257,9 @@ class _SelectedPinCard extends StatelessWidget {
                     ),
                   ),
                   icon: Icon(
-                    hasUpvoted ? Icons.thumb_down_alt_outlined : Icons.thumb_up_alt_outlined,
+                    hasUpvoted
+                        ? Icons.thumb_down_alt_outlined
+                        : Icons.thumb_up_alt_outlined,
                     size: 16,
                   ),
                   label: Text(hasUpvoted ? 'Remove upvote' : 'I see this too'),
@@ -1255,10 +1322,7 @@ extension on Color {
 }
 
 class _SearchedPlaceMarker extends StatelessWidget {
-  const _SearchedPlaceMarker({
-    required this.name,
-    required this.onClear,
-  });
+  const _SearchedPlaceMarker({required this.name, required this.onClear});
 
   final String name;
   final VoidCallback onClear;
@@ -1282,7 +1346,11 @@ class _SearchedPlaceMarker extends StatelessWidget {
                   name,
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
-                  style: const TextStyle(color: Colors.white, fontSize: 10, fontWeight: FontWeight.bold),
+                  style: const TextStyle(
+                    color: Colors.white,
+                    fontSize: 10,
+                    fontWeight: FontWeight.bold,
+                  ),
                 ),
               ),
               const SizedBox(width: 4),
@@ -1293,13 +1361,8 @@ class _SearchedPlaceMarker extends StatelessWidget {
             ],
           ),
         ),
-        const Icon(
-          Icons.location_on,
-          color: Colors.redAccent,
-          size: 32,
-        ),
+        const Icon(Icons.location_on, color: Colors.redAccent, size: 32),
       ],
     );
   }
 }
-

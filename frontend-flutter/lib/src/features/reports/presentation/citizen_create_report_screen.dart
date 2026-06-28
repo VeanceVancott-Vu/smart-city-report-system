@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 
+import '../../../core/ui/app_feedback.dart';
 import '../data/report_api_service.dart';
 import '../domain/report.dart';
 import 'citizen_report_form.dart';
@@ -30,23 +31,24 @@ class CitizenCreateReportScreen extends StatelessWidget {
       if (!context.mounted) {
         return;
       }
-      ScaffoldMessenger.of(
+      AppFeedback.showSuccess(
         context,
-      ).showSnackBar(SnackBar(content: Text('${report.title} created')));
+        title: 'Report submitted',
+        message: report.title,
+      );
       Navigator.of(context).pop(true);
     } on ReportApiException catch (error) {
-      _showError(context, error.message);
+      await _showError(context, error.message);
     } catch (_) {
-      _showError(context, 'Unable to create report.');
+      await _showError(context, 'Unable to create report.');
     }
   }
 
-  void _showError(BuildContext context, String message) {
-    if (!context.mounted) {
-      return;
-    }
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(content: Text(message), backgroundColor: Colors.red.shade700),
+  Future<void> _showError(BuildContext context, String message) async {
+    await AppFeedback.showErrorDialog(
+      context,
+      title: 'Could not submit report',
+      message: message,
     );
   }
 }

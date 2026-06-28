@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 
 import '../../../core/files/uploaded_photo_view.dart';
 import '../../../core/routing/app_routes.dart';
+import '../../../core/ui/app_feedback.dart';
 import '../data/report_api_service.dart';
 import '../domain/report.dart';
 
@@ -53,23 +54,27 @@ class _CitizenReportDetailScreenState extends State<CitizenReportDetailScreen> {
       if (!mounted) {
         return;
       }
-      ScaffoldMessenger.of(
+      AppFeedback.showSuccess(
         context,
-      ).showSnackBar(SnackBar(content: Text('${report.title} deleted')));
+        title: 'Report cancelled',
+        message: report.title,
+      );
       Navigator.of(context).pop(true);
     } on ReportApiException catch (error) {
-      _showError(error.message);
+      await _showError(error.message);
     } catch (_) {
-      _showError('Unable to delete report.');
+      await _showError('Unable to delete report.');
     }
   }
 
-  void _showError(String message) {
+  Future<void> _showError(String message) async {
     if (!mounted) {
       return;
     }
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(content: Text(message), backgroundColor: Colors.red.shade700),
+    await AppFeedback.showErrorDialog(
+      context,
+      title: 'Could not cancel report',
+      message: message,
     );
   }
 
