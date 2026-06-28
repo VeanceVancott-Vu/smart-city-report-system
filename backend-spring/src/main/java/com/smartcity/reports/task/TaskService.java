@@ -149,6 +149,17 @@ public class TaskService {
     }
 
     @Transactional
+    public TaskResponse approveTask(UUID id, User currentUser) {
+        requireOverseer(currentUser);
+        Task task = getTaskEntity(id);
+        if (task.getStatus() != TaskStatus.DONE && task.getStatus() != TaskStatus.PENDING_REVIEW) {
+            throw new IllegalArgumentException("Only done or pending-review tasks can be approved");
+        }
+        task.approve(Instant.now(clock));
+        return taskMapper.toResponse(task);
+    }
+
+    @Transactional
     public TaskResponse closeTask(UUID id, User currentUser) {
         requireOverseer(currentUser);
         Task task = getTaskEntity(id);
@@ -163,6 +174,18 @@ public class TaskService {
         Task task = getTaskEntity(id);
         task.cancel();
         return taskMapper.toResponse(task);
+    }
+
+    @Transactional
+    public void deleteTask(UUID id, User currentUser) {
+        requireOverseer(currentUser);
+        Task task = getTaskEntity(id);
+        List<Report> linkedReports = List.copyOf(task.getReports());
+        for (Report report : linkedReports) {
+            task.unlinkReport(report);
+            report.unlinkFromTask(task.getId());
+        }
+        taskRepository.delete(task);
     }
 
     private void syncReports(Task task, Collection<UUID> reportIds) {

@@ -289,6 +289,67 @@ class TaskServiceTest {
     }
 
     @Test
+    void overseerCanApproveDoneTask() {
+        User overseer = user(UserRole.OVERSEER);
+        User staff = user(UserRole.STAFF);
+        Task task = taskFor(overseer, staff);
+        UUID taskId = UUID.randomUUID();
+        task.setId(taskId);
+        task.setCreatedAt(NOW);
+        task.setUpdatedAt(NOW);
+        task.start(NOW.minusSeconds(120));
+        task.complete(NOW.minusSeconds(60), "/uploads/task-after/after.jpg", "Done");
+
+        when(taskRepository.findById(taskId)).thenReturn(Optional.of(task));
+
+        TaskResponse response = taskService.approveTask(taskId, overseer);
+
+        assertThat(response.status()).isEqualTo(TaskStatus.APPROVED);
+        assertThat(response.reviewedAt()).isEqualTo(NOW);
+    }
+
+    @Test
+    void approveTaskRequiresDoneOrPendingReviewStatus() {
+        User overseer = user(UserRole.OVERSEER);
+        Task task = taskFor(overseer, null);
+        UUID taskId = UUID.randomUUID();
+
+        when(taskRepository.findById(taskId)).thenReturn(Optional.of(task));
+
+        assertThatThrownBy(() -> taskService.approveTask(taskId, overseer))
+                .isInstanceOf(IllegalArgumentException.class)
+                .hasMessage("Only done or pending-review tasks can be approved");
+    }
+
+    @Test
+    void overseerCanDeleteTaskAndUnlinkReports() {
+        User overseer = user(UserRole.OVERSEER);
+        User staff = user(UserRole.STAFF);
+        Report report = reportFor(user(UserRole.CITIZEN));
+        Task task = taskFor(overseer, staff);
+        UUID taskId = UUID.randomUUID();
+        UUID reportId = UUID.randomUUID();
+        task.setId(taskId);
+        report.setId(reportId);
+        task.linkReport(report);
+        report.linkToTask(taskId);
+
+        when(taskRepository.findById(taskId)).thenReturn(Optional.of(task));
+
+        taskService.deleteTask(taskId, overseer);
+
+        assertThat(task.getReports()).isEmpty();
+        assertThat(report.getLinkedTaskId()).isNull();
+        verify(taskRepository).delete(task);
+    }
+
+    @Test
+    void staffCannotDeleteTask() {
+        assertThatThrownBy(() -> taskService.deleteTask(UUID.randomUUID(), user(UserRole.STAFF)))
+                .isInstanceOf(AccessDeniedException.class)
+                .hasMessage("Only overseers can manage tasks");
+    }
+    @Test
     void staffCannotCloseTask() {
         assertThatThrownBy(() -> taskService.closeTask(UUID.randomUUID(), user(UserRole.STAFF)))
                 .isInstanceOf(AccessDeniedException.class)

@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 
 import '../../../core/files/uploaded_photo_view.dart';
 import '../../../core/routing/app_routes.dart';
+import '../../../core/ui/app_feedback.dart';
 import '../../tasks/data/task_api_service.dart';
 import '../../tasks/domain/task.dart';
 import 'overseer_report_dashboard_screen.dart';
@@ -61,26 +62,82 @@ class _OverseerTaskDetailScreenState extends State<OverseerTaskDetailScreen> {
     }
   }
 
-  Future<void> _closeTask() async {
-    await _changeTask(() => widget.taskApiService.closeTask(_taskId), 'closed');
-  }
-
-  Future<void> _cancelTask() async {
+  Future<void> _approveTask() async {
     await _changeTask(
-      () => widget.taskApiService.cancelTask(_taskId),
-      'cancelled',
+      () => widget.taskApiService.approveTask(_taskId),
+      successTitle: 'Task approved',
     );
   }
 
-  Future<void> _changeTask(Future<Task> Function() action, String verb) async {
+  Future<void> _closeTask() async {
+    await _changeTask(
+      () => widget.taskApiService.closeTask(_taskId),
+      successTitle: 'Task closed',
+    );
+  }
+
+  Future<void> _deleteTask(Task task) async {
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (context) => AlertDialog(
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+        icon: Icon(
+          Icons.delete_outline,
+          color: Theme.of(context).colorScheme.error,
+        ),
+        title: const Text('Delete task?'),
+        content: Text(
+          'This will permanently delete "${task.title}" and unlink its reports.',
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(context).pop(false),
+            child: const Text('Keep task'),
+          ),
+          FilledButton.icon(
+            onPressed: () => Navigator.of(context).pop(true),
+            icon: const Icon(Icons.delete_outline),
+            label: const Text('Delete'),
+          ),
+        ],
+      ),
+    );
+    if (confirmed != true) {
+      return;
+    }
+
+    try {
+      await widget.taskApiService.deleteTask(_taskId);
+      if (!mounted) {
+        return;
+      }
+      AppFeedback.showSuccess(
+        context,
+        title: 'Task deleted',
+        message: task.title,
+      );
+      Navigator.of(context).pop(true);
+    } on TaskApiException catch (error) {
+      _showError(error.message);
+    } catch (_) {
+      _showError('Unable to delete task.');
+    }
+  }
+
+  Future<void> _changeTask(
+    Future<Task> Function() action, {
+    required String successTitle,
+  }) async {
     try {
       final task = await action();
       if (!mounted) {
         return;
       }
-      ScaffoldMessenger.of(
+      AppFeedback.showSuccess(
         context,
-      ).showSnackBar(SnackBar(content: Text('${task.title} $verb')));
+        title: successTitle,
+        message: task.title,
+      );
       setState(_loadTask);
     } on TaskApiException catch (error) {
       _showError(error.message);
@@ -93,8 +150,10 @@ class _OverseerTaskDetailScreenState extends State<OverseerTaskDetailScreen> {
     if (!mounted) {
       return;
     }
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(content: Text(message), backgroundColor: Colors.red.shade700),
+    AppFeedback.showError(
+      context,
+      title: 'Unable to update task',
+      message: message,
     );
   }
 
@@ -121,17 +180,23 @@ class _OverseerTaskDetailScreenState extends State<OverseerTaskDetailScreen> {
                   onPressed: _assignTask,
                   icon: const Icon(Icons.person_add_alt_1),
                 ),
+              if (task != null && task.status.canApprove)
+                IconButton(
+                  tooltip: 'Approve',
+                  onPressed: _approveTask,
+                  icon: const Icon(Icons.verified_outlined),
+                ),
               if (task != null && task.status.canClose)
                 IconButton(
                   tooltip: 'Close',
                   onPressed: _closeTask,
                   icon: const Icon(Icons.check_circle_outline),
                 ),
-              if (task != null && task.status.canCancel)
+              if (task != null && task.status.canDelete)
                 IconButton(
-                  tooltip: 'Cancel',
-                  onPressed: _cancelTask,
-                  icon: const Icon(Icons.cancel_outlined),
+                  tooltip: 'Delete',
+                  onPressed: () => _deleteTask(task),
+                  icon: const Icon(Icons.delete_outline),
                 ),
             ],
           ),
@@ -182,6 +247,10 @@ class _OverseerTaskDetailScreenState extends State<OverseerTaskDetailScreen> {
               ),
             ],
           ),
+          if (task.status.needsReviewComparison) ...[
+            const SizedBox(height: 18),
+            _ReviewComparison(task: task),
+          ],
           _Section(title: 'Description', child: Text(task.description)),
           _Section(title: 'Location', child: Text(task.locationLabel)),
           _Section(
@@ -194,15 +263,17 @@ class _OverseerTaskDetailScreenState extends State<OverseerTaskDetailScreen> {
             title: 'Assigned staff',
             child: Text(task.assignedStaff?.fullName ?? 'Unassigned'),
           ),
-          _Section(
-            title: 'Before photo',
-            child: UploadedPhotoView(fileUrl: task.beforePhotoUrl),
-          ),
-          if ((task.afterPhotoUrl ?? '').trim().isNotEmpty)
+          if (!task.status.needsReviewComparison) ...[
             _Section(
-              title: 'After photo',
-              child: UploadedPhotoView(fileUrl: task.afterPhotoUrl),
+              title: 'Before photo',
+              child: UploadedPhotoView(fileUrl: task.beforePhotoUrl),
             ),
+            if ((task.afterPhotoUrl ?? '').trim().isNotEmpty)
+              _Section(
+                title: 'After photo',
+                child: UploadedPhotoView(fileUrl: task.afterPhotoUrl),
+              ),
+          ],
           if ((task.staffNote ?? '').trim().isNotEmpty)
             _Section(title: 'Staff note', child: Text(task.staffNote!)),
           _Section(
@@ -226,19 +297,128 @@ class _OverseerTaskDetailScreenState extends State<OverseerTaskDetailScreen> {
                 icon: const Icon(Icons.edit_outlined),
                 label: const Text('Edit'),
               ),
-              FilledButton.icon(
-                onPressed: task.status.canClose ? _closeTask : null,
-                icon: const Icon(Icons.check_circle_outline),
-                label: const Text('Close'),
-              ),
+              if (task.status.canApprove)
+                FilledButton.icon(
+                  onPressed: _approveTask,
+                  icon: const Icon(Icons.verified_outlined),
+                  label: const Text('Approve'),
+                ),
+              if (task.status.canClose)
+                FilledButton.icon(
+                  onPressed: _closeTask,
+                  icon: const Icon(Icons.check_circle_outline),
+                  label: const Text('Close'),
+                ),
               OutlinedButton.icon(
-                onPressed: task.status.canCancel ? _cancelTask : null,
-                icon: const Icon(Icons.cancel_outlined),
-                label: const Text('Cancel'),
+                onPressed: task.status.canDelete
+                    ? () => _deleteTask(task)
+                    : null,
+                icon: const Icon(Icons.delete_outline),
+                label: const Text('Delete'),
+                style: OutlinedButton.styleFrom(
+                  foregroundColor: Theme.of(context).colorScheme.error,
+                ),
               ),
             ],
           ),
         ],
+      ),
+    );
+  }
+}
+
+class _ReviewComparison extends StatelessWidget {
+  const _ReviewComparison({required this.task});
+
+  final Task task;
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          'Review evidence',
+          style: Theme.of(
+            context,
+          ).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.w800),
+        ),
+        const SizedBox(height: 10),
+        LayoutBuilder(
+          builder: (context, constraints) {
+            final isWide = constraints.maxWidth >= 760;
+            final before = _ReviewPhotoCard(
+              title: 'Before',
+              icon: Icons.report_problem_outlined,
+              fileUrl: task.beforePhotoUrl,
+              emptyLabel: 'No before photo uploaded',
+            );
+            final after = _ReviewPhotoCard(
+              title: 'After',
+              icon: Icons.task_alt_outlined,
+              fileUrl: task.afterPhotoUrl,
+              emptyLabel: 'No after photo uploaded',
+            );
+
+            return isWide
+                ? Row(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Expanded(child: before),
+                      const SizedBox(width: 12),
+                      Expanded(child: after),
+                    ],
+                  )
+                : Column(children: [before, const SizedBox(height: 12), after]);
+          },
+        ),
+      ],
+    );
+  }
+}
+
+class _ReviewPhotoCard extends StatelessWidget {
+  const _ReviewPhotoCard({
+    required this.title,
+    required this.icon,
+    required this.fileUrl,
+    required this.emptyLabel,
+  });
+
+  final String title;
+  final IconData icon;
+  final String? fileUrl;
+  final String emptyLabel;
+
+  @override
+  Widget build(BuildContext context) {
+    return Card(
+      elevation: 0,
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(8),
+        side: const BorderSide(color: Color(0xFFDDE5E2)),
+      ),
+      child: Padding(
+        padding: const EdgeInsets.all(12),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              children: [
+                Icon(icon, size: 18, color: const Color(0xFF0F766E)),
+                const SizedBox(width: 8),
+                Text(
+                  title,
+                  style: Theme.of(
+                    context,
+                  ).textTheme.titleSmall?.copyWith(fontWeight: FontWeight.w800),
+                ),
+              ],
+            ),
+            const SizedBox(height: 10),
+            UploadedPhotoView(fileUrl: fileUrl, emptyLabel: emptyLabel),
+          ],
+        ),
       ),
     );
   }

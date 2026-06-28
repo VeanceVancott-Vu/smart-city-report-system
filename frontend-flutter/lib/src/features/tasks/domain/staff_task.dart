@@ -21,6 +21,9 @@ class StaffTask {
     required this.status,
     required this.area,
     required this.dueDate,
+    required this.latitude,
+    required this.longitude,
+    required this.priorityScore,
   });
 
   final String id;
@@ -29,6 +32,9 @@ class StaffTask {
   final StaffTaskStatus status;
   final String area;
   final DateTime dueDate;
+  final double latitude;
+  final double longitude;
+  final int priorityScore;
 
   factory StaffTask.fromTask(Task task) {
     return StaffTask(
@@ -45,6 +51,9 @@ class StaffTask {
       },
       area: task.locationLabel,
       dueDate: task.createdAt,
+      latitude: task.latitude,
+      longitude: task.longitude,
+      priorityScore: task.priorityScore,
     );
   }
 }

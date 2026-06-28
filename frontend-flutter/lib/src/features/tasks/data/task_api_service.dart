@@ -31,9 +31,13 @@ abstract class TaskApiService {
 
   Future<Task> completeTask(String id, TaskCompletionDraft draft);
 
+  Future<Task> approveTask(String id);
+
   Future<Task> closeTask(String id);
 
   Future<Task> cancelTask(String id);
+
+  Future<void> deleteTask(String id);
 }
 
 class BackendTaskApiService extends ApiService implements TaskApiService {
@@ -146,6 +150,11 @@ class BackendTaskApiService extends ApiService implements TaskApiService {
   }
 
   @override
+  Future<Task> approveTask(String id) async {
+    return _patchTask('/api/tasks/$id/approve');
+  }
+
+  @override
   Future<Task> closeTask(String id) async {
     return _patchTask('/api/tasks/$id/close');
   }
@@ -153,6 +162,15 @@ class BackendTaskApiService extends ApiService implements TaskApiService {
   @override
   Future<Task> cancelTask(String id) async {
     return _patchTask('/api/tasks/$id/cancel');
+  }
+
+  @override
+  Future<void> deleteTask(String id) async {
+    final response = await _client.delete(
+      _uri('/api/tasks/$id'),
+      headers: await _headers(includeContentType: false),
+    );
+    _ensureSuccess(response);
   }
 
   Future<Task> _patchTask(String path) async {
@@ -385,6 +403,25 @@ class MockTaskApiService extends ApiService implements TaskApiService {
   }
 
   @override
+  Future<Task> approveTask(String id) async {
+    await Future<void>.delayed(const Duration(milliseconds: 100));
+    final index = _taskIndex(id);
+    final task = _tasks[index];
+    if (!task.status.canApprove) {
+      throw const TaskApiException(
+        'Only done or pending-review tasks can be approved.',
+      );
+    }
+    final updated = task.copyWith(
+      status: TaskStatus.approved,
+      reviewedAt: DateTime.now(),
+      updatedAt: DateTime.now(),
+    );
+    _tasks[index] = updated;
+    return updated;
+  }
+
+  @override
   Future<Task> closeTask(String id) async {
     await Future<void>.delayed(const Duration(milliseconds: 100));
     final index = _taskIndex(id);
@@ -407,6 +444,12 @@ class MockTaskApiService extends ApiService implements TaskApiService {
     );
     _tasks[index] = updated;
     return updated;
+  }
+
+  @override
+  Future<void> deleteTask(String id) async {
+    await Future<void>.delayed(const Duration(milliseconds: 100));
+    _tasks.removeAt(_taskIndex(id));
   }
 
   Task _findTask(String id) {

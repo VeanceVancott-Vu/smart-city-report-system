@@ -208,6 +208,11 @@ public class Task {
         aiDecision = null;
     }
 
+    public void approve(Instant now) {
+        status = TaskStatus.APPROVED;
+        reviewedAt = now;
+    }
+
     public void close(Instant now) {
         status = TaskStatus.CLOSED;
         closedAt = now;

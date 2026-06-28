@@ -16,6 +16,7 @@ class OverseerTaskListScreen extends StatefulWidget {
 
 class OverseerTaskListScreenState extends State<OverseerTaskListScreen> {
   late Future<List<Task>> _tasksFuture;
+  TaskStatus? _selectedStatus;
 
   @override
   void initState() {
@@ -63,13 +64,63 @@ class OverseerTaskListScreenState extends State<OverseerTaskListScreen> {
       children: [
         Padding(
           padding: const EdgeInsets.fromLTRB(16, 12, 16, 8),
-          child: Align(
-            alignment: Alignment.centerRight,
-            child: FilledButton.icon(
-              onPressed: _createTask,
-              icon: const Icon(Icons.add_task_outlined),
-              label: const Text('Create task'),
-            ),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              Row(
+                children: [
+                  Expanded(
+                    child: Text(
+                      'Task Queue',
+                      style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                        fontWeight: FontWeight.w800,
+                      ),
+                    ),
+                  ),
+                  FilledButton.icon(
+                    onPressed: _createTask,
+                    icon: const Icon(Icons.add_task_outlined),
+                    label: const Text('Create task'),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 12),
+              SingleChildScrollView(
+                scrollDirection: Axis.horizontal,
+                child: Row(
+                  children: [
+                    Padding(
+                      padding: const EdgeInsets.only(right: 8),
+                      child: FilterChip(
+                        label: const Text('All statuses'),
+                        selected: _selectedStatus == null,
+                        onSelected: (_) =>
+                            setState(() => _selectedStatus = null),
+                        selectedColor: const Color(0xFFE2F3EE),
+                        checkmarkColor: const Color(0xFF0F766E),
+                      ),
+                    ),
+                    for (final status in TaskStatus.values)
+                      Padding(
+                        padding: const EdgeInsets.only(right: 8),
+                        child: FilterChip(
+                          label: Text(status.label),
+                          selected: _selectedStatus == status,
+                          onSelected: (_) => setState(
+                            () => _selectedStatus = _selectedStatus == status
+                                ? null
+                                : status,
+                          ),
+                          selectedColor: _statusColor(
+                            status,
+                          ).withValues(alpha: 0.14),
+                          checkmarkColor: _statusColor(status),
+                        ),
+                      ),
+                  ],
+                ),
+              ),
+            ],
           ),
         ),
         Expanded(
@@ -87,6 +138,12 @@ class OverseerTaskListScreenState extends State<OverseerTaskListScreen> {
               }
 
               final tasks = snapshot.data ?? const <Task>[];
+              final filteredTasks = _selectedStatus == null
+                  ? tasks
+                  : tasks
+                        .where((task) => task.status == _selectedStatus)
+                        .toList(growable: false);
+
               if (tasks.isEmpty) {
                 return RefreshIndicator(
                   onRefresh: reload,
@@ -101,15 +158,29 @@ class OverseerTaskListScreenState extends State<OverseerTaskListScreen> {
                 );
               }
 
+              if (filteredTasks.isEmpty) {
+                return RefreshIndicator(
+                  onRefresh: reload,
+                  child: ListView(
+                    physics: const AlwaysScrollableScrollPhysics(),
+                    padding: const EdgeInsets.all(24),
+                    children: const [
+                      SizedBox(height: 96),
+                      Center(child: Text('No tasks match this status')),
+                    ],
+                  ),
+                );
+              }
+
               return RefreshIndicator(
                 onRefresh: reload,
                 child: ListView.separated(
                   padding: const EdgeInsets.fromLTRB(16, 0, 16, 96),
-                  itemCount: tasks.length,
+                  itemCount: filteredTasks.length,
                   separatorBuilder: (_, _) => const SizedBox(height: 10),
                   itemBuilder: (context, index) => _TaskTile(
-                    task: tasks[index],
-                    onTap: () => _openTask(tasks[index].id),
+                    task: filteredTasks[index],
+                    onTap: () => _openTask(filteredTasks[index].id),
                   ),
                 ),
               );
@@ -129,6 +200,7 @@ class _TaskTile extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final statusColor = _statusColor(task.status);
     return Card(
       elevation: 0,
       shape: RoundedRectangleBorder(
@@ -138,9 +210,13 @@ class _TaskTile extends StatelessWidget {
       child: ListTile(
         onTap: onTap,
         leading: CircleAvatar(
-          backgroundColor: const Color(0xFFE2F3EE),
-          foregroundColor: Theme.of(context).colorScheme.primary,
-          child: const Icon(Icons.assignment_outlined),
+          backgroundColor: statusColor.withValues(alpha: 0.1),
+          foregroundColor: statusColor,
+          child: Icon(
+            task.status.needsReviewComparison
+                ? Icons.rate_review_outlined
+                : Icons.assignment_outlined,
+          ),
         ),
         title: Text(task.title, maxLines: 2, overflow: TextOverflow.ellipsis),
         subtitle: Padding(
@@ -168,8 +244,12 @@ class _TaskTile extends StatelessWidget {
         trailing: Chip(
           visualDensity: VisualDensity.compact,
           label: Text(task.status.label),
-          side: BorderSide.none,
-          backgroundColor: const Color(0xFFF6E7C8),
+          side: BorderSide(color: statusColor.withValues(alpha: 0.18)),
+          backgroundColor: statusColor.withValues(alpha: 0.1),
+          labelStyle: TextStyle(
+            color: statusColor,
+            fontWeight: FontWeight.w700,
+          ),
         ),
       ),
     );
@@ -217,4 +297,17 @@ class _ErrorState extends StatelessWidget {
       ),
     );
   }
+}
+
+Color _statusColor(TaskStatus status) {
+  return switch (status) {
+    TaskStatus.newTask => const Color(0xFF607D8B),
+    TaskStatus.assigned => const Color(0xFF2563EB),
+    TaskStatus.inProgress => const Color(0xFF7C3AED),
+    TaskStatus.done => const Color(0xFFE67E22),
+    TaskStatus.pendingReview => const Color(0xFFD97706),
+    TaskStatus.approved => const Color(0xFF0F766E),
+    TaskStatus.closed => const Color(0xFF475569),
+    TaskStatus.cancelled => const Color(0xFF78909C),
+  };
 }

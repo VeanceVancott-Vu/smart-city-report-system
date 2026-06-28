@@ -24,8 +24,10 @@ import java.util.UUID;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.ArgumentMatchers.nullable;
+import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.authentication;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.patch;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
@@ -226,6 +228,31 @@ class TaskControllerTest {
                         .value("After photo must be uploaded with /api/files/task-after"));
     }
 
+    @Test
+    void approveTaskReturnsApprovedTask() throws Exception {
+        UUID taskId = UUID.randomUUID();
+        User overseer = user(UserRole.OVERSEER);
+
+        when(taskService.approveTask(eq(taskId), nullable(User.class)))
+                .thenReturn(response(taskId, TaskStatus.APPROVED, null, List.of()));
+
+        mockMvc.perform(patch("/api/tasks/{id}/approve", taskId)
+                        .with(authentication(authenticationToken(overseer))))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.status").value("APPROVED"));
+    }
+
+    @Test
+    void deleteTaskReturnsNoContent() throws Exception {
+        UUID taskId = UUID.randomUUID();
+        User overseer = user(UserRole.OVERSEER);
+
+        mockMvc.perform(delete("/api/tasks/{id}", taskId)
+                        .with(authentication(authenticationToken(overseer))))
+                .andExpect(status().isNoContent());
+
+        verify(taskService).deleteTask(eq(taskId), nullable(User.class));
+    }
     @Test
     void closeTaskReturnsClosedTask() throws Exception {
         UUID taskId = UUID.randomUUID();

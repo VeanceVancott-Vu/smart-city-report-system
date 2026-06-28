@@ -18,8 +18,15 @@ enum TaskStatus {
   bool get canAssign =>
       this != TaskStatus.closed && this != TaskStatus.cancelled;
 
-  bool get canClose =>
-      this != TaskStatus.closed && this != TaskStatus.cancelled;
+  bool get canApprove =>
+      this == TaskStatus.done || this == TaskStatus.pendingReview;
+
+  bool get canClose => this == TaskStatus.approved;
+
+  bool get canDelete => true;
+
+  bool get needsReviewComparison =>
+      this == TaskStatus.done || this == TaskStatus.pendingReview;
 
   bool get canCancel =>
       this != TaskStatus.closed && this != TaskStatus.cancelled;
