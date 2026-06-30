@@ -19,6 +19,7 @@ import 'features/reports/presentation/citizen_report_detail_screen.dart';
 import 'features/tasks/data/task_api_service.dart';
 import 'features/tasks/presentation/staff_complete_task_screen.dart';
 import 'features/tasks/presentation/staff_task_detail_screen.dart';
+import 'features/tasks/presentation/staff_report_detail_screen.dart';
 import 'features/tasks/presentation/staff_task_inbox_screen.dart';
 import 'features/users/data/user_api_service.dart';
 import 'features/users/presentation/overseer_create_user_screen.dart';
@@ -72,6 +73,7 @@ class SmartCityReportApp extends StatelessWidget {
         AppRoutes.staffHome: (_) => StaffHomeScreen(
           authApiService: authApiService,
           taskApiService: taskApiService,
+          reportApiService: reportApiService,
         ),
         AppRoutes.overseerHome: (_) => OverseerHomeScreen(
           authApiService: authApiService,
@@ -104,10 +106,16 @@ class SmartCityReportApp extends StatelessWidget {
           reportApiService: reportApiService,
           authApiService: authApiService,
         ),
-        AppRoutes.staffTasks: (_) =>
-            StaffTaskInboxScreen(taskApiService: taskApiService),
-        AppRoutes.staffTaskDetail: (_) =>
-            StaffTaskDetailScreen(taskApiService: taskApiService),
+        AppRoutes.staffTasks: (_) => StaffTaskInboxScreen(
+          taskApiService: taskApiService,
+          reportApiService: reportApiService,
+        ),
+        AppRoutes.staffTaskDetail: (_) => StaffTaskDetailScreen(
+          taskApiService: taskApiService,
+          reportApiService: reportApiService,
+        ),
+        AppRoutes.staffReportDetail: (_) =>
+            StaffReportDetailScreen(reportApiService: reportApiService),
         AppRoutes.staffCompleteTask: (_) =>
             StaffCompleteTaskScreen(taskApiService: taskApiService),
       },

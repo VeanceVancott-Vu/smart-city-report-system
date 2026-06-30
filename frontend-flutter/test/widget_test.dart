@@ -269,6 +269,7 @@ void main() {
     await tester.pumpWidget(
       SmartCityReportApp(
         authApiService: FakeAuthApiService(loginRole: UserRole.staff),
+        reportApiService: MockReportApiService(),
         taskApiService: MockTaskApiService(),
       ),
     );
@@ -284,9 +285,61 @@ void main() {
 
     expect(find.text('Task queue'), findsOneWidget);
     expect(find.text('Fix pothole'), findsOneWidget);
+    expect(find.text('2 reports'), findsWidgets);
+    expect(find.text('Cracked curb near Le Loi crossing'), findsNothing);
+
+    final reportsToggle = find.byKey(
+      const ValueKey('taskReportsToggle-33333333-3333-3333-3333-000000000001'),
+    );
+    expect(reportsToggle, findsOneWidget);
+
+    await tester.tap(reportsToggle);
+    await tester.pumpAndSettle();
+
+    expect(find.text('Pothole beside the bus stop'), findsOneWidget);
+    expect(find.text('Cracked curb near Le Loi crossing'), findsOneWidget);
     expect(find.text('Inspect broken streetlight'), findsNothing);
   });
 
+  testWidgets('staff can open a linked report from task details', (
+    tester,
+  ) async {
+    tester.view.physicalSize = const Size(1200, 800);
+    tester.view.devicePixelRatio = 1;
+    addTearDown(tester.view.resetPhysicalSize);
+    addTearDown(tester.view.resetDevicePixelRatio);
+
+    await tester.pumpWidget(
+      SmartCityReportApp(
+        authApiService: FakeAuthApiService(loginRole: UserRole.staff),
+        reportApiService: MockReportApiService(),
+        taskApiService: MockTaskApiService(),
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    await tester.enterText(find.byType(EditableText).at(0), 'staff@test.com');
+    await tester.enterText(find.byType(EditableText).at(1), 'Password123');
+    await tester.tap(find.text('Log in'));
+    await tester.pumpAndSettle();
+
+    await tester.tap(find.text('Fix pothole'));
+    await tester.pumpAndSettle();
+
+    expect(find.text('Task Details'), findsOneWidget);
+    expect(find.text('Linked reports'), findsOneWidget);
+    expect(find.text('Pothole beside the bus stop'), findsOneWidget);
+
+    await tester.tap(find.text('Pothole beside the bus stop'));
+    await tester.pumpAndSettle();
+
+    expect(find.text('Report Details'), findsOneWidget);
+    expect(
+      find.text('Cars swerve around it during rush hour.'),
+      findsOneWidget,
+    );
+    expect(find.text('Bus stop near Le Loi'), findsWidgets);
+  });
   testWidgets('staff can start and complete an assigned task', (tester) async {
     tester.view.physicalSize = const Size(1200, 800);
     tester.view.devicePixelRatio = 1;
@@ -296,6 +349,7 @@ void main() {
     await tester.pumpWidget(
       SmartCityReportApp(
         authApiService: FakeAuthApiService(loginRole: UserRole.staff),
+        reportApiService: MockReportApiService(),
         taskApiService: MockTaskApiService(),
       ),
     );

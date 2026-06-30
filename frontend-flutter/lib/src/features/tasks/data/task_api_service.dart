@@ -503,7 +503,10 @@ class MockTaskApiService extends ApiService implements TaskApiService {
         closedAt: null,
         createdAt: DateTime(2026, 6, 9, 9),
         updatedAt: DateTime(2026, 6, 9, 9),
-        reportIds: const ['11111111-1111-1111-1111-000000000003'],
+        reportIds: const [
+          '11111111-1111-1111-1111-000000000003',
+          '11111111-1111-1111-1111-000000000005',
+        ],
       ),
       Task(
         id: '33333333-3333-3333-3333-000000000002',

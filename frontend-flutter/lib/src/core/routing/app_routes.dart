@@ -22,5 +22,6 @@ class AppRoutes {
   static const overseerAssignStaff = '/overseer/tasks/assign';
   static const staffTasks = '/staff/tasks';
   static const staffTaskDetail = '/staff/tasks/detail';
+  static const staffReportDetail = '/staff/reports/detail';
   static const staffCompleteTask = '/staff/tasks/complete';
 }

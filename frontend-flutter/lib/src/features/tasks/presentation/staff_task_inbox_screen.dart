@@ -3,6 +3,8 @@ import 'package:flutter_map/flutter_map.dart';
 import 'package:latlong2/latlong.dart' hide Path;
 
 import '../../../core/routing/app_routes.dart';
+import '../../reports/data/report_api_service.dart';
+import '../../reports/domain/report.dart';
 import '../data/task_api_service.dart';
 import '../domain/staff_task.dart';
 
@@ -10,10 +12,12 @@ class StaffTaskInboxScreen extends StatefulWidget {
   const StaffTaskInboxScreen({
     super.key,
     required this.taskApiService,
+    required this.reportApiService,
     this.onLogout,
   });
 
   final TaskApiService taskApiService;
+  final ReportApiService reportApiService;
   final VoidCallback? onLogout;
 
   @override
@@ -22,9 +26,10 @@ class StaffTaskInboxScreen extends StatefulWidget {
 
 class _StaffTaskInboxScreenState extends State<StaffTaskInboxScreen> {
   late final MapController _mapController;
-  late Future<List<StaffTask>> _tasksFuture;
+  late Future<_StaffTaskInboxData> _tasksFuture;
 
   List<StaffTask> _tasks = const <StaffTask>[];
+  Map<String, List<Report>> _reportsByTaskId = const <String, List<Report>>{};
   StaffTask? _selectedTask;
   StaffTaskStatus? _selectedStatus;
 
@@ -36,14 +41,55 @@ class _StaffTaskInboxScreenState extends State<StaffTaskInboxScreen> {
   }
 
   void _loadTasks() {
-    _tasksFuture = widget.taskApiService.fetchStaffTasks().then((tasks) {
-      _tasks = tasks;
+    _tasksFuture = _loadTaskData().then((data) {
+      _tasks = data.tasks;
+      _reportsByTaskId = data.reportsByTaskId;
       final selectedId = _selectedTask?.id;
       if (selectedId != null) {
-        _selectedTask = _taskById(tasks, selectedId);
+        _selectedTask = _taskById(data.tasks, selectedId);
       }
-      return tasks;
+      return data;
     });
+  }
+
+  Future<_StaffTaskInboxData> _loadTaskData() async {
+    final tasks = await widget.taskApiService.fetchStaffTasks();
+    final reportsById = await _fetchLinkedReports(tasks);
+    final reportsByTaskId = <String, List<Report>>{
+      for (final task in tasks)
+        task.id: <Report>[
+          for (final reportId in task.reportIds)
+            if (reportsById[reportId] != null) reportsById[reportId]!,
+        ],
+    };
+
+    return _StaffTaskInboxData(tasks: tasks, reportsByTaskId: reportsByTaskId);
+  }
+
+  Future<Map<String, Report>> _fetchLinkedReports(List<StaffTask> tasks) async {
+    final reportIds = <String>{};
+    for (final task in tasks) {
+      reportIds.addAll(task.reportIds);
+    }
+
+    if (reportIds.isEmpty) {
+      return const <String, Report>{};
+    }
+
+    final reports = await Future.wait<Report?>(
+      reportIds.map((reportId) async {
+        try {
+          return await widget.reportApiService.fetchReport(reportId);
+        } on Object {
+          return null;
+        }
+      }),
+    );
+
+    return <String, Report>{
+      for (final report in reports)
+        if (report != null) report.id: report,
+    };
   }
 
   Future<void> _refresh() async {
@@ -61,6 +107,12 @@ class _StaffTaskInboxScreenState extends State<StaffTaskInboxScreen> {
     if (changed == true) {
       setState(_loadTasks);
     }
+  }
+
+  Future<void> _openReport(String reportId) async {
+    await Navigator.of(
+      context,
+    ).pushNamed(AppRoutes.staffReportDetail, arguments: reportId);
   }
 
   void _selectTask(StaffTask task) {
@@ -151,7 +203,7 @@ class _StaffTaskInboxScreenState extends State<StaffTaskInboxScreen> {
         ],
       ),
       body: SafeArea(
-        child: FutureBuilder<List<StaffTask>>(
+        child: FutureBuilder<_StaffTaskInboxData>(
           future: _tasksFuture,
           builder: (context, snapshot) {
             if (snapshot.connectionState != ConnectionState.done &&
@@ -166,7 +218,13 @@ class _StaffTaskInboxScreenState extends State<StaffTaskInboxScreen> {
               );
             }
 
-            final tasks = snapshot.data ?? _tasks;
+            final data =
+                snapshot.data ??
+                _StaffTaskInboxData(
+                  tasks: _tasks,
+                  reportsByTaskId: _reportsByTaskId,
+                );
+            final tasks = data.tasks;
             final visibleTasks = _filteredTasks(tasks);
             final selectedTask = _visibleSelectedTask(visibleTasks);
 
@@ -178,6 +236,7 @@ class _StaffTaskInboxScreenState extends State<StaffTaskInboxScreen> {
                     tasks: tasks,
                     visibleTasks: visibleTasks,
                     selectedTask: selectedTask,
+                    reportsByTaskId: data.reportsByTaskId,
                   );
                 }
 
@@ -185,6 +244,7 @@ class _StaffTaskInboxScreenState extends State<StaffTaskInboxScreen> {
                   tasks: tasks,
                   visibleTasks: visibleTasks,
                   selectedTask: selectedTask,
+                  reportsByTaskId: data.reportsByTaskId,
                 );
               },
             );
@@ -198,6 +258,7 @@ class _StaffTaskInboxScreenState extends State<StaffTaskInboxScreen> {
     required List<StaffTask> tasks,
     required List<StaffTask> visibleTasks,
     required StaffTask? selectedTask,
+    required Map<String, List<Report>> reportsByTaskId,
   }) {
     return Padding(
       padding: const EdgeInsets.fromLTRB(16, 12, 16, 16),
@@ -232,8 +293,10 @@ class _StaffTaskInboxScreenState extends State<StaffTaskInboxScreen> {
                   child: _TaskListPanel(
                     tasks: visibleTasks,
                     selectedTask: selectedTask,
+                    reportsByTaskId: reportsByTaskId,
                     embedded: false,
                     onOpenTask: _openTask,
+                    onOpenReport: _openReport,
                     onFocusTask: _focusTaskOnMap,
                   ),
                 ),
@@ -249,6 +312,7 @@ class _StaffTaskInboxScreenState extends State<StaffTaskInboxScreen> {
     required List<StaffTask> tasks,
     required List<StaffTask> visibleTasks,
     required StaffTask? selectedTask,
+    required Map<String, List<Report>> reportsByTaskId,
   }) {
     return RefreshIndicator(
       onRefresh: _refresh,
@@ -280,14 +344,26 @@ class _StaffTaskInboxScreenState extends State<StaffTaskInboxScreen> {
           _TaskListPanel(
             tasks: visibleTasks,
             selectedTask: selectedTask,
+            reportsByTaskId: reportsByTaskId,
             embedded: true,
             onOpenTask: _openTask,
+            onOpenReport: _openReport,
             onFocusTask: _focusTaskOnMap,
           ),
         ],
       ),
     );
   }
+}
+
+class _StaffTaskInboxData {
+  const _StaffTaskInboxData({
+    required this.tasks,
+    required this.reportsByTaskId,
+  });
+
+  final List<StaffTask> tasks;
+  final Map<String, List<Report>> reportsByTaskId;
 }
 
 class _TaskSummary extends StatelessWidget {
@@ -791,15 +867,19 @@ class _TaskListPanel extends StatelessWidget {
   const _TaskListPanel({
     required this.tasks,
     required this.selectedTask,
+    required this.reportsByTaskId,
     required this.embedded,
     required this.onOpenTask,
+    required this.onOpenReport,
     required this.onFocusTask,
   });
 
   final List<StaffTask> tasks;
   final StaffTask? selectedTask;
+  final Map<String, List<Report>> reportsByTaskId;
   final bool embedded;
   final ValueChanged<String> onOpenTask;
+  final ValueChanged<String> onOpenReport;
   final ValueChanged<StaffTask> onFocusTask;
 
   @override
@@ -815,10 +895,13 @@ class _TaskListPanel extends StatelessWidget {
             itemBuilder: (context, index) {
               final task = tasks[index];
               return _TaskTile(
+                key: ValueKey('taskTile-${task.id}'),
                 number: index + 1,
                 task: task,
+                reports: reportsByTaskId[task.id] ?? const <Report>[],
                 selected: selectedTask?.id == task.id,
                 onTap: () => onOpenTask(task.id),
+                onOpenReport: onOpenReport,
                 onFocusOnMap: () => onFocusTask(task),
               );
             },
@@ -908,69 +991,284 @@ class _EmptyTaskList extends StatelessWidget {
   }
 }
 
-class _TaskTile extends StatelessWidget {
+class _TaskTile extends StatefulWidget {
   const _TaskTile({
+    super.key,
     required this.number,
     required this.task,
+    required this.reports,
     required this.selected,
     required this.onTap,
+    required this.onOpenReport,
     required this.onFocusOnMap,
   });
 
   final int number;
   final StaffTask task;
+  final List<Report> reports;
   final bool selected;
   final VoidCallback onTap;
+  final ValueChanged<String> onOpenReport;
   final VoidCallback onFocusOnMap;
 
   @override
+  State<_TaskTile> createState() => _TaskTileState();
+}
+
+class _TaskTileState extends State<_TaskTile> {
+  bool _expanded = false;
+
+  @override
+  void didUpdateWidget(covariant _TaskTile oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (oldWidget.task.id != widget.task.id) {
+      _expanded = false;
+    }
+  }
+
+  @override
   Widget build(BuildContext context) {
-    final color = _statusColor(task.status);
+    final color = _statusColor(widget.task.status);
+    final reportCount = widget.reports.isNotEmpty
+        ? widget.reports.length
+        : widget.task.reportIds.length;
+    final hasMultipleReports = widget.reports.length > 1;
+    final reportCountLabel = reportCount == 1
+        ? '1 report'
+        : '$reportCount reports';
 
     return Card(
       elevation: 0,
-      color: selected ? color.withValues(alpha: 0.06) : Colors.white,
+      color: widget.selected ? color.withValues(alpha: 0.06) : Colors.white,
       shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.circular(8),
         side: BorderSide(
-          color: selected ? color : const Color(0xFFDDE5E2),
-          width: selected ? 1.6 : 1,
+          color: widget.selected ? color : const Color(0xFFDDE5E2),
+          width: widget.selected ? 1.6 : 1,
         ),
       ),
-      child: ListTile(
-        contentPadding: const EdgeInsets.fromLTRB(12, 10, 8, 10),
-        onTap: onTap,
-        leading: _TaskIndexBadge(number: number, color: color),
-        title: Text(
-          task.reportTitle,
-          maxLines: 2,
-          overflow: TextOverflow.ellipsis,
-          style: const TextStyle(fontWeight: FontWeight.w800),
-        ),
-        subtitle: Padding(
-          padding: const EdgeInsets.only(top: 8),
-          child: Wrap(
-            spacing: 8,
-            runSpacing: 8,
-            children: [
-              _TaskStatusPill(status: task.status),
-              _TaskChip(icon: Icons.category_outlined, label: task.category),
-              _TaskChip(icon: Icons.place_outlined, label: task.area),
-              _TaskChip(
-                icon: Icons.trending_up,
-                label: 'Priority ${task.priorityScore}',
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          ListTile(
+            contentPadding: const EdgeInsets.fromLTRB(12, 10, 8, 10),
+            onTap: widget.onTap,
+            leading: _TaskIndexBadge(number: widget.number, color: color),
+            title: Text(
+              widget.task.reportTitle,
+              maxLines: 2,
+              overflow: TextOverflow.ellipsis,
+              style: const TextStyle(fontWeight: FontWeight.w800),
+            ),
+            subtitle: Padding(
+              padding: const EdgeInsets.only(top: 8),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Wrap(
+                    spacing: 8,
+                    runSpacing: 8,
+                    children: [
+                      _TaskStatusPill(status: widget.task.status),
+                      _TaskChip(
+                        icon: Icons.category_outlined,
+                        label: widget.task.category,
+                      ),
+                      _TaskChip(
+                        icon: Icons.place_outlined,
+                        label: widget.task.area,
+                      ),
+                      _TaskChip(
+                        icon: Icons.trending_up,
+                        label: 'Priority ${widget.task.priorityScore}',
+                      ),
+                      _TaskChip(
+                        icon: Icons.event_outlined,
+                        label: _formatDate(widget.task.dueDate),
+                      ),
+                      if (reportCount > 0)
+                        _TaskChip(
+                          icon: Icons.article_outlined,
+                          label: reportCountLabel,
+                        ),
+                    ],
+                  ),
+                  if (hasMultipleReports)
+                    Padding(
+                      padding: const EdgeInsets.only(top: 8),
+                      child: TextButton.icon(
+                        key: ValueKey('taskReportsToggle-${widget.task.id}'),
+                        onPressed: () => setState(() {
+                          _expanded = !_expanded;
+                        }),
+                        icon: Icon(
+                          _expanded ? Icons.expand_less : Icons.expand_more,
+                          size: 18,
+                        ),
+                        label: Text(
+                          _expanded ? 'Hide reports' : reportCountLabel,
+                        ),
+                      ),
+                    ),
+                ],
               ),
-              _TaskChip(
-                icon: Icons.event_outlined,
-                label: _formatDate(task.dueDate),
-              ),
-            ],
+            ),
+            trailing: IconButton(
+              tooltip: 'Show on map',
+              onPressed: widget.onFocusOnMap,
+              icon: const Icon(Icons.my_location_outlined),
+            ),
           ),
+          if (_expanded && hasMultipleReports)
+            Padding(
+              padding: const EdgeInsets.fromLTRB(58, 0, 12, 12),
+              child: _TaskLinkedReports(
+                reports: widget.reports,
+                onOpenReport: widget.onOpenReport,
+              ),
+            ),
+        ],
+      ),
+    );
+  }
+}
+
+class _TaskLinkedReports extends StatelessWidget {
+  const _TaskLinkedReports({required this.reports, required this.onOpenReport});
+
+  final List<Report> reports;
+  final ValueChanged<String> onOpenReport;
+
+  @override
+  Widget build(BuildContext context) {
+    return DecoratedBox(
+      decoration: BoxDecoration(
+        color: const Color(0xFFF7F9F8),
+        borderRadius: BorderRadius.circular(8),
+        border: Border.all(color: const Color(0xFFDDE5E2)),
+      ),
+      child: Column(
+        children: [
+          for (var index = 0; index < reports.length; index++) ...[
+            _TaskLinkedReportRow(
+              number: index + 1,
+              report: reports[index],
+              onTap: () => onOpenReport(reports[index].id),
+            ),
+            if (index != reports.length - 1)
+              const Divider(height: 1, color: Color(0xFFDDE5E2)),
+          ],
+        ],
+      ),
+    );
+  }
+}
+
+class _TaskLinkedReportRow extends StatelessWidget {
+  const _TaskLinkedReportRow({
+    required this.number,
+    required this.report,
+    required this.onTap,
+  });
+
+  final int number;
+  final Report report;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    final location = _reportLocationLabel(report);
+
+    return InkWell(
+      onTap: onTap,
+      borderRadius: BorderRadius.circular(8),
+      child: Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 10),
+        child: Row(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Container(
+              width: 26,
+              height: 26,
+              alignment: Alignment.center,
+              decoration: const BoxDecoration(
+                color: Color(0xFFE2F3EE),
+                shape: BoxShape.circle,
+              ),
+              child: Text(
+                number.toString(),
+                style: const TextStyle(
+                  color: Color(0xFF0F766E),
+                  fontSize: 12,
+                  fontWeight: FontWeight.w900,
+                ),
+              ),
+            ),
+            const SizedBox(width: 10),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    report.title,
+                    maxLines: 2,
+                    overflow: TextOverflow.ellipsis,
+                    style: const TextStyle(fontWeight: FontWeight.w800),
+                  ),
+                  const SizedBox(height: 5),
+                  Text(
+                    location,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                      color: Colors.grey.shade700,
+                    ),
+                  ),
+                  const SizedBox(height: 7),
+                  Wrap(
+                    spacing: 8,
+                    runSpacing: 6,
+                    children: [
+                      _ReportStatusPill(status: report.status),
+                      _TaskChip(
+                        icon: Icons.trending_up,
+                        label: 'Priority ${report.priorityScore}',
+                      ),
+                    ],
+                  ),
+                ],
+              ),
+            ),
+            const SizedBox(width: 6),
+            Icon(Icons.chevron_right, color: Colors.grey.shade600),
+          ],
         ),
-        trailing: IconButton(
-          tooltip: 'Show on map',
-          onPressed: onFocusOnMap,
-          icon: const Icon(Icons.my_location_outlined),
+      ),
+    );
+  }
+}
+
+class _ReportStatusPill extends StatelessWidget {
+  const _ReportStatusPill({required this.status});
+
+  final ReportStatus status;
+
+  @override
+  Widget build(BuildContext context) {
+    final color = _reportStatusColor(status);
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+      decoration: BoxDecoration(
+        color: color.withValues(alpha: 0.11),
+        borderRadius: BorderRadius.circular(999),
+        border: Border.all(color: color.withValues(alpha: 0.24)),
+      ),
+      child: Text(
+        status.label,
+        style: TextStyle(
+          color: color,
+          fontSize: 12,
+          fontWeight: FontWeight.w800,
         ),
       ),
     );
@@ -1109,6 +1407,22 @@ class _PinTrianglePainter extends CustomPainter {
 
   @override
   bool shouldRepaint(covariant CustomPainter oldDelegate) => false;
+}
+
+String _reportLocationLabel(Report report) {
+  final address = report.addressText?.trim();
+  if (address != null && address.isNotEmpty) {
+    return address;
+  }
+  return '${report.latitude.toStringAsFixed(4)}, ${report.longitude.toStringAsFixed(4)}';
+}
+
+Color _reportStatusColor(ReportStatus status) {
+  return switch (status) {
+    ReportStatus.submitted => const Color(0xFF2563EB),
+    ReportStatus.fixed => const Color(0xFF0F766E),
+    ReportStatus.cancelled => const Color(0xFF64748B),
+  };
 }
 
 LatLng _taskMapCenter(List<StaffTask> tasks) {

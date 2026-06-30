@@ -5,10 +5,11 @@ import com.smartcity.reports.user.UserRepository;
 import com.smartcity.reports.user.UserRole;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
-import org.springframework.context.annotation.Profile;
 import org.mockito.ArgumentCaptor;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.context.annotation.Profile;
+import org.springframework.core.annotation.Order;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 
@@ -28,11 +29,14 @@ class DevUserSeederTest {
     private final PasswordEncoder passwordEncoder = new BCryptPasswordEncoder();
 
     @Test
-    void seederOnlyRunsForLocalAndDevProfiles() {
+    void seederOnlyRunsForLocalAndDevProfilesBeforeDemoData() {
         Profile profile = DevUserSeeder.class.getAnnotation(Profile.class);
+        Order order = DevUserSeeder.class.getAnnotation(Order.class);
 
         assertThat(profile).isNotNull();
         assertThat(profile.value()).containsExactlyInAnyOrder("local", "dev");
+        assertThat(order).isNotNull();
+        assertThat(order.value()).isEqualTo(1);
     }
 
     @Test

@@ -4,6 +4,7 @@ class StaffTaskListScreen extends StaffTaskInboxScreen {
   const StaffTaskListScreen({
     super.key,
     required super.taskApiService,
+    required super.reportApiService,
     super.onLogout,
   });
 }

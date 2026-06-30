@@ -160,8 +160,9 @@ class BackendReportApiService extends ApiService implements ReportApiService {
       throw const ReportApiException('Expected a JSON array response.');
     }
 
-    final list = decoded
-        .map((item) => ReportMapPin.fromJson(item as Map<String, dynamic>));
+    final list = decoded.map(
+      (item) => ReportMapPin.fromJson(item as Map<String, dynamic>),
+    );
 
     if (includeAllStatuses) {
       return list.toList(growable: false);
@@ -323,7 +324,7 @@ class MockReportApiService extends ApiService implements ReportApiService {
 
     final now = DateTime.now();
     final report = Report(
-      id: '11111111-1111-1111-1111-${(_reports.length + 1).toString().padLeft(12, '0')}',
+      id: _nextReportId(),
       title: draft.title,
       description: draft.description,
       category: draft.category,
@@ -437,7 +438,9 @@ class MockReportApiService extends ApiService implements ReportApiService {
     await Future<void>.delayed(const Duration(milliseconds: 100));
     final report = _findReport(id);
     if (report.createdBy?.id == _demoUser.id) {
-      throw const ReportApiException('Creators cannot upvote their own reports');
+      throw const ReportApiException(
+        'Creators cannot upvote their own reports',
+      );
     }
     _upvotedReportIds.add(id);
     return _syncUpvote(id, hasUpvoted: true);
@@ -448,6 +451,16 @@ class MockReportApiService extends ApiService implements ReportApiService {
     await Future<void>.delayed(const Duration(milliseconds: 100));
     _upvotedReportIds.remove(id);
     return _syncUpvote(id, hasUpvoted: false);
+  }
+
+  String _nextReportId() {
+    var nextNumber = _reports.length + 1;
+    while (_reports.any(
+      (report) => report.id.endsWith(nextNumber.toString().padLeft(12, '0')),
+    )) {
+      nextNumber++;
+    }
+    return '11111111-1111-1111-1111-${nextNumber.toString().padLeft(12, '0')}';
   }
 
   Report _findReport(String id) {
@@ -513,6 +526,24 @@ class MockReportApiService extends ApiService implements ReportApiService {
         priorityScore: 5,
         createdAt: DateTime(2026, 6, 6, 8, 15),
         updatedAt: DateTime(2026, 6, 8, 14, 30),
+        createdBy: _demoUser,
+      ),
+      Report(
+        id: '11111111-1111-1111-1111-000000000005',
+        title: 'Cracked curb near Le Loi crossing',
+        description:
+            'The curb edge is broken and difficult for wheelchairs to pass.',
+        category: ReportCategory.roadDamage,
+        status: ReportStatus.submitted,
+        latitude: 10.7831,
+        longitude: 106.6991,
+        addressText: 'Le Loi pedestrian crossing',
+        beforePhotoUrl: '/uploads/report-before/curb-before.jpg',
+        anonymous: false,
+        upvoteCount: 2,
+        priorityScore: 2,
+        createdAt: DateTime(2026, 6, 6, 9, 10),
+        updatedAt: DateTime(2026, 6, 6, 9, 10),
         createdBy: _demoUser,
       ),
       Report(

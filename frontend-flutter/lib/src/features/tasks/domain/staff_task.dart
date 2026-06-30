@@ -24,6 +24,7 @@ class StaffTask {
     required this.latitude,
     required this.longitude,
     required this.priorityScore,
+    required this.reportIds,
   });
 
   final String id;
@@ -35,6 +36,7 @@ class StaffTask {
   final double latitude;
   final double longitude;
   final int priorityScore;
+  final List<String> reportIds;
 
   factory StaffTask.fromTask(Task task) {
     return StaffTask(
@@ -54,6 +56,7 @@ class StaffTask {
       latitude: task.latitude,
       longitude: task.longitude,
       priorityScore: task.priorityScore,
+      reportIds: task.reportIds,
     );
   }
 }
