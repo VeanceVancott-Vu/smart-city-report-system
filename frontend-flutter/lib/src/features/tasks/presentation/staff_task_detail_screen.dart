@@ -78,6 +78,9 @@ class _StaffTaskDetailScreenState extends State<StaffTaskDetailScreen> {
         context,
       ).showSnackBar(SnackBar(content: Text('${task.title} started')));
       setState(_loadTask);
+      await Navigator.of(
+        context,
+      ).pushNamed(AppRoutes.staffTaskRoute, arguments: task.id);
     } on TaskApiException catch (error) {
       _showError(error.message);
     } catch (_) {
@@ -104,6 +107,16 @@ class _StaffTaskDetailScreenState extends State<StaffTaskDetailScreen> {
     if (changed == true) {
       setState(_loadTask);
     }
+  }
+
+  void _openRouteMap() {
+    final taskId = _taskId;
+    if (taskId == null) {
+      return;
+    }
+    Navigator.of(
+      context,
+    ).pushNamed(AppRoutes.staffTaskRoute, arguments: taskId);
   }
 
   void _openReport(String reportId) {
@@ -149,6 +162,7 @@ class _StaffTaskDetailScreenState extends State<StaffTaskDetailScreen> {
                       task: task,
                       isUpdating: _isUpdating,
                       onStart: _startTask,
+                      onRoute: _openRouteMap,
                       onComplete: _openCompleteTask,
                     ),
                   ),
@@ -367,12 +381,14 @@ class _TaskActions extends StatelessWidget {
     required this.task,
     required this.isUpdating,
     required this.onStart,
+    required this.onRoute,
     required this.onComplete,
   });
 
   final Task task;
   final bool isUpdating;
   final VoidCallback onStart;
+  final VoidCallback onRoute;
   final VoidCallback onComplete;
 
   @override
@@ -391,10 +407,22 @@ class _TaskActions extends StatelessWidget {
     }
 
     if (task.status.canComplete) {
-      return FilledButton.icon(
-        onPressed: onComplete,
-        icon: const Icon(Icons.task_alt),
-        label: const Text('Complete task'),
+      return Column(
+        mainAxisSize: MainAxisSize.min,
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          OutlinedButton.icon(
+            onPressed: onRoute,
+            icon: const Icon(Icons.route),
+            label: const Text('Route map'),
+          ),
+          const SizedBox(height: 8),
+          FilledButton.icon(
+            onPressed: onComplete,
+            icon: const Icon(Icons.task_alt),
+            label: const Text('Complete task'),
+          ),
+        ],
       );
     }
 

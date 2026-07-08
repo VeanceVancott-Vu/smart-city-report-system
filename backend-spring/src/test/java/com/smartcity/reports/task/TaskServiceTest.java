@@ -94,6 +94,76 @@ class TaskServiceTest {
         assertThat(response.assignedStaff().id()).isEqualTo(staff.getId());
         assertThat(response.reportIds()).containsExactly(report.getId());
         assertThat(report.getLinkedTaskId()).isEqualTo(taskId);
+        assertThat(report.getStatus()).isEqualTo(ReportStatus.IN_PROGRESS);
+    }
+
+    @Test
+    void createTaskRejectsReportAlreadyLinkedToAnotherTask() {
+        User overseer = user(UserRole.OVERSEER);
+        Report report = reportFor(user(UserRole.CITIZEN));
+        UUID taskId = UUID.randomUUID();
+        UUID existingTaskId = UUID.randomUUID();
+        report.setId(UUID.randomUUID());
+        report.linkToTask(existingTaskId);
+
+        CreateTaskRequest request = new CreateTaskRequest(
+                "Fix pothole",
+                "Repair the pothole reported by citizens.",
+                IssueCategory.ROAD_DAMAGE,
+                10.762622,
+                106.660172,
+                "District 1",
+                4,
+                null,
+                "/uploads/report-before/before.jpg",
+                List.of(report.getId())
+        );
+
+        when(userRepository.getReferenceById(overseer.getId())).thenReturn(overseer);
+        when(taskRepository.saveAndFlush(any(Task.class))).thenAnswer(invocation -> {
+            Task task = invocation.getArgument(0);
+            task.setId(taskId);
+            return task;
+        });
+        when(reportRepository.findAllById(any())).thenReturn(List.of(report));
+
+        assertThatThrownBy(() -> taskService.createTask(request, overseer))
+                .isInstanceOf(IllegalArgumentException.class)
+                .hasMessageContaining("Report is already linked to another task");
+    }
+
+    @Test
+    void createTaskRejectsReportThatIsNoLongerSubmitted() {
+        User overseer = user(UserRole.OVERSEER);
+        Report report = reportFor(user(UserRole.CITIZEN));
+        UUID taskId = UUID.randomUUID();
+        report.setId(UUID.randomUUID());
+        report.fix();
+
+        CreateTaskRequest request = new CreateTaskRequest(
+                "Fix pothole",
+                "Repair the pothole reported by citizens.",
+                IssueCategory.ROAD_DAMAGE,
+                10.762622,
+                106.660172,
+                "District 1",
+                4,
+                null,
+                "/uploads/report-before/before.jpg",
+                List.of(report.getId())
+        );
+
+        when(userRepository.getReferenceById(overseer.getId())).thenReturn(overseer);
+        when(taskRepository.saveAndFlush(any(Task.class))).thenAnswer(invocation -> {
+            Task task = invocation.getArgument(0);
+            task.setId(taskId);
+            return task;
+        });
+        when(reportRepository.findAllById(any())).thenReturn(List.of(report));
+
+        assertThatThrownBy(() -> taskService.createTask(request, overseer))
+                .isInstanceOf(IllegalArgumentException.class)
+                .hasMessageContaining("Only submitted reports can be linked to a task");
     }
 
     @Test
@@ -289,14 +359,19 @@ class TaskServiceTest {
     }
 
     @Test
-    void overseerCanApproveDoneTask() {
+    void overseerCanApproveDoneTaskAndFixesLinkedReports() {
         User overseer = user(UserRole.OVERSEER);
         User staff = user(UserRole.STAFF);
         Task task = taskFor(overseer, staff);
+        Report report = reportFor(user(UserRole.CITIZEN));
         UUID taskId = UUID.randomUUID();
+        UUID reportId = UUID.randomUUID();
         task.setId(taskId);
         task.setCreatedAt(NOW);
         task.setUpdatedAt(NOW);
+        report.setId(reportId);
+        task.linkReport(report);
+        report.linkToTask(taskId);
         task.start(NOW.minusSeconds(120));
         task.complete(NOW.minusSeconds(60), "/uploads/task-after/after.jpg", "Done");
 
@@ -306,6 +381,8 @@ class TaskServiceTest {
 
         assertThat(response.status()).isEqualTo(TaskStatus.APPROVED);
         assertThat(response.reviewedAt()).isEqualTo(NOW);
+        assertThat(response.reportIds()).containsExactly(reportId);
+        assertThat(report.getStatus()).isEqualTo(ReportStatus.FIXED);
     }
 
     @Test

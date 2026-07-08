@@ -187,11 +187,13 @@ class _StatusChip extends StatelessWidget {
     final colorScheme = Theme.of(context).colorScheme;
     final backgroundColor = switch (status) {
       ReportStatus.submitted => const Color(0xFFE2F3EE),
+      ReportStatus.inProgress => const Color(0xFFFFF2D6),
       ReportStatus.fixed => const Color(0xFFE8EEF8),
       ReportStatus.cancelled => const Color(0xFFF5E4E4),
     };
     final foregroundColor = switch (status) {
       ReportStatus.submitted => colorScheme.primary,
+      ReportStatus.inProgress => const Color(0xFFB45309),
       ReportStatus.fixed => const Color(0xFF35548A),
       ReportStatus.cancelled => colorScheme.error,
     };

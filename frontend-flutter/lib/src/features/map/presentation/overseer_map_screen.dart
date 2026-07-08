@@ -215,7 +215,34 @@ class _OverseerMapScreenState extends State<OverseerMapScreen> {
     }
   }
 
+  bool _canCreateTaskForPin(ReportMapPin pin) {
+    return pin.status == ReportStatus.submitted;
+  }
+
+  ReportMapPin? _pinById(String reportId) {
+    for (final pin in _pins) {
+      if (pin.id == reportId) {
+        return pin;
+      }
+    }
+    return null;
+  }
+
+  void _showTaskUnavailable() {
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(
+        content: Text('Only submitted reports can be turned into tasks.'),
+      ),
+    );
+  }
+
   void _createTaskForSingleReport(String reportId) {
+    final pin = _pinById(reportId);
+    if (pin != null && !_canCreateTaskForPin(pin)) {
+      _showTaskUnavailable();
+      return;
+    }
+
     Navigator.of(context)
         .pushNamed(
           AppRoutes.overseerCreateTask,
@@ -229,12 +256,22 @@ class _OverseerMapScreenState extends State<OverseerMapScreen> {
   }
 
   void _createTaskFromSelection() {
+    final reportIds = _pins
+        .where(
+          (pin) =>
+              _selectedReportIds.contains(pin.id) && _canCreateTaskForPin(pin),
+        )
+        .map((pin) => pin.id)
+        .toList(growable: false);
+    if (reportIds.isEmpty) {
+      _showTaskUnavailable();
+      return;
+    }
+
     Navigator.of(context)
         .pushNamed(
           AppRoutes.overseerCreateTask,
-          arguments: OverseerTaskFormArgs(
-            reportIds: _selectedReportIds.toList(),
-          ),
+          arguments: OverseerTaskFormArgs(reportIds: reportIds),
         )
         .then((changed) {
           if (changed == true) {
@@ -274,7 +311,7 @@ class _OverseerMapScreenState extends State<OverseerMapScreen> {
     _mapController.move(LatLng(pin.latitude, pin.longitude), 15.0);
 
     if (_multiSelectMode) {
-      if (pin.status == ReportStatus.submitted) {
+      if (_canCreateTaskForPin(pin)) {
         _toggleReportSelection(pin.id);
       }
       return;
@@ -565,8 +602,7 @@ class _OverseerMapScreenState extends State<OverseerMapScreen> {
                                           behavior: HitTestBehavior.opaque,
                                           onTap: () {
                                             if (_multiSelectMode) {
-                                              if (pin.status ==
-                                                  ReportStatus.submitted) {
+                                              if (_canCreateTaskForPin(pin)) {
                                                 _toggleReportSelection(pin.id);
                                               }
                                             } else {
@@ -1023,6 +1059,8 @@ Color _getStatusColor(ReportStatus status) {
   switch (status) {
     case ReportStatus.submitted:
       return const Color(0xFFE11D48); // Red
+    case ReportStatus.inProgress:
+      return const Color(0xFFB45309);
     case ReportStatus.fixed:
       return const Color(0xFF0F766E); // Green
     case ReportStatus.cancelled:
@@ -1270,10 +1308,12 @@ class _ReportQueuePanel extends StatelessWidget {
     switch (status) {
       case ReportStatus.submitted:
         return 0;
-      case ReportStatus.fixed:
+      case ReportStatus.inProgress:
         return 1;
-      case ReportStatus.cancelled:
+      case ReportStatus.fixed:
         return 2;
+      case ReportStatus.cancelled:
+        return 3;
     }
   }
 

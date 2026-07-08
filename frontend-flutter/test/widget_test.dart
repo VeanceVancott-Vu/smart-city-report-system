@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:latlong2/latlong.dart';
 import 'package:smart_city_report_frontend/src/app.dart';
 import 'package:smart_city_report_frontend/src/core/routing/app_routes.dart';
 import 'package:smart_city_report_frontend/src/features/auth/data/auth_api_service.dart';
@@ -12,6 +13,7 @@ import 'package:smart_city_report_frontend/src/features/reports/data/report_api_
 import 'package:smart_city_report_frontend/src/features/reports/domain/report.dart';
 import 'package:smart_city_report_frontend/src/features/tasks/data/task_api_service.dart';
 import 'package:smart_city_report_frontend/src/features/tasks/domain/task.dart';
+import 'package:smart_city_report_frontend/src/features/tasks/presentation/staff_task_route_map_screen.dart';
 import 'package:smart_city_report_frontend/src/features/users/data/user_api_service.dart';
 import 'package:smart_city_report_frontend/src/features/users/domain/app_user.dart';
 
@@ -296,7 +298,7 @@ void main() {
     await tester.tap(reportsToggle);
     await tester.pumpAndSettle();
 
-    expect(find.text('Pothole beside the bus stop'), findsOneWidget);
+    expect(find.text('Pothole beside the bus stop'), findsWidgets);
     expect(find.text('Cracked curb near Le Loi crossing'), findsOneWidget);
     expect(find.text('Inspect broken streetlight'), findsNothing);
   });
@@ -328,7 +330,7 @@ void main() {
 
     expect(find.text('Task Details'), findsOneWidget);
     expect(find.text('Linked reports'), findsOneWidget);
-    expect(find.text('Pothole beside the bus stop'), findsOneWidget);
+    expect(find.text('Pothole beside the bus stop'), findsWidgets);
 
     await tester.tap(find.text('Pothole beside the bus stop'));
     await tester.pumpAndSettle();
@@ -351,6 +353,7 @@ void main() {
         authApiService: FakeAuthApiService(loginRole: UserRole.staff),
         reportApiService: MockReportApiService(),
         taskApiService: MockTaskApiService(),
+        roadRouteService: FakeRoadRouteService(),
       ),
     );
     await tester.pumpAndSettle();
@@ -369,7 +372,29 @@ void main() {
     await tester.tap(find.text('Start task'));
     await tester.pumpAndSettle();
 
+    expect(find.text('Route Map'), findsOneWidget);
+    expect(find.text('Visit order'), findsOneWidget);
+    expect(find.text('Current address'), findsOneWidget);
+    expect(find.text('Pothole beside the bus stop'), findsWidgets);
+    expect(find.text('Cracked curb near Le Loi crossing'), findsOneWidget);
+
+    await tester.enterText(
+      find.byKey(const Key('staffRouteStartAddressField')),
+      'Le Loi pedestrian crossing',
+    );
+    await tester.tap(find.byTooltip('Route from address'));
+    await tester.pumpAndSettle();
+
+    expect(
+      find.text('Route starts from Le Loi pedestrian crossing.'),
+      findsOneWidget,
+    );
+
+    await tester.tap(find.byTooltip('Back'));
+    await tester.pumpAndSettle();
+
     expect(find.text('In progress'), findsOneWidget);
+    expect(find.text('Route map'), findsOneWidget);
 
     await tester.tap(find.text('Complete task'));
     await tester.pumpAndSettle();
@@ -459,39 +484,20 @@ void main() {
   });
   testWidgets('linked report item opens report details', (tester) async {
     await tester.pumpWidget(
-      MaterialApp(
-        onGenerateRoute: (settings) {
-          if (settings.name == AppRoutes.overseerReportDetail) {
-            return MaterialPageRoute<void>(
-              settings: settings,
-              builder: (_) => Scaffold(
-                appBar: AppBar(title: const Text('Report Details')),
-                body: Text('Report detail ${settings.arguments}'),
-              ),
-            );
-          }
-
-          return MaterialPageRoute<void>(
-            settings: const RouteSettings(
-              arguments: OverseerTaskFormArgs(
-                reportIds: ['11111111-1111-1111-1111-000000000004'],
-              ),
-            ),
-            builder: (_) => OverseerCreateTaskScreen(
-              taskApiService: MockTaskApiService(),
-              reportApiService: MockReportApiService(),
-              userApiService: MockUserApiService(),
-            ),
-          );
-        },
+      overseerCreateTaskHarness(
+        reportIds: const ['11111111-1111-1111-1111-000000000004'],
       ),
     );
-    await tester.pump();
-    await tester.pump(const Duration(milliseconds: 500));
-    await tester.pump();
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Open create task'));
+    await tester.pumpAndSettle();
 
-    await tester.ensureVisible(find.text('Broken streetlight near Nguyen Hue'));
-    await tester.pump();
+    await tester.scrollUntilVisible(
+      find.text('Broken streetlight near Nguyen Hue'),
+      300,
+      scrollable: find.byType(Scrollable).first,
+    );
+    await tester.pumpAndSettle();
     await tester.tap(find.text('Broken streetlight near Nguyen Hue'));
     await tester.pump();
     await tester.pump(const Duration(milliseconds: 500));
@@ -502,54 +508,51 @@ void main() {
       findsOneWidget,
     );
   });
+  testWidgets('overseer cannot create a task from reports already handled', (
+    tester,
+  ) async {
+    await tester.pumpWidget(
+      overseerCreateTaskHarness(
+        reportIds: const ['11111111-1111-1111-1111-000000000003'],
+      ),
+    );
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Open create task'));
+    await tester.pumpAndSettle();
+
+    expect(find.textContaining('Only submitted reports'), findsOneWidget);
+    expect(find.byKey(const Key('overseerTaskSubmitButton')), findsNothing);
+  });
+
   testWidgets(
     'overseer creates a task from selected reports with report data',
     (tester) async {
       final taskApiService = MockTaskApiService();
 
       await tester.pumpWidget(
-        MaterialApp(
-          onGenerateRoute: (settings) {
-            if (settings.name == AppRoutes.overseerReportDetail) {
-              return MaterialPageRoute<void>(
-                settings: settings,
-                builder: (_) => Scaffold(
-                  appBar: AppBar(title: const Text('Report Details')),
-                  body: Text('Report detail ${settings.arguments}'),
-                ),
-              );
-            }
-
-            return MaterialPageRoute<void>(
-              settings: const RouteSettings(
-                arguments: OverseerTaskFormArgs(
-                  reportIds: ['11111111-1111-1111-1111-000000000004'],
-                ),
-              ),
-              builder: (_) => OverseerCreateTaskScreen(
-                taskApiService: taskApiService,
-                reportApiService: MockReportApiService(),
-                userApiService: MockUserApiService(),
-              ),
-            );
-          },
+        overseerCreateTaskHarness(
+          reportIds: const ['11111111-1111-1111-1111-000000000004'],
+          taskApiService: taskApiService,
         ),
       );
-      await tester.pump();
-      await tester.pump(const Duration(milliseconds: 500));
-      await tester.pump();
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('Open create task'));
+      await tester.pumpAndSettle();
 
       expect(find.text('Create Task'), findsOneWidget);
-      expect(find.text('Linked reports'), findsOneWidget);
-      expect(find.text('Broken streetlight near Nguyen Hue'), findsOneWidget);
       expect(find.text('Report IDs'), findsNothing);
-      expect(find.text('Assigned staff'), findsNothing);
+      expect(find.text('Assigned staff'), findsOneWidget);
 
       await tester.enterText(find.byType(EditableText).at(0), 'Repair light');
       await tester.enterText(
         find.byType(EditableText).at(1),
         'Replace the broken lamp.',
       );
+      await tester.ensureVisible(find.text('Assigned staff'));
+      await tester.tap(find.byIcon(Icons.person_outline).first);
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('Test Staff (staff@test.com)').last);
+      await tester.pumpAndSettle();
       await tester.ensureVisible(
         find.byKey(const Key('overseerTaskSubmitButton')),
       );
@@ -563,7 +566,11 @@ void main() {
       final createdTask = tasks!.first;
       expect(createdTask.title, 'Repair light');
       expect(createdTask.description, 'Replace the broken lamp.');
-      expect(createdTask.status, TaskStatus.newTask);
+      expect(createdTask.status, TaskStatus.assigned);
+      expect(
+        createdTask.assignedStaff?.id,
+        '44444444-4444-4444-4444-444444444444',
+      );
       expect(createdTask.category, ReportCategory.streetLight);
       expect(createdTask.latitude, 10.7769);
       expect(createdTask.longitude, 106.7009);
@@ -574,6 +581,83 @@ void main() {
       );
     },
   );
+}
+
+Widget overseerCreateTaskHarness({
+  required List<String> reportIds,
+  TaskApiService? taskApiService,
+  ReportApiService? reportApiService,
+  UserApiService? userApiService,
+}) {
+  final tasks = taskApiService ?? MockTaskApiService();
+  final reports = reportApiService ?? MockReportApiService();
+  final users = userApiService ?? MockUserApiService();
+
+  return MaterialApp(
+    onGenerateRoute: (settings) {
+      if (settings.name == AppRoutes.overseerCreateTask) {
+        return MaterialPageRoute<void>(
+          settings: settings,
+          builder: (_) => OverseerCreateTaskScreen(
+            taskApiService: tasks,
+            reportApiService: reports,
+            userApiService: users,
+          ),
+        );
+      }
+
+      if (settings.name == AppRoutes.overseerReportDetail) {
+        return MaterialPageRoute<void>(
+          settings: settings,
+          builder: (_) => Scaffold(
+            appBar: AppBar(title: const Text('Report Details')),
+            body: Text('Report detail ${settings.arguments}'),
+          ),
+        );
+      }
+
+      return MaterialPageRoute<void>(
+        builder: (context) => Scaffold(
+          body: Center(
+            child: FilledButton(
+              onPressed: () => Navigator.of(context).pushNamed(
+                AppRoutes.overseerCreateTask,
+                arguments: OverseerTaskFormArgs(reportIds: reportIds),
+              ),
+              child: const Text('Open create task'),
+            ),
+          ),
+        ),
+      );
+    },
+  );
+}
+
+class FakeRoadRouteService implements RoadRouteService {
+  @override
+  Future<RoadRouteResult> fetchRoute(List<LatLng> waypoints) async {
+    return RoadRouteResult(
+      points: waypoints.length < 2
+          ? waypoints
+          : <LatLng>[
+              waypoints.first,
+              LatLng(
+                (waypoints.first.latitude + waypoints.last.latitude) / 2,
+                (waypoints.first.longitude + waypoints.last.longitude) / 2,
+              ),
+              waypoints.last,
+            ],
+      distanceMeters: 1800,
+      durationSeconds: 420,
+      steps: const <RoadRouteStep>[
+        RoadRouteStep(instruction: 'Head toward Le Loi', distanceMeters: 500),
+        RoadRouteStep(
+          instruction: 'Turn right onto the crossing',
+          distanceMeters: 1300,
+        ),
+      ],
+    );
+  }
 }
 
 class FakeAuthApiService implements AuthApiService {

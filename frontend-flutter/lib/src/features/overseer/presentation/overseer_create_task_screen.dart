@@ -86,6 +86,7 @@ class _OverseerCreateTaskScreenState extends State<OverseerCreateTaskScreen> {
       _loadStaff();
       _loadTask(_args!.taskId!);
     } else if (_isReportLinkedCreate) {
+      _loadStaff();
       _loadLinkedReports(_args!.reportIds);
     } else {
       _loadStaff();
@@ -151,12 +152,20 @@ class _OverseerCreateTaskScreenState extends State<OverseerCreateTaskScreen> {
       final reports = await Future.wait(
         reportIds.map(widget.reportApiService.fetchReport),
       );
+      final unavailableReports = reports
+          .where((report) => report.status != ReportStatus.submitted)
+          .toList(growable: false);
       if (!mounted) {
         return;
       }
       setState(() {
         _linkedReports = reports;
-        _applyReportDefaults(reports);
+        if (unavailableReports.isNotEmpty) {
+          _linkedReportsError = _unavailableReportsMessage(unavailableReports);
+        } else {
+          _linkedReportsError = null;
+          _applyReportDefaults(reports);
+        }
       });
     } on ReportApiException catch (error) {
       if (mounted) {
@@ -272,7 +281,7 @@ class _OverseerCreateTaskScreenState extends State<OverseerCreateTaskScreen> {
       longitude: anchor.longitude,
       addressText: _nullableAddress(anchor.addressText),
       priorityScore: _priorityScoreForReports(_linkedReports),
-      assignedStaffId: null,
+      assignedStaffId: _selectedStaffId,
       beforePhotoUrl: _firstReportPhotoUrl(_linkedReports),
       afterPhotoUrl: null,
       staffNote: null,
@@ -280,6 +289,13 @@ class _OverseerCreateTaskScreenState extends State<OverseerCreateTaskScreen> {
           .map((report) => report.id)
           .toList(growable: false),
     );
+  }
+
+  String _unavailableReportsMessage(List<Report> reports) {
+    final labels = reports
+        .map((report) => '${report.title} (${report.status.label})')
+        .join(', ');
+    return 'Only submitted reports can be used to create a task. Already handled: $labels';
   }
 
   String? _nullableText(TextEditingController controller) {
@@ -381,7 +397,41 @@ class _OverseerCreateTaskScreenState extends State<OverseerCreateTaskScreen> {
           onRetry: _retryLoadLinkedReports,
         );
       }
-      return _buildLinkedReportTaskForm();
+      return FutureBuilder<List<AppUser>>(
+        future: _staffFuture,
+        builder: (context, snapshot) {
+          if (snapshot.connectionState != ConnectionState.done) {
+            return const Center(child: CircularProgressIndicator());
+          }
+
+          if (snapshot.hasError) {
+            return _ErrorState(
+              message: 'Unable to load staff users.',
+              onRetry: _retryLoadStaff,
+            );
+          }
+
+          final staffUsers = snapshot.data ?? const <AppUser>[];
+          if (staffUsers.isEmpty) {
+            return const Center(
+              child: Padding(
+                padding: EdgeInsets.all(24),
+                child: Text('No active staff users found.'),
+              ),
+            );
+          }
+
+          final selectedStaffId =
+              staffUsers.any((staff) => staff.id == _selectedStaffId)
+              ? _selectedStaffId
+              : null;
+
+          return _buildLinkedReportTaskForm(
+            staffUsers: staffUsers,
+            selectedStaffId: selectedStaffId,
+          );
+        },
+      );
     }
 
     return FutureBuilder<List<AppUser>>(
@@ -421,13 +471,20 @@ class _OverseerCreateTaskScreenState extends State<OverseerCreateTaskScreen> {
     );
   }
 
-  Widget _buildLinkedReportTaskForm() {
+  Widget _buildLinkedReportTaskForm({
+    required List<AppUser> staffUsers,
+    required String? selectedStaffId,
+  }) {
     return Form(
       key: _formKey,
       child: LayoutBuilder(
         builder: (context, constraints) {
           final isWide = constraints.maxWidth >= 900;
-          final taskBrief = _buildLinkedTaskBrief(context);
+          final taskBrief = _buildLinkedTaskBrief(
+            context,
+            staffUsers: staffUsers,
+            selectedStaffId: selectedStaffId,
+          );
           final linkedReports = _buildLinkedReportsList(context);
 
           return ListView(
@@ -454,7 +511,11 @@ class _OverseerCreateTaskScreenState extends State<OverseerCreateTaskScreen> {
     );
   }
 
-  Widget _buildLinkedTaskBrief(BuildContext context) {
+  Widget _buildLinkedTaskBrief(
+    BuildContext context, {
+    required List<AppUser> staffUsers,
+    required String? selectedStaffId,
+  }) {
     final theme = Theme.of(context);
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -484,6 +545,11 @@ class _OverseerCreateTaskScreenState extends State<OverseerCreateTaskScreen> {
           minLines: 5,
           maxLines: 8,
           validator: _required,
+        ),
+        const SizedBox(height: 12),
+        _buildStaffPicker(
+          staffUsers: staffUsers,
+          selectedStaffId: selectedStaffId,
         ),
         const SizedBox(height: 16),
         _buildDerivedTaskDetails(context),
@@ -568,6 +634,41 @@ class _OverseerCreateTaskScreenState extends State<OverseerCreateTaskScreen> {
           const SizedBox(height: 10),
         ],
       ],
+    );
+  }
+
+  Widget _buildStaffPicker({
+    required List<AppUser> staffUsers,
+    required String? selectedStaffId,
+  }) {
+    return DropdownButtonFormField<String>(
+      value: selectedStaffId,
+      decoration: const InputDecoration(
+        labelText: 'Assigned staff',
+        prefixIcon: Icon(Icons.person_outline),
+      ),
+      items: staffUsers
+          .map(
+            (staff) => DropdownMenuItem<String>(
+              value: staff.id,
+              child: Text(
+                '${staff.fullName} (${staff.email})',
+                overflow: TextOverflow.ellipsis,
+              ),
+            ),
+          )
+          .toList(growable: false),
+      onChanged: _isSaving
+          ? null
+          : (staffId) {
+              setState(() => _selectedStaffId = staffId);
+            },
+      validator: (value) {
+        if ((value ?? '').isEmpty) {
+          return 'Required';
+        }
+        return null;
+      },
     );
   }
 
@@ -687,34 +788,9 @@ class _OverseerCreateTaskScreenState extends State<OverseerCreateTaskScreen> {
             validator: _nonNegativeInt,
           ),
           const SizedBox(height: 12),
-          DropdownButtonFormField<String>(
-            value: selectedStaffId,
-            decoration: const InputDecoration(
-              labelText: 'Assigned staff',
-              prefixIcon: Icon(Icons.person_outline),
-            ),
-            items: staffUsers
-                .map(
-                  (staff) => DropdownMenuItem<String>(
-                    value: staff.id,
-                    child: Text(
-                      '${staff.fullName} (${staff.email})',
-                      overflow: TextOverflow.ellipsis,
-                    ),
-                  ),
-                )
-                .toList(growable: false),
-            onChanged: _isSaving
-                ? null
-                : (staffId) {
-                    setState(() => _selectedStaffId = staffId);
-                  },
-            validator: (value) {
-              if ((value ?? '').isEmpty) {
-                return 'Required';
-              }
-              return null;
-            },
+          _buildStaffPicker(
+            staffUsers: staffUsers,
+            selectedStaffId: selectedStaffId,
           ),
           const SizedBox(height: 12),
           TextFormField(
@@ -1048,6 +1124,7 @@ Color _categoryColor(ReportCategory category) {
 Color _statusColor(ReportStatus status) {
   return switch (status) {
     ReportStatus.submitted => const Color(0xFFE91E63),
+    ReportStatus.inProgress => const Color(0xFFB45309),
     ReportStatus.fixed => const Color(0xFF0F766E),
     ReportStatus.cancelled => const Color(0xFF78909C),
   };

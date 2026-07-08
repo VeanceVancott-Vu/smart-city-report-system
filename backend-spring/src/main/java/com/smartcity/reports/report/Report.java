@@ -153,17 +153,31 @@ public class Report {
         status = ReportStatus.CANCELLED;
     }
 
+    public void markInProgress() {
+        if (status == ReportStatus.SUBMITTED) {
+            status = ReportStatus.IN_PROGRESS;
+        }
+    }
+
+    public void reopen() {
+        if (status == ReportStatus.IN_PROGRESS) {
+            status = ReportStatus.SUBMITTED;
+        }
+    }
+
     public void fix() {
         status = ReportStatus.FIXED;
     }
 
     public void linkToTask(UUID taskId) {
         linkedTaskId = taskId;
+        markInProgress();
     }
 
     public void unlinkFromTask(UUID taskId) {
         if (linkedTaskId != null && linkedTaskId.equals(taskId)) {
             linkedTaskId = null;
+            reopen();
         }
     }
 

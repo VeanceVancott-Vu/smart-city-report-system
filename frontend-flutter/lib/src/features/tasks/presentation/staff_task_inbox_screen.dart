@@ -379,6 +379,7 @@ class _TaskSummary extends StatelessWidget {
       tasks,
       StaffTaskStatus.awaitingReview,
     );
+    final approved = _countByStatus(tasks, StaffTaskStatus.approved);
     final topPriority = tasks.fold<int>(
       0,
       (highest, task) =>
@@ -406,6 +407,12 @@ class _TaskSummary extends StatelessWidget {
           label: 'Review',
           value: awaitingReview.toString(),
           color: _statusColor(StaffTaskStatus.awaitingReview),
+        ),
+        _SummaryMetric(
+          icon: Icons.verified_outlined,
+          label: 'Approved',
+          value: approved.toString(),
+          color: _statusColor(StaffTaskStatus.approved),
         ),
         _SummaryMetric(
           icon: Icons.trending_up,
@@ -1420,6 +1427,7 @@ String _reportLocationLabel(Report report) {
 Color _reportStatusColor(ReportStatus status) {
   return switch (status) {
     ReportStatus.submitted => const Color(0xFF2563EB),
+    ReportStatus.inProgress => const Color(0xFFB45309),
     ReportStatus.fixed => const Color(0xFF0F766E),
     ReportStatus.cancelled => const Color(0xFF64748B),
   };
@@ -1453,6 +1461,7 @@ IconData _statusIcon(StaffTaskStatus status) {
     StaffTaskStatus.assigned => Icons.radio_button_checked,
     StaffTaskStatus.inProgress => Icons.play_circle_outline,
     StaffTaskStatus.awaitingReview => Icons.rate_review_outlined,
+    StaffTaskStatus.approved => Icons.verified_outlined,
   };
 }
 
@@ -1462,5 +1471,6 @@ Color _statusColor(StaffTaskStatus status) {
     StaffTaskStatus.assigned => const Color(0xFF2563EB),
     StaffTaskStatus.inProgress => const Color(0xFF0F766E),
     StaffTaskStatus.awaitingReview => const Color(0xFFB45309),
+    StaffTaskStatus.approved => const Color(0xFF15803D),
   };
 }

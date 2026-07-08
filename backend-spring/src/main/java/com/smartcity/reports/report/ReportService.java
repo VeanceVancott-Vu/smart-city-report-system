@@ -199,11 +199,8 @@ public class ReportService {
     }
 
     private void ensureCanReceiveUpvote(Report report) {
-        if (report.getStatus() == ReportStatus.CANCELLED) {
-            throw new IllegalArgumentException("Cancelled reports cannot be upvoted");
-        }
-        if (report.getStatus() == ReportStatus.FIXED) {
-            throw new IllegalArgumentException("Fixed reports cannot be upvoted");
+        if (report.getStatus() != ReportStatus.SUBMITTED) {
+            throw new IllegalArgumentException("Only submitted reports can be upvoted");
         }
     }
 
@@ -246,7 +243,7 @@ public class ReportService {
         }
         if (currentUser.getRole() == UserRole.CITIZEN
                 && isOwner(report, currentUser)
-                && report.getStatus() != ReportStatus.FIXED) {
+                && report.getStatus() == ReportStatus.SUBMITTED) {
             return;
         }
         throw new AccessDeniedException("Report cannot be cancelled by this user");

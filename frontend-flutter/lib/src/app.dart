@@ -21,6 +21,7 @@ import 'features/tasks/presentation/staff_complete_task_screen.dart';
 import 'features/tasks/presentation/staff_task_detail_screen.dart';
 import 'features/tasks/presentation/staff_report_detail_screen.dart';
 import 'features/tasks/presentation/staff_task_inbox_screen.dart';
+import 'features/tasks/presentation/staff_task_route_map_screen.dart';
 import 'features/users/data/user_api_service.dart';
 import 'features/users/presentation/overseer_create_user_screen.dart';
 
@@ -31,15 +32,18 @@ class SmartCityReportApp extends StatelessWidget {
     ReportApiService? reportApiService,
     TaskApiService? taskApiService,
     UserApiService? userApiService,
+    RoadRouteService? roadRouteService,
   }) : authApiService = authApiService ?? BackendAuthApiService(),
        reportApiService = reportApiService ?? BackendReportApiService(),
        taskApiService = taskApiService ?? BackendTaskApiService(),
-       userApiService = userApiService ?? BackendUserApiService();
+       userApiService = userApiService ?? BackendUserApiService(),
+       roadRouteService = roadRouteService ?? OsrmRoadRouteService();
 
   final AuthApiService authApiService;
   final ReportApiService reportApiService;
   final TaskApiService taskApiService;
   final UserApiService userApiService;
+  final RoadRouteService roadRouteService;
 
   @override
   Widget build(BuildContext context) {
@@ -111,6 +115,10 @@ class SmartCityReportApp extends StatelessWidget {
           reportApiService: reportApiService,
         ),
         AppRoutes.staffTaskDetail: (_) => StaffTaskDetailScreen(
+          taskApiService: taskApiService,
+          reportApiService: reportApiService,
+        ),
+        AppRoutes.staffTaskRoute: (_) => StaffTaskRouteMapScreen(
           taskApiService: taskApiService,
           reportApiService: reportApiService,
         ),

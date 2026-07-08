@@ -350,7 +350,7 @@ class ReportServiceTest {
 
         assertThatThrownBy(() -> reportService.upvoteReport(reportId, user(UserRole.CITIZEN)))
                 .isInstanceOf(IllegalArgumentException.class)
-                .hasMessage("Cancelled reports cannot be upvoted");
+                .hasMessage("Only submitted reports can be upvoted");
     }
 
     @Test
@@ -363,7 +363,34 @@ class ReportServiceTest {
 
         assertThatThrownBy(() -> reportService.upvoteReport(reportId, user(UserRole.CITIZEN)))
                 .isInstanceOf(IllegalArgumentException.class)
-                .hasMessage("Fixed reports cannot be upvoted");
+                .hasMessage("Only submitted reports can be upvoted");
+    }
+
+    @Test
+    void upvoteReportRejectsInProgressReport() {
+        UUID reportId = UUID.randomUUID();
+        Report report = reportFor(user(UserRole.CITIZEN));
+        report.markInProgress();
+
+        when(reportRepository.findById(reportId)).thenReturn(Optional.of(report));
+
+        assertThatThrownBy(() -> reportService.upvoteReport(reportId, user(UserRole.CITIZEN)))
+                .isInstanceOf(IllegalArgumentException.class)
+                .hasMessage("Only submitted reports can be upvoted");
+    }
+
+    @Test
+    void citizenCannotCancelInProgressReport() {
+        UUID reportId = UUID.randomUUID();
+        User owner = user(UserRole.CITIZEN);
+        Report report = reportFor(owner);
+        report.markInProgress();
+
+        when(reportRepository.findById(reportId)).thenReturn(Optional.of(report));
+
+        assertThatThrownBy(() -> reportService.cancelReport(reportId, owner))
+                .isInstanceOf(AccessDeniedException.class)
+                .hasMessage("Report cannot be cancelled by this user");
     }
 
     @Test

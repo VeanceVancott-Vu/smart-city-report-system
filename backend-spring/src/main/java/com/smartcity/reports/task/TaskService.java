@@ -3,6 +3,7 @@ package com.smartcity.reports.task;
 import com.smartcity.reports.common.ResourceNotFoundException;
 import com.smartcity.reports.report.Report;
 import com.smartcity.reports.report.ReportRepository;
+import com.smartcity.reports.report.ReportStatus;
 import com.smartcity.reports.user.User;
 import com.smartcity.reports.user.UserRepository;
 import com.smartcity.reports.user.UserRole;
@@ -156,6 +157,7 @@ public class TaskService {
             throw new IllegalArgumentException("Only done or pending-review tasks can be approved");
         }
         task.approve(Instant.now(clock));
+        task.getReports().forEach(Report::fix);
         return taskMapper.toResponse(task);
     }
 
@@ -223,6 +225,9 @@ public class TaskService {
         UUID linkedTaskId = report.getLinkedTaskId();
         if (linkedTaskId != null && !linkedTaskId.equals(taskId)) {
             throw new IllegalArgumentException("Report is already linked to another task: " + report.getId());
+        }
+        if (linkedTaskId == null && report.getStatus() != ReportStatus.SUBMITTED) {
+            throw new IllegalArgumentException("Only submitted reports can be linked to a task: " + report.getId());
         }
     }
 

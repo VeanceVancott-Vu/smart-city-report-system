@@ -37,10 +37,19 @@ class _OverseerReportDetailScreenState
     await _reportFuture;
   }
 
-  Future<void> _createTask() async {
+  Future<void> _createTask(Report report) async {
+    if (report.status != ReportStatus.submitted) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Only submitted reports can be turned into tasks.'),
+        ),
+      );
+      return;
+    }
+
     final changed = await Navigator.of(context).pushNamed(
       AppRoutes.overseerCreateTask,
-      arguments: OverseerTaskFormArgs(reportIds: <String>[_reportId]),
+      arguments: OverseerTaskFormArgs(reportIds: <String>[report.id]),
     );
     if (!mounted) {
       return;
@@ -56,10 +65,17 @@ class _OverseerReportDetailScreenState
       appBar: AppBar(
         title: const Text('Report Details'),
         actions: [
-          IconButton(
-            tooltip: 'Create task',
-            onPressed: _createTask,
-            icon: const Icon(Icons.add_task_outlined),
+          FutureBuilder<Report>(
+            future: _reportFuture,
+            builder: (context, snapshot) {
+              final report = snapshot.data;
+              final canCreateTask = report?.status == ReportStatus.submitted;
+              return IconButton(
+                tooltip: 'Create task',
+                onPressed: canCreateTask ? () => _createTask(report!) : null,
+                icon: const Icon(Icons.add_task_outlined),
+              );
+            },
           ),
         ],
       ),
@@ -78,6 +94,7 @@ class _OverseerReportDetailScreenState
             }
 
             final report = snapshot.requireData;
+            final canCreateTask = report.status == ReportStatus.submitted;
             return RefreshIndicator(
               onRefresh: _refresh,
               child: ListView(
@@ -122,7 +139,7 @@ class _OverseerReportDetailScreenState
                     _Section(
                       title: 'Address',
                       child: Text(report.addressText!),
-                  ),
+                    ),
                   _Section(
                     title: 'Before photo',
                     child: UploadedPhotoView(fileUrl: report.beforePhotoUrl),
@@ -133,7 +150,7 @@ class _OverseerReportDetailScreenState
                   ),
                   const SizedBox(height: 18),
                   FilledButton.icon(
-                    onPressed: _createTask,
+                    onPressed: canCreateTask ? () => _createTask(report) : null,
                     icon: const Icon(Icons.add_task_outlined),
                     label: const Text('Create task from report'),
                   ),

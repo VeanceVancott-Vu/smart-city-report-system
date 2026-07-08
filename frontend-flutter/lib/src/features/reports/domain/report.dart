@@ -23,6 +23,7 @@ enum ReportCategory {
 
 enum ReportStatus {
   submitted('SUBMITTED', 'Submitted'),
+  inProgress('IN_PROGRESS', 'In progress'),
   fixed('FIXED', 'Fixed'),
   cancelled('CANCELLED', 'Cancelled');
 
