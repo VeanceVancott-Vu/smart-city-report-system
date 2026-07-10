@@ -3,8 +3,8 @@ package com.smartcity.reports.security;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.smartcity.reports.user.User;
-import com.smartcity.reports.user.UserRole;
+import com.smartcity.reports.user.domain.User;
+import com.smartcity.reports.user.domain.UserRole;
 import org.springframework.stereotype.Service;
 
 import javax.crypto.Mac;

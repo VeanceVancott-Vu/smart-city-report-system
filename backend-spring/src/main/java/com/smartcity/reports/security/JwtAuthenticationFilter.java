@@ -1,7 +1,7 @@
 package com.smartcity.reports.security;
 
-import com.smartcity.reports.user.User;
-import com.smartcity.reports.user.UserRepository;
+import com.smartcity.reports.user.domain.User;
+import com.smartcity.reports.user.persistence.UserRepository;
 import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;

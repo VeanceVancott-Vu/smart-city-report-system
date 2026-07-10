@@ -1,0 +1,13 @@
+package com.smartcity.reports.task.persistence;
+
+import com.smartcity.reports.task.domain.Task;
+
+import org.springframework.data.jpa.repository.JpaRepository;
+
+import java.util.List;
+import java.util.UUID;
+
+public interface TaskRepository extends JpaRepository<Task, UUID> {
+
+    List<Task> findByAssignedStaff_IdOrderByCreatedAtDesc(UUID assignedStaffId);
+}

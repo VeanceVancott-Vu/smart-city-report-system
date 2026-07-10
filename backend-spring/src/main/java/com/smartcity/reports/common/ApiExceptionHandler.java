@@ -1,6 +1,6 @@
 package com.smartcity.reports.common;
 
-import com.smartcity.reports.files.FileStorageException;
+import com.smartcity.reports.files.application.FileStorageException;
 import jakarta.validation.ConstraintViolationException;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;

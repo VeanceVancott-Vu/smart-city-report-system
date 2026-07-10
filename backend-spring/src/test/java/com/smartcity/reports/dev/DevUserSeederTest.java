@@ -1,8 +1,8 @@
 package com.smartcity.reports.dev;
 
-import com.smartcity.reports.user.User;
-import com.smartcity.reports.user.UserRepository;
-import com.smartcity.reports.user.UserRole;
+import com.smartcity.reports.user.domain.User;
+import com.smartcity.reports.user.persistence.UserRepository;
+import com.smartcity.reports.user.domain.UserRole;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.ArgumentCaptor;

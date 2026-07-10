@@ -2,7 +2,7 @@ package com.smartcity.reports.config;
 
 import com.smartcity.reports.security.JwtAuthenticationFilter;
 import com.smartcity.reports.security.JwtProperties;
-import com.smartcity.reports.user.UserRepository;
+import com.smartcity.reports.user.persistence.UserRepository;
 import jakarta.servlet.DispatcherType;
 import jakarta.servlet.http.HttpServletResponse;
 import org.springframework.boot.context.properties.EnableConfigurationProperties;

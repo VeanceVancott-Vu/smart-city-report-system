@@ -1,8 +1,8 @@
 package com.smartcity.reports.security;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.smartcity.reports.user.User;
-import com.smartcity.reports.user.UserRole;
+import com.smartcity.reports.user.domain.User;
+import com.smartcity.reports.user.domain.UserRole;
 import org.junit.jupiter.api.Test;
 
 import java.util.UUID;

@@ -1,6 +1,6 @@
 package com.smartcity.reports.security;
 
-import com.smartcity.reports.user.UserRole;
+import com.smartcity.reports.user.domain.UserRole;
 
 import java.time.Instant;
 import java.util.UUID;

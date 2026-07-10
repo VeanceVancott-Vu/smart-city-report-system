@@ -1,12 +1,12 @@
 package com.smartcity.reports.dev;
 
 import com.smartcity.reports.issue.IssueCategory;
-import com.smartcity.reports.report.Report;
-import com.smartcity.reports.report.ReportRepository;
-import com.smartcity.reports.task.Task;
-import com.smartcity.reports.task.TaskRepository;
-import com.smartcity.reports.user.User;
-import com.smartcity.reports.user.UserRepository;
+import com.smartcity.reports.report.domain.Report;
+import com.smartcity.reports.report.persistence.ReportRepository;
+import com.smartcity.reports.task.domain.Task;
+import com.smartcity.reports.task.persistence.TaskRepository;
+import com.smartcity.reports.user.domain.User;
+import com.smartcity.reports.user.persistence.UserRepository;
 import org.springframework.boot.ApplicationArguments;
 import org.springframework.boot.ApplicationRunner;
 import org.springframework.context.annotation.Profile;
