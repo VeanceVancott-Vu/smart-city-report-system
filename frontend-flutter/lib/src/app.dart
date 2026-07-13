@@ -89,8 +89,10 @@ class SmartCityReportApp extends StatelessWidget {
             OverseerCreateUserScreen(userApiService: userApiService),
         AppRoutes.citizenCreateReport: (_) =>
             CitizenCreateReportScreen(reportApiService: reportApiService),
-        AppRoutes.citizenReportDetail: (_) =>
-            CitizenReportDetailScreen(reportApiService: reportApiService),
+        AppRoutes.citizenReportDetail: (_) => CitizenReportDetailScreen(
+          reportApiService: reportApiService,
+          authApiService: authApiService,
+        ),
         AppRoutes.citizenEditReport: (_) =>
             CitizenEditReportScreen(reportApiService: reportApiService),
         AppRoutes.overseerReportDetail: (_) =>

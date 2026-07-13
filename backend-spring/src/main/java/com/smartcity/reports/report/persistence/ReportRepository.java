@@ -11,6 +11,10 @@ import java.util.UUID;
 
 public interface ReportRepository extends JpaRepository<Report, UUID>, JpaSpecificationExecutor<Report> {
 
+    boolean existsByBeforePhotoUrl(String beforePhotoUrl);
+
+    boolean existsByBeforePhotoUrlAndIdNot(String beforePhotoUrl, UUID id);
+
     @Query(value = """
             SELECT *
             FROM reports

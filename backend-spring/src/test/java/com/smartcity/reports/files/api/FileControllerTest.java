@@ -1,8 +1,8 @@
 package com.smartcity.reports.files.api;
 
-import com.smartcity.reports.files.application.FileStorageService;
-
 import com.smartcity.reports.common.ApiExceptionHandler;
+import com.smartcity.reports.files.application.FileDownload;
+import com.smartcity.reports.files.application.FileStorageService;
 import com.smartcity.reports.security.JwtAuthenticationFilter;
 import com.smartcity.reports.user.domain.User;
 import com.smartcity.reports.user.domain.UserRole;
@@ -12,6 +12,8 @@ import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMock
 import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
 import org.springframework.boot.test.mock.mockito.MockBean;
 import org.springframework.context.annotation.Import;
+import org.springframework.core.io.ByteArrayResource;
+import org.springframework.http.MediaType;
 import org.springframework.mock.web.MockMultipartFile;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
@@ -23,11 +25,13 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.nullable;
 import static org.mockito.Mockito.when;
 import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.authentication;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.multipart;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.content;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
-@WebMvcTest(FileController.class)
+@WebMvcTest({FileController.class, FileDownloadController.class})
 @AutoConfigureMockMvc(addFilters = false)
 @Import(ApiExceptionHandler.class)
 class FileControllerTest {
@@ -77,6 +81,22 @@ class FileControllerTest {
                         .with(authentication(authenticationToken(staff))))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.fileUrl").value("/uploads/task-after/after.png"));
+    }
+
+    @Test
+    void downloadReturnsStoredImage() throws Exception {
+        byte[] contentBytes = new byte[] {(byte) 0xFF, (byte) 0xD8, (byte) 0xFF};
+        when(fileStorageService.load("/uploads/report-before/before.jpg"))
+                .thenReturn(new FileDownload(
+                        new ByteArrayResource(contentBytes),
+                        MediaType.IMAGE_JPEG,
+                        contentBytes.length
+                ));
+
+        mockMvc.perform(get("/uploads/report-before/before.jpg"))
+                .andExpect(status().isOk())
+                .andExpect(content().contentType(MediaType.IMAGE_JPEG))
+                .andExpect(content().bytes(contentBytes));
     }
 
     @Test

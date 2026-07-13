@@ -1,6 +1,7 @@
 package com.smartcity.reports.task.application;
 
 import com.smartcity.reports.task.api.TaskListResponse;
+import com.smartcity.reports.files.application.FileReferenceCleanupService;
 
 import com.smartcity.reports.task.api.AssignTaskRequest;
 import com.smartcity.reports.task.api.CompleteTaskRequest;
@@ -52,6 +53,9 @@ class TaskServiceTest {
     @Mock
     private UserRepository userRepository;
 
+    @Mock
+    private FileReferenceCleanupService fileReferenceCleanupService;
+
     private final TaskMapper taskMapper = new TaskMapper();
 
     private TaskService taskService;
@@ -63,7 +67,8 @@ class TaskServiceTest {
                 reportRepository,
                 userRepository,
                 taskMapper,
-                Clock.fixed(NOW, ZoneOffset.UTC)
+                Clock.fixed(NOW, ZoneOffset.UTC),
+                fileReferenceCleanupService
         );
     }
 

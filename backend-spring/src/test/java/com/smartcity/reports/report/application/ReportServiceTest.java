@@ -1,6 +1,7 @@
 package com.smartcity.reports.report.application;
 
 import com.smartcity.reports.common.ResourceNotFoundException;
+import com.smartcity.reports.files.application.FileReferenceCleanupService;
 import com.smartcity.reports.issue.IssueCategory;
 import com.smartcity.reports.report.api.CreateReportRequest;
 import com.smartcity.reports.report.api.ReportMapPinResponse;
@@ -43,13 +44,16 @@ class ReportServiceTest {
     @Mock
     private ReportUpvoteRepository reportUpvoteRepository;
 
+    @Mock
+    private FileReferenceCleanupService fileReferenceCleanupService;
+
     private final ReportMapper reportMapper = new ReportMapper();
 
     private ReportService reportService;
 
     @BeforeEach
     void setUp() {
-        reportService = new ReportService(reportRepository, reportUpvoteRepository, reportMapper);
+        reportService = new ReportService(reportRepository, reportUpvoteRepository, reportMapper, fileReferenceCleanupService);
     }
 
     @Test
@@ -241,9 +245,28 @@ class ReportServiceTest {
     }
 
     @Test
-    void citizenCannotViewAnotherUsersReport() {
+    void citizenCanViewAnotherUsersSubmittedReport() {
+        UUID reportId = UUID.randomUUID();
+        User otherCitizen = user(UserRole.CITIZEN);
+        Report report = reportFor(otherCitizen);
+        report.setId(reportId);
+        report.setCreatedAt(Instant.parse("2026-06-08T05:00:00Z"));
+        report.setUpdatedAt(Instant.parse("2026-06-08T05:00:00Z"));
+
+        when(reportRepository.findById(reportId)).thenReturn(Optional.of(report));
+
+        ReportResponse response = reportService.getReport(reportId, user(UserRole.CITIZEN));
+
+        assertThat(response.id()).isEqualTo(reportId);
+        assertThat(response.status()).isEqualTo(ReportStatus.SUBMITTED);
+        assertThat(response.createdBy().id()).isEqualTo(otherCitizen.getId());
+    }
+
+    @Test
+    void citizenCannotViewAnotherUsersNonSubmittedReport() {
         UUID reportId = UUID.randomUUID();
         Report report = reportFor(user(UserRole.CITIZEN));
+        report.fix();
 
         when(reportRepository.findById(reportId)).thenReturn(Optional.of(report));
 

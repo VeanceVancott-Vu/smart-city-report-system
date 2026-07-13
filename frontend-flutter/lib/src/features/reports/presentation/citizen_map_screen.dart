@@ -6,11 +6,12 @@ import 'package:flutter_map/flutter_map.dart';
 import 'package:http/http.dart' as http;
 import 'package:latlong2/latlong.dart' hide Path;
 
+import '../../../core/routing/app_routes.dart';
 import '../../../core/ui/app_feedback.dart';
-import '../data/report_api_service.dart';
-import '../domain/report.dart';
 import '../../auth/data/auth_api_service.dart';
 import '../../auth/domain/current_user.dart';
+import '../data/report_api_service.dart';
+import '../domain/report.dart';
 
 class CitizenMapScreen extends StatefulWidget {
   const CitizenMapScreen({
@@ -221,6 +222,19 @@ class _CitizenMapScreenState extends State<CitizenMapScreen> {
       _showError(error.message);
     } catch (_) {
       _showError('Unable to update upvote.');
+    }
+  }
+
+  Future<void> _openDetails(ReportMapPin pin) async {
+    _searchFocusNode.unfocus();
+    final changed = await Navigator.of(
+      context,
+    ).pushNamed(AppRoutes.citizenReportDetail, arguments: pin.id);
+    if (!mounted) {
+      return;
+    }
+    if (changed == true) {
+      await refresh();
     }
   }
 
@@ -569,6 +583,7 @@ class _CitizenMapScreenState extends State<CitizenMapScreen> {
                             _selectedPin!.id,
                           ),
                           onUpvote: () => _toggleUpvote(_selectedPin!),
+                          onViewDetails: () => _openDetails(_selectedPin!),
                           onClose: () {
                             setState(() {
                               _selectedPin = null;
@@ -609,6 +624,7 @@ class _CitizenMapScreenState extends State<CitizenMapScreen> {
                       filteredPins[index].id,
                     ),
                     onUpvote: () => _toggleUpvote(filteredPins[index]),
+                    onViewDetails: () => _openDetails(filteredPins[index]),
                     showUpvote:
                         _currentUser == null ||
                         filteredPins[index].creatorId != _currentUser!.id,
@@ -842,12 +858,14 @@ class _PinTile extends StatelessWidget {
     required this.pin,
     required this.hasUpvoted,
     required this.onUpvote,
+    required this.onViewDetails,
     required this.showUpvote,
   });
 
   final ReportMapPin pin;
   final bool hasUpvoted;
   final VoidCallback onUpvote;
+  final VoidCallback onViewDetails;
   final bool showUpvote;
 
   @override
@@ -903,21 +921,34 @@ class _PinTile extends StatelessWidget {
                 ),
               ],
             ),
-            if (showUpvote) ...[
-              const SizedBox(height: 12),
-              Align(
-                alignment: Alignment.centerRight,
-                child: OutlinedButton.icon(
-                  onPressed: onUpvote,
-                  icon: Icon(
-                    hasUpvoted
-                        ? Icons.thumb_down_alt_outlined
-                        : Icons.thumb_up_alt_outlined,
+            const SizedBox(height: 12),
+            Align(
+              alignment: Alignment.centerRight,
+              child: Wrap(
+                spacing: 8,
+                runSpacing: 8,
+                alignment: WrapAlignment.end,
+                children: [
+                  OutlinedButton.icon(
+                    onPressed: onViewDetails,
+                    icon: const Icon(Icons.info_outline),
+                    label: const Text('View details'),
                   ),
-                  label: Text(hasUpvoted ? 'Remove upvote' : 'I see this too'),
-                ),
+                  if (showUpvote)
+                    OutlinedButton.icon(
+                      onPressed: onUpvote,
+                      icon: Icon(
+                        hasUpvoted
+                            ? Icons.thumb_down_alt_outlined
+                            : Icons.thumb_up_alt_outlined,
+                      ),
+                      label: Text(
+                        hasUpvoted ? 'Remove upvote' : 'I see this too',
+                      ),
+                    ),
+                ],
               ),
-            ],
+            ),
           ],
         ),
       ),
@@ -1148,6 +1179,7 @@ class _SelectedPinCard extends StatelessWidget {
     required this.pin,
     required this.hasUpvoted,
     required this.onUpvote,
+    required this.onViewDetails,
     required this.onClose,
     required this.showUpvote,
   });
@@ -1155,6 +1187,7 @@ class _SelectedPinCard extends StatelessWidget {
   final ReportMapPin pin;
   final bool hasUpvoted;
   final VoidCallback onUpvote;
+  final VoidCallback onViewDetails;
   final VoidCallback onClose;
   final bool showUpvote;
 
@@ -1243,29 +1276,49 @@ class _SelectedPinCard extends StatelessWidget {
                 ),
               ],
             ),
-            if (showUpvote) ...[
-              const SizedBox(height: 16),
-              Align(
-                alignment: Alignment.centerRight,
-                child: FilledButton.icon(
-                  onPressed: onUpvote,
-                  style: FilledButton.styleFrom(
-                    backgroundColor: color,
-                    foregroundColor: Colors.white,
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(8),
+            const SizedBox(height: 16),
+            Align(
+              alignment: Alignment.centerRight,
+              child: Wrap(
+                spacing: 8,
+                runSpacing: 8,
+                alignment: WrapAlignment.end,
+                children: [
+                  OutlinedButton.icon(
+                    onPressed: onViewDetails,
+                    icon: const Icon(Icons.info_outline, size: 16),
+                    label: const Text('View details'),
+                    style: OutlinedButton.styleFrom(
+                      foregroundColor: color,
+                      side: BorderSide(color: color.withValues(alpha: 0.55)),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(8),
+                      ),
                     ),
                   ),
-                  icon: Icon(
-                    hasUpvoted
-                        ? Icons.thumb_down_alt_outlined
-                        : Icons.thumb_up_alt_outlined,
-                    size: 16,
-                  ),
-                  label: Text(hasUpvoted ? 'Remove upvote' : 'I see this too'),
-                ),
+                  if (showUpvote)
+                    FilledButton.icon(
+                      onPressed: onUpvote,
+                      style: FilledButton.styleFrom(
+                        backgroundColor: color,
+                        foregroundColor: Colors.white,
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(8),
+                        ),
+                      ),
+                      icon: Icon(
+                        hasUpvoted
+                            ? Icons.thumb_down_alt_outlined
+                            : Icons.thumb_up_alt_outlined,
+                        size: 16,
+                      ),
+                      label: Text(
+                        hasUpvoted ? 'Remove upvote' : 'I see this too',
+                      ),
+                    ),
+                ],
               ),
-            ],
+            ),
           ],
         ),
       ),

@@ -1,5 +1,7 @@
 package com.smartcity.reports.report.application;
 
+import com.smartcity.reports.files.application.FileReferenceCleanupService;
+
 import com.smartcity.reports.common.ResourceNotFoundException;
 import com.smartcity.reports.issue.IssueCategory;
 import com.smartcity.reports.report.api.CreateReportRequest;
@@ -32,15 +34,18 @@ public class ReportService {
     private final ReportRepository reportRepository;
     private final ReportUpvoteRepository reportUpvoteRepository;
     private final ReportMapper reportMapper;
+    private final FileReferenceCleanupService fileReferenceCleanupService;
 
     public ReportService(
             ReportRepository reportRepository,
             ReportUpvoteRepository reportUpvoteRepository,
-            ReportMapper reportMapper
+            ReportMapper reportMapper,
+            FileReferenceCleanupService fileReferenceCleanupService
     ) {
         this.reportRepository = reportRepository;
         this.reportUpvoteRepository = reportUpvoteRepository;
         this.reportMapper = reportMapper;
+        this.fileReferenceCleanupService = fileReferenceCleanupService;
     }
 
     @Transactional
@@ -95,6 +100,7 @@ public class ReportService {
         requireAuthenticated(currentUser);
         Report report = getReportEntity(id);
         ensureCanEdit(report, currentUser);
+        String previousBeforePhotoUrl = report.getBeforePhotoUrl();
         ensureBeforePhotoCanBeReplaced(report, request.beforePhotoUrl());
 
         report.updateDetails(
@@ -106,6 +112,10 @@ public class ReportService {
                 request.addressText(),
                 request.beforePhotoUrl()
         );
+        if (!Objects.equals(previousBeforePhotoUrl, request.beforePhotoUrl())) {
+            reportRepository.flush();
+            fileReferenceCleanupService.deleteIfUnused(previousBeforePhotoUrl, report.getId(), null);
+        }
         return reportMapper.toResponse(report);
     }
 
@@ -114,7 +124,10 @@ public class ReportService {
         requireAuthenticated(currentUser);
         Report report = getReportEntity(id);
         ensureCanCancel(report, currentUser);
+        String beforePhotoUrl = report.getBeforePhotoUrl();
         reportRepository.delete(report);
+        reportRepository.flush();
+        fileReferenceCleanupService.deleteIfUnused(beforePhotoUrl, report.getId(), null);
         return reportMapper.toResponse(report);
     }
 
@@ -223,7 +236,9 @@ public class ReportService {
     private boolean canView(Report report, User currentUser) {
         return currentUser.getRole() == UserRole.OVERSEER
                 || currentUser.getRole() == UserRole.STAFF
-                || isOwner(report, currentUser);
+                || isOwner(report, currentUser)
+                || (currentUser.getRole() == UserRole.CITIZEN
+                        && report.getStatus() == ReportStatus.SUBMITTED);
     }
 
     private void ensureCanEdit(Report report, User currentUser) {

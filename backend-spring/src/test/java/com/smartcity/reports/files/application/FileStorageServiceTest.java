@@ -2,25 +2,34 @@ package com.smartcity.reports.files.application;
 
 import com.smartcity.reports.files.api.FileUploadResponse;
 import com.smartcity.reports.files.config.FileStorageProperties;
+import com.smartcity.reports.files.persistence.FileMetadataRepository;
 
 import com.smartcity.reports.user.domain.User;
 import com.smartcity.reports.user.domain.UserRole;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.Mock;
+import org.mockito.junit.jupiter.MockitoExtension;
 import org.junit.jupiter.api.io.TempDir;
 import org.springframework.mock.web.MockMultipartFile;
 import org.springframework.security.access.AccessDeniedException;
 import org.springframework.util.unit.DataSize;
 
 import java.nio.file.Files;
+import java.util.Optional;
 import java.nio.file.Path;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
+@ExtendWith(MockitoExtension.class)
 class FileStorageServiceTest {
 
     @TempDir
     private Path uploadDir;
+
+    @Mock
+    private FileMetadataRepository fileMetadataRepository;
 
     @Test
     void citizenCanUploadReportBeforePhoto() {
@@ -105,7 +114,7 @@ class FileStorageServiceTest {
     }
 
     private FileStorageService service(DataSize maxUploadSize) {
-        return new FileStorageService(new FileStorageProperties(uploadDir.toString(), maxUploadSize));
+        return new FileStorageService(new FileStorageProperties(uploadDir.toString(), maxUploadSize), fileMetadataRepository);
     }
 
     private User user(UserRole role) {

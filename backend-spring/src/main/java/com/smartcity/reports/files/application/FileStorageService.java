@@ -1,19 +1,23 @@
 package com.smartcity.reports.files.application;
 
+import com.smartcity.reports.common.ResourceNotFoundException;
 import com.smartcity.reports.files.api.FileUploadResponse;
 import com.smartcity.reports.files.config.FileStorageProperties;
-
+import com.smartcity.reports.files.domain.FileMetadata;
+import com.smartcity.reports.files.persistence.FileMetadataRepository;
 import com.smartcity.reports.user.domain.User;
 import com.smartcity.reports.user.domain.UserRole;
+import org.springframework.core.io.FileSystemResource;
+import org.springframework.core.io.Resource;
 import org.springframework.http.MediaType;
 import org.springframework.security.access.AccessDeniedException;
 import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
 
 import java.io.IOException;
+import java.io.InputStream;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.nio.file.StandardOpenOption;
 import java.util.Arrays;
 import java.util.Locale;
 import java.util.Set;
@@ -24,26 +28,65 @@ public class FileStorageService {
 
     private static final String REPORT_BEFORE_DIR = "report-before";
     private static final String TASK_AFTER_DIR = "task-after";
+    private static final Set<String> ALLOWED_DIRECTORIES = Set.of(REPORT_BEFORE_DIR, TASK_AFTER_DIR);
 
     private final Path uploadRoot;
     private final long maxUploadBytes;
+    private final FileMetadataRepository fileMetadataRepository;
 
-    public FileStorageService(FileStorageProperties properties) {
+    public FileStorageService(
+            FileStorageProperties properties,
+            FileMetadataRepository fileMetadataRepository
+    ) {
         this.uploadRoot = Path.of(properties.uploadDir()).toAbsolutePath().normalize();
         this.maxUploadBytes = properties.maxUploadSize().toBytes();
+        this.fileMetadataRepository = fileMetadataRepository;
     }
 
     public FileUploadResponse uploadReportBefore(MultipartFile file, User currentUser) {
         requireRole(currentUser, UserRole.CITIZEN, "Only citizens can upload report before photos");
-        return store(file, REPORT_BEFORE_DIR);
+        return store(file, REPORT_BEFORE_DIR, currentUser);
     }
 
     public FileUploadResponse uploadTaskAfter(MultipartFile file, User currentUser) {
         requireRole(currentUser, UserRole.STAFF, "Only staff can upload task after photos");
-        return store(file, TASK_AFTER_DIR);
+        return store(file, TASK_AFTER_DIR, currentUser);
     }
 
-    private FileUploadResponse store(MultipartFile file, String directoryName) {
+    public FileDownload load(String fileUrl) {
+        String storageKey = storageKeyOf(fileUrl);
+        Path targetFile = resolveStoragePath(storageKey);
+        if (!Files.isRegularFile(targetFile)) {
+            throw new ResourceNotFoundException("File not found");
+        }
+
+        String contentType = fileMetadataRepository.findByStorageKey(storageKey)
+                .map(FileMetadata::getContentType)
+                .orElseGet(() -> contentTypeFor(storageKey));
+        try {
+            Resource resource = new FileSystemResource(targetFile);
+            return new FileDownload(resource, MediaType.parseMediaType(contentType), Files.size(targetFile));
+        } catch (IOException | IllegalArgumentException exception) {
+            throw new FileStorageException("Unable to read stored file", exception);
+        }
+    }
+
+    public void delete(String fileUrl) {
+        String storageKey = storageKeyOf(fileUrl);
+        Path targetFile = resolveStoragePath(storageKey);
+        try {
+            Files.deleteIfExists(targetFile);
+            fileMetadataRepository.deleteByStorageKey(storageKey);
+        } catch (IOException exception) {
+            throw new FileStorageException("Unable to delete stored file", exception);
+        }
+    }
+
+    private FileUploadResponse store(
+            MultipartFile file,
+            String directoryName,
+            User currentUser
+    ) {
         if (file == null || file.isEmpty()) {
             throw new IllegalArgumentException("File is required");
         }
@@ -60,8 +103,7 @@ public class FileStorageService {
             throw new IllegalArgumentException("Only jpg, jpeg, png, and webp image files are allowed");
         }
 
-        byte[] content = readBytes(file);
-        ImageFileType detectedType = ImageFileType.detect(content);
+        ImageFileType detectedType = detectType(file);
         if (detectedType == null || detectedType != extensionType) {
             throw new IllegalArgumentException("Only jpg, jpeg, png, and webp image files are allowed");
         }
@@ -79,19 +121,78 @@ public class FileStorageService {
 
         try {
             Files.createDirectories(targetDir);
-            Files.write(targetFile, content, StandardOpenOption.CREATE_NEW);
-            return new FileUploadResponse("/uploads/" + directoryName + "/" + filename);
+            try (InputStream inputStream = file.getInputStream()) {
+                Files.copy(inputStream, targetFile);
+            }
+
+            String storageKey = directoryName + "/" + filename;
+            FileMetadata metadata = new FileMetadata(
+                    storageKey,
+                    originalFilenameOf(file.getOriginalFilename()),
+                    extensionType.mediaType,
+                    file.getSize(),
+                    currentUser
+            );
+            try {
+                fileMetadataRepository.save(metadata);
+            } catch (RuntimeException exception) {
+                Files.deleteIfExists(targetFile);
+                throw exception;
+            }
+            return new FileUploadResponse("/uploads/" + storageKey);
         } catch (IOException exception) {
             throw new FileStorageException("Unable to store uploaded file", exception);
         }
     }
 
-    private byte[] readBytes(MultipartFile file) {
-        try {
-            return file.getBytes();
+    private ImageFileType detectType(MultipartFile file) {
+        try (InputStream inputStream = file.getInputStream()) {
+            return ImageFileType.detect(inputStream.readNBytes(12));
         } catch (IOException exception) {
             throw new FileStorageException("Unable to read uploaded file", exception);
         }
+    }
+
+    private Path resolveStoragePath(String storageKey) {
+        Path targetFile = uploadRoot.resolve(storageKey).normalize();
+        if (!targetFile.startsWith(uploadRoot)) {
+            throw new ResourceNotFoundException("File not found");
+        }
+        return targetFile;
+    }
+
+    private String storageKeyOf(String fileUrl) {
+        if (fileUrl == null || !fileUrl.startsWith("/uploads/")) {
+            throw new ResourceNotFoundException("File not found");
+        }
+
+        String storageKey = fileUrl.substring("/uploads/".length());
+        if (storageKey.contains("\\")) {
+            throw new ResourceNotFoundException("File not found");
+        }
+
+        Path relativePath = Path.of(storageKey).normalize();
+        String normalizedKey = relativePath.toString().replace('\\', '/');
+        if (relativePath.getNameCount() != 2
+                || !ALLOWED_DIRECTORIES.contains(relativePath.getName(0).toString())
+                || relativePath.getName(1).toString().isBlank()
+                || !normalizedKey.equals(storageKey)) {
+            throw new ResourceNotFoundException("File not found");
+        }
+        return storageKey;
+    }
+
+    private String contentTypeFor(String storageKey) {
+        ImageFileType type = ImageFileType.fromExtension(extensionOf(storageKey));
+        return type == null ? MediaType.APPLICATION_OCTET_STREAM_VALUE : type.mediaType;
+    }
+
+    private String originalFilenameOf(String filename) {
+        if (filename == null || filename.isBlank()) {
+            return "uploaded-image";
+        }
+        String normalized = filename.replace('\\', '/');
+        return normalized.substring(normalized.lastIndexOf('/') + 1);
     }
 
     private void requireRole(User currentUser, UserRole role, String message) {
@@ -115,16 +216,18 @@ public class FileStorageService {
     }
 
     private enum ImageFileType {
-        JPEG(Set.of("jpg", "jpeg"), Set.of(MediaType.IMAGE_JPEG_VALUE)),
-        PNG(Set.of("png"), Set.of(MediaType.IMAGE_PNG_VALUE)),
-        WEBP(Set.of("webp"), Set.of("image/webp"));
+        JPEG(Set.of("jpg", "jpeg"), Set.of(MediaType.IMAGE_JPEG_VALUE), MediaType.IMAGE_JPEG_VALUE),
+        PNG(Set.of("png"), Set.of(MediaType.IMAGE_PNG_VALUE), MediaType.IMAGE_PNG_VALUE),
+        WEBP(Set.of("webp"), Set.of("image/webp"), "image/webp");
 
         private final Set<String> extensions;
         private final Set<String> contentTypes;
+        private final String mediaType;
 
-        ImageFileType(Set<String> extensions, Set<String> contentTypes) {
+        ImageFileType(Set<String> extensions, Set<String> contentTypes, String mediaType) {
             this.extensions = extensions;
             this.contentTypes = contentTypes;
+            this.mediaType = mediaType;
         }
 
         static ImageFileType fromExtension(String extension) {

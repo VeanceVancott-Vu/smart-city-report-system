@@ -1,8 +1,9 @@
 import 'package:flutter/material.dart';
 
 import '../config/api_config.dart';
+import '../../features/auth/data/token_storage.dart';
 
-class UploadedPhotoView extends StatelessWidget {
+class UploadedPhotoView extends StatefulWidget {
   const UploadedPhotoView({
     super.key,
     required this.fileUrl,
@@ -13,10 +14,23 @@ class UploadedPhotoView extends StatelessWidget {
   final String emptyLabel;
 
   @override
+  State<UploadedPhotoView> createState() => _UploadedPhotoViewState();
+}
+
+class _UploadedPhotoViewState extends State<UploadedPhotoView> {
+  late final Future<String?> _tokenFuture;
+
+  @override
+  void initState() {
+    super.initState();
+    _tokenFuture = const SecureTokenStorage().readToken();
+  }
+
+  @override
   Widget build(BuildContext context) {
-    final rawUrl = fileUrl?.trim() ?? '';
+    final rawUrl = widget.fileUrl?.trim() ?? '';
     if (rawUrl.isEmpty) {
-      return Text(emptyLabel);
+      return Text(widget.emptyLabel);
     }
 
     final imageUrl = resolveUploadedPhotoUrl(rawUrl);
@@ -24,17 +38,36 @@ class UploadedPhotoView extends StatelessWidget {
       return Text(rawUrl);
     }
 
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        _ImagePreview(imageUrl: imageUrl),
-        const SizedBox(height: 8),
-        Text(
-          rawUrl,
-          style: TextStyle(color: Theme.of(context).colorScheme.primary),
-          overflow: TextOverflow.ellipsis,
-        ),
-      ],
+    final requiresAuthentication = rawUrl.startsWith('/uploads/');
+    return FutureBuilder<String?>(
+      future: _tokenFuture,
+      builder: (context, snapshot) {
+        if (snapshot.connectionState == ConnectionState.waiting) {
+          return const AspectRatio(
+            aspectRatio: 16 / 9,
+            child: Center(child: CircularProgressIndicator()),
+          );
+        }
+
+        final token = snapshot.data;
+        final headers =
+            requiresAuthentication && token != null && token.isNotEmpty
+            ? <String, String>{'Authorization': 'Bearer $token'}
+            : null;
+
+        return Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            _ImagePreview(imageUrl: imageUrl, headers: headers),
+            const SizedBox(height: 8),
+            Text(
+              rawUrl,
+              style: TextStyle(color: Theme.of(context).colorScheme.primary),
+              overflow: TextOverflow.ellipsis,
+            ),
+          ],
+        );
+      },
     );
   }
 }
@@ -66,9 +99,10 @@ String? resolveUploadedPhotoUrl(String? fileUrl, {String? baseUrl}) {
 }
 
 class _ImagePreview extends StatelessWidget {
-  const _ImagePreview({required this.imageUrl});
+  const _ImagePreview({required this.imageUrl, required this.headers});
 
   final String imageUrl;
+  final Map<String, String>? headers;
 
   @override
   Widget build(BuildContext context) {
@@ -89,6 +123,7 @@ class _ImagePreview extends StatelessWidget {
               aspectRatio: 16 / 9,
               child: Image.network(
                 imageUrl,
+                headers: headers,
                 fit: BoxFit.cover,
                 loadingBuilder: (context, child, loadingProgress) {
                   if (loadingProgress == null) {
@@ -123,6 +158,7 @@ class _ImagePreview extends StatelessWidget {
                 maxScale: 4,
                 child: Image.network(
                   imageUrl,
+                  headers: headers,
                   fit: BoxFit.contain,
                   loadingBuilder: (context, child, loadingProgress) {
                     if (loadingProgress == null) {

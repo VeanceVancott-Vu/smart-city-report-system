@@ -109,7 +109,7 @@ docker compose down -v
 - The local database is published on laptop port `55432` to avoid conflicts with PostgreSQL installations already using common ports like `5432` or `5433`.
 - Public registration creates `CITIZEN` accounts only. Overseers can create `STAFF` or `OVERSEER` accounts with `POST /api/users`.
 - Overseer task assignment loads active staff from `GET /api/users?role=STAFF`.
-- Local file upload uses `APP_FILE_UPLOAD_DIR` and `APP_FILE_MAX_UPLOAD_SIZE`. Uploaded files are served from `/uploads/**`, while reports and tasks store only the returned URL string.
+- Local file upload uses APP_FILE_UPLOAD_DIR and APP_FILE_MAX_UPLOAD_SIZE. Uploaded files are streamed to disk under the configured directory, while reports and tasks store only the returned URL string. File metadata is recorded in PostgreSQL for auditing and cleanup. Downloads from /uploads/** require JWT authentication.
 - Flutter requires `API_BASE_URL` through `--dart-define` or `--dart-define-from-file`; no API URL fallback is compiled into the app.
 - See `docs/manual-test-flow.md` for the full CRUD/auth demo flow.
 
@@ -128,7 +128,7 @@ The multipart field name is `file`. Allowed extensions and image signatures are 
 { "fileUrl": "/uploads/report-before/filename.jpg" }
 ```
 
-Use that `fileUrl` as `beforePhotoUrl` when creating/updating a report, or as `afterPhotoUrl` when completing a task. Image binary is stored on disk under `APP_FILE_UPLOAD_DIR`, not in PostgreSQL.
+Use that fileUrl as beforePhotoUrl when creating/updating a report, or as afterPhotoUrl when completing a task. Image binary is stored on disk under APP_FILE_UPLOAD_DIR, not in PostgreSQL. The metadata table stores the storage key, original filename, content type, size, uploader, and upload time. Keep the upload directory on a persistent volume or use an absolute path in deployment; relative paths resolve from the backend process working directory.
 
 ## Seed Data
 

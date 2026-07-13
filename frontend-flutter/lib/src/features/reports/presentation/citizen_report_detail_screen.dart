@@ -3,13 +3,20 @@ import 'package:flutter/material.dart';
 import '../../../core/files/uploaded_photo_view.dart';
 import '../../../core/routing/app_routes.dart';
 import '../../../core/ui/app_feedback.dart';
+import '../../auth/data/auth_api_service.dart';
+import '../../auth/domain/current_user.dart';
 import '../data/report_api_service.dart';
 import '../domain/report.dart';
 
 class CitizenReportDetailScreen extends StatefulWidget {
-  const CitizenReportDetailScreen({super.key, required this.reportApiService});
+  const CitizenReportDetailScreen({
+    super.key,
+    required this.reportApiService,
+    required this.authApiService,
+  });
 
   final ReportApiService reportApiService;
+  final AuthApiService authApiService;
 
   @override
   State<CitizenReportDetailScreen> createState() =>
@@ -18,8 +25,15 @@ class CitizenReportDetailScreen extends StatefulWidget {
 
 class _CitizenReportDetailScreenState extends State<CitizenReportDetailScreen> {
   late Future<Report> _reportFuture;
+  CurrentUser? _currentUser;
 
   String get _reportId => ModalRoute.of(context)!.settings.arguments! as String;
+
+  @override
+  void initState() {
+    super.initState();
+    _loadCurrentUser();
+  }
 
   @override
   void didChangeDependencies() {
@@ -29,6 +43,15 @@ class _CitizenReportDetailScreenState extends State<CitizenReportDetailScreen> {
 
   void _loadReport() {
     _reportFuture = widget.reportApiService.fetchReport(_reportId);
+  }
+
+  Future<void> _loadCurrentUser() async {
+    try {
+      final user = await widget.authApiService.getCurrentUser();
+      if (mounted) {
+        setState(() => _currentUser = user);
+      }
+    } catch (_) {}
   }
 
   Future<void> _refresh() async {
@@ -84,18 +107,22 @@ class _CitizenReportDetailScreenState extends State<CitizenReportDetailScreen> {
       future: _reportFuture,
       builder: (context, snapshot) {
         final report = snapshot.data;
+        final isOwner =
+            report != null &&
+            _currentUser != null &&
+            report.createdBy?.id == _currentUser!.id;
 
         return Scaffold(
           appBar: AppBar(
             title: const Text('Report Details'),
             actions: [
-              if (report != null && report.status.canCitizenEdit)
+              if (report != null && isOwner && report.status.canCitizenEdit)
                 IconButton(
                   tooltip: 'Edit',
                   onPressed: _editReport,
                   icon: const Icon(Icons.edit_outlined),
                 ),
-              if (report != null && report.status.canCitizenCancel)
+              if (report != null && isOwner && report.status.canCitizenCancel)
                 IconButton(
                   tooltip: 'Delete',
                   onPressed: _deleteReport,
