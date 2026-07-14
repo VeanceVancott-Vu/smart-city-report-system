@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_map/flutter_map.dart';
+import 'package:latlong2/latlong.dart' hide Path;
 
 import '../../../core/files/upload_file_picker.dart';
 import '../../../core/ui/app_feedback.dart';
@@ -24,9 +26,10 @@ class _CitizenCreateReportScreenState extends State<CitizenCreateReportScreen> {
   ReportCategory? _selectedCategory;
   String _reportTitle = '';
   String _reportDescription = '';
-  double? _latitude;
-  double? _longitude;
+  double? _latitude = 10.7769;
+  double? _longitude = 106.7009;
   String? _uploadedPhotoPath;
+  final MapController _stepMapController = MapController();
 
   @override
   void initState() {
@@ -421,24 +424,44 @@ class _CitizenCreateReportScreenState extends State<CitizenCreateReportScreen> {
         Container(
           height: 250,
           decoration: BoxDecoration(
-            color: const Color(0xFFE7EEFF),
             borderRadius: BorderRadius.circular(12),
             border: Border.all(color: const Color(0xFFBDC9C6)),
           ),
-          child: const Center(
-            child: Column(
-              mainAxisAlignment: MainAxisAlignment.center,
+          child: ClipRRect(
+            borderRadius: BorderRadius.circular(11),
+            child: FlutterMap(
+              mapController: _stepMapController,
+              options: MapOptions(
+                initialCenter: LatLng(_latitude ?? 10.7769, _longitude ?? 106.7009),
+                initialZoom: 14.0,
+                onTap: (tapPosition, point) {
+                  setState(() {
+                    _latitude = point.latitude;
+                    _longitude = point.longitude;
+                  });
+                },
+              ),
               children: [
-                Icon(Icons.map, size: 48, color: Color(0xFF5A6A81)),
-                SizedBox(height: 8),
-                Text(
-                  'Interactive Map Canvas Area',
-                  style: TextStyle(color: Color(0xFF425268), fontWeight: FontWeight.w500),
+                TileLayer(
+                  urlTemplate: 'https://tile.openstreetmap.org/{z}/{x}/{y}.png',
+                  userAgentPackageName: 'com.smartcity.report',
                 ),
-                Text(
-                  '(Simulated Map component boundary)',
-                  style: TextStyle(color: Color(0xFF64748B), fontSize: 12),
-                ),
+                if (_latitude != null && _longitude != null)
+                  MarkerLayer(
+                    markers: [
+                      Marker(
+                        point: LatLng(_latitude!, _longitude!),
+                        width: 40,
+                        height: 40,
+                        alignment: Alignment.center,
+                        child: const Icon(
+                          Icons.location_pin,
+                          color: Colors.red,
+                          size: 40,
+                        ),
+                      ),
+                    ],
+                  ),
               ],
             ),
           ),
@@ -452,6 +475,7 @@ class _CitizenCreateReportScreenState extends State<CitizenCreateReportScreen> {
                   _latitude = 10.7769;
                   _longitude = 106.7009;
                 });
+                _stepMapController.move(const LatLng(10.7769, 106.7009), 14.0);
               },
               icon: const Icon(Icons.my_location, size: 16),
               label: const Text('Locate Current Position'),
