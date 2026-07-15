@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 
+import '../../../core/localization/app_localizations_extension.dart';
+import '../../../core/localization/domain_localizations.dart';
 import '../../../core/routing/app_routes.dart';
 import '../../tasks/data/task_api_service.dart';
 import '../../tasks/domain/task.dart';
@@ -71,7 +73,7 @@ class OverseerTaskListScreenState extends State<OverseerTaskListScreen> {
                 children: [
                   Expanded(
                     child: Text(
-                      'Task Queue',
+                      context.l10n.taskQueueTitle,
                       style: Theme.of(context).textTheme.titleMedium?.copyWith(
                         fontWeight: FontWeight.w800,
                       ),
@@ -80,7 +82,7 @@ class OverseerTaskListScreenState extends State<OverseerTaskListScreen> {
                   FilledButton.icon(
                     onPressed: _createTask,
                     icon: const Icon(Icons.add_task_outlined),
-                    label: const Text('Create task'),
+                    label: Text(context.l10n.taskCreateTitle),
                   ),
                 ],
               ),
@@ -92,7 +94,7 @@ class OverseerTaskListScreenState extends State<OverseerTaskListScreen> {
                     Padding(
                       padding: const EdgeInsets.only(right: 8),
                       child: FilterChip(
-                        label: const Text('All statuses'),
+                        label: Text(context.l10n.taskAllStatuses),
                         selected: _selectedStatus == null,
                         onSelected: (_) =>
                             setState(() => _selectedStatus = null),
@@ -104,7 +106,7 @@ class OverseerTaskListScreenState extends State<OverseerTaskListScreen> {
                       Padding(
                         padding: const EdgeInsets.only(right: 8),
                         child: FilterChip(
-                          label: Text(status.label),
+                          label: Text(status.localizedLabel(context)),
                           selected: _selectedStatus == status,
                           onSelected: (_) => setState(
                             () => _selectedStatus = _selectedStatus == status
@@ -132,7 +134,7 @@ class OverseerTaskListScreenState extends State<OverseerTaskListScreen> {
               }
               if (snapshot.hasError) {
                 return _ErrorState(
-                  message: 'Unable to load tasks.',
+                  message: context.l10n.tasksLoadFailed,
                   onRetry: reload,
                 );
               }
@@ -150,9 +152,9 @@ class OverseerTaskListScreenState extends State<OverseerTaskListScreen> {
                   child: ListView(
                     physics: const AlwaysScrollableScrollPhysics(),
                     padding: const EdgeInsets.all(24),
-                    children: const [
-                      SizedBox(height: 96),
-                      Center(child: Text('No tasks yet')),
+                    children: [
+                      const SizedBox(height: 96),
+                      Center(child: Text(context.l10n.tasksEmpty)),
                     ],
                   ),
                 );
@@ -164,9 +166,9 @@ class OverseerTaskListScreenState extends State<OverseerTaskListScreen> {
                   child: ListView(
                     physics: const AlwaysScrollableScrollPhysics(),
                     padding: const EdgeInsets.all(24),
-                    children: const [
-                      SizedBox(height: 96),
-                      Center(child: Text('No tasks match this status')),
+                    children: [
+                      const SizedBox(height: 96),
+                      Center(child: Text(context.l10n.tasksNoStatusMatches)),
                     ],
                   ),
                 );
@@ -227,23 +229,25 @@ class _TaskTile extends StatelessWidget {
             children: [
               _MetaChip(
                 icon: Icons.category_outlined,
-                label: task.category.label,
+                label: task.category.localizedLabel(context),
               ),
               _MetaChip(icon: Icons.place_outlined, label: task.locationLabel),
               _MetaChip(
                 icon: Icons.person_outline,
-                label: task.assignedStaff?.fullName ?? 'Unassigned',
+                label:
+                    task.assignedStaff?.fullName ??
+                    context.l10n.commonUnassigned,
               ),
               _MetaChip(
                 icon: Icons.trending_up,
-                label: 'Priority ${task.priorityScore}',
+                label: context.l10n.priorityValue(task.priorityScore),
               ),
             ],
           ),
         ),
         trailing: Chip(
           visualDensity: VisualDensity.compact,
-          label: Text(task.status.label),
+          label: Text(task.status.localizedLabel(context)),
           side: BorderSide(color: statusColor.withValues(alpha: 0.18)),
           backgroundColor: statusColor.withValues(alpha: 0.1),
           labelStyle: TextStyle(
@@ -290,7 +294,7 @@ class _ErrorState extends StatelessWidget {
             OutlinedButton.icon(
               onPressed: onRetry,
               icon: const Icon(Icons.refresh),
-              label: const Text('Retry'),
+              label: Text(context.l10n.commonRetry),
             ),
           ],
         ),

@@ -2,7 +2,10 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:latlong2/latlong.dart';
+import 'package:smart_city_report_frontend/l10n/app_localizations.dart';
 import 'package:smart_city_report_frontend/src/app.dart';
+import 'package:smart_city_report_frontend/src/core/localization/locale_controller.dart';
+import 'package:smart_city_report_frontend/src/core/localization/locale_storage.dart';
 import 'package:smart_city_report_frontend/src/core/routing/app_routes.dart';
 import 'package:smart_city_report_frontend/src/features/auth/data/auth_api_service.dart';
 import 'package:smart_city_report_frontend/src/features/auth/domain/auth_session.dart';
@@ -61,6 +64,64 @@ void main() {
         .setMockMethodCallHandler(filePickerChannel, null);
     TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger
         .setMockMethodCallHandler(pathProviderChannel, null);
+  });
+
+  testWidgets('switches between English and Vietnamese and persists it', (
+    tester,
+  ) async {
+    final storage = MemoryLocaleStorage();
+    final localeController = LocaleController(storage: storage);
+
+    await tester.pumpWidget(
+      SmartCityReportApp(
+        authApiService: FakeAuthApiService(),
+        reportApiService: MockReportApiService(),
+        localeController: localeController,
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    expect(find.text('Log in'), findsOneWidget);
+
+    await tester.tap(find.byIcon(Icons.language));
+    await tester.pumpAndSettle();
+    await tester.tap(find.byType(CheckedPopupMenuItem<String>).last);
+    await tester.pumpAndSettle();
+
+    expect(find.text('Đăng nhập'), findsOneWidget);
+    expect(localeController.locale, const Locale('vi'));
+    expect(storage.languageCode, 'vi');
+  });
+
+  testWidgets('localizes structured road route maneuvers', (tester) async {
+    const step = RoadRouteStep(
+      instruction: 'Turn right onto Le Loi',
+      distanceMeters: 120,
+      maneuverType: 'turn',
+      maneuverModifier: 'right',
+      roadName: 'Đường Lê Lợi',
+    );
+
+    Future<void> pumpForLocale(Locale locale) async {
+      await tester.pumpWidget(
+        MaterialApp(
+          locale: locale,
+          localizationsDelegates: AppLocalizations.localizationsDelegates,
+          supportedLocales: AppLocalizations.supportedLocales,
+          home: Builder(
+            builder: (context) =>
+                Text(localizeRoadRouteInstruction(context, step)),
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+    }
+
+    await pumpForLocale(const Locale('vi'));
+    expect(find.text('Rẽ phải vào Đường Lê Lợi'), findsOneWidget);
+
+    await pumpForLocale(const Locale('en'));
+    expect(find.text('Turn right onto Đường Lê Lợi'), findsOneWidget);
   });
 
   test('parses backend report user summary displayName', () {
@@ -219,7 +280,7 @@ void main() {
     await tester.tap(find.text('Log in'));
     await tester.pumpAndSettle();
 
-    expect(find.text('My Reports'), findsOneWidget);
+    expect(find.text('My reports'), findsOneWidget);
     expect(find.text('Broken streetlight near Nguyen Hue'), findsOneWidget);
   });
 
@@ -237,10 +298,10 @@ void main() {
     await tester.tap(find.text('Log in'));
     await tester.pumpAndSettle();
 
-    await tester.tap(find.text('Report'));
+    await tester.tap(find.text('Report an issue'));
     await tester.pumpAndSettle();
 
-    expect(find.text('Create Report'), findsOneWidget);
+    expect(find.text('Create report'), findsOneWidget);
 
     await tester.enterText(find.byType(EditableText).at(0), 'Blocked drain');
     await tester.enterText(
@@ -257,7 +318,7 @@ void main() {
     await tester.tap(find.text('Submit report'));
     await tester.pumpAndSettle();
 
-    expect(find.text('My Reports'), findsOneWidget);
+    expect(find.text('My reports'), findsOneWidget);
     expect(find.text('Report submitted'), findsOneWidget);
     expect(find.text('Blocked drain'), findsWidgets);
   });
@@ -282,7 +343,7 @@ void main() {
     await tester.tap(find.text('Log in'));
     await tester.pumpAndSettle();
 
-    expect(find.text('My Tasks'), findsOneWidget);
+    expect(find.text('My tasks'), findsOneWidget);
     expect(find.text('1 task'), findsOneWidget);
 
     expect(find.text('Task queue'), findsOneWidget);
@@ -328,14 +389,14 @@ void main() {
     await tester.tap(find.text('Fix pothole'));
     await tester.pumpAndSettle();
 
-    expect(find.text('Task Details'), findsOneWidget);
+    expect(find.text('Task details'), findsOneWidget);
     expect(find.text('Linked reports'), findsOneWidget);
     expect(find.text('Pothole beside the bus stop'), findsWidgets);
 
     await tester.tap(find.text('Pothole beside the bus stop'));
     await tester.pumpAndSettle();
 
-    expect(find.text('Report Details'), findsOneWidget);
+    expect(find.text('Report details'), findsOneWidget);
     expect(
       find.text('Cars swerve around it during rush hour.'),
       findsOneWidget,
@@ -347,7 +408,6 @@ void main() {
     tester.view.devicePixelRatio = 1;
     addTearDown(tester.view.resetPhysicalSize);
     addTearDown(tester.view.resetDevicePixelRatio);
-
     await tester.pumpWidget(
       SmartCityReportApp(
         authApiService: FakeAuthApiService(loginRole: UserRole.staff),
@@ -366,13 +426,13 @@ void main() {
     await tester.tap(find.text('Fix pothole'));
     await tester.pumpAndSettle();
 
-    expect(find.text('Task Details'), findsOneWidget);
+    expect(find.text('Task details'), findsOneWidget);
     expect(find.text('Assigned'), findsWidgets);
 
     await tester.tap(find.text('Start task'));
     await tester.pumpAndSettle();
 
-    expect(find.text('Route Map'), findsOneWidget);
+    expect(find.text('Route map'), findsOneWidget);
     expect(find.text('Visit order'), findsOneWidget);
     expect(find.text('Current address'), findsOneWidget);
     expect(find.text('Pothole beside the bus stop'), findsWidgets);
@@ -399,12 +459,18 @@ void main() {
     await tester.tap(find.text('Complete task'));
     await tester.pumpAndSettle();
 
-    expect(find.text('Complete Task'), findsOneWidget);
+    expect(
+      find.descendant(
+        of: find.byType(AppBar),
+        matching: find.text('Complete task'),
+      ),
+      findsOneWidget,
+    );
 
     await tester.tap(find.text('Upload photo'));
     await tester.pumpAndSettle();
     await tester.enterText(find.byType(EditableText).first, 'Done');
-    await tester.tap(find.text('Complete task'));
+    await tester.tap(find.text('Complete task').last);
     await tester.pumpAndSettle();
 
     expect(find.text('/uploads/task-after/picked.png'), findsOneWidget);
@@ -428,9 +494,9 @@ void main() {
     );
     await tester.pumpAndSettle();
 
-    expect(find.text('Report Dashboard'), findsOneWidget);
+    expect(find.text('Report dashboard'), findsOneWidget);
 
-    await tester.tap(find.byTooltip('Logout'));
+    await tester.tap(find.byTooltip('Log out'));
     await tester.pumpAndSettle();
 
     expect(authApiService.loggedOut, isTrue);
@@ -453,7 +519,7 @@ void main() {
     );
     await tester.pumpAndSettle();
 
-    expect(find.text('Report Dashboard'), findsOneWidget);
+    expect(find.text('Report dashboard'), findsOneWidget);
     expect(find.text('Fresh drainage task'), findsNothing);
 
     await tester.runAsync(
@@ -502,7 +568,7 @@ void main() {
     await tester.pump();
     await tester.pump(const Duration(milliseconds: 500));
 
-    expect(find.text('Report Details'), findsOneWidget);
+    expect(find.text('Report details'), findsOneWidget);
     expect(
       find.text('Report detail 11111111-1111-1111-1111-000000000004'),
       findsOneWidget,
@@ -539,7 +605,13 @@ void main() {
       await tester.tap(find.text('Open create task'));
       await tester.pumpAndSettle();
 
-      expect(find.text('Create Task'), findsOneWidget);
+      expect(
+        find.descendant(
+          of: find.byType(AppBar),
+          matching: find.text('Create task'),
+        ),
+        findsOneWidget,
+      );
       expect(find.text('Report IDs'), findsNothing);
       expect(find.text('Assigned staff'), findsOneWidget);
 
@@ -594,6 +666,9 @@ Widget overseerCreateTaskHarness({
   final users = userApiService ?? MockUserApiService();
 
   return MaterialApp(
+    locale: const Locale('en'),
+    localizationsDelegates: AppLocalizations.localizationsDelegates,
+    supportedLocales: AppLocalizations.supportedLocales,
     onGenerateRoute: (settings) {
       if (settings.name == AppRoutes.overseerCreateTask) {
         return MaterialPageRoute<void>(
@@ -610,7 +685,7 @@ Widget overseerCreateTaskHarness({
         return MaterialPageRoute<void>(
           settings: settings,
           builder: (_) => Scaffold(
-            appBar: AppBar(title: const Text('Report Details')),
+            appBar: AppBar(title: const Text('Report details')),
             body: Text('Report detail ${settings.arguments}'),
           ),
         );
@@ -650,10 +725,18 @@ class FakeRoadRouteService implements RoadRouteService {
       distanceMeters: 1800,
       durationSeconds: 420,
       steps: const <RoadRouteStep>[
-        RoadRouteStep(instruction: 'Head toward Le Loi', distanceMeters: 500),
+        RoadRouteStep(
+          instruction: 'Head toward Le Loi',
+          distanceMeters: 500,
+          maneuverType: 'depart',
+          roadName: 'Le Loi',
+        ),
         RoadRouteStep(
           instruction: 'Turn right onto the crossing',
           distanceMeters: 1300,
+          maneuverType: 'turn',
+          maneuverModifier: 'right',
+          roadName: 'Đường Lê Lợi',
         ),
       ],
     );

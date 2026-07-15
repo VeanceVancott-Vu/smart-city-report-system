@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 
 import '../../../core/files/uploaded_photo_view.dart';
+import '../../../core/localization/app_localizations_extension.dart';
+import '../../../core/localization/domain_localizations.dart';
 import '../../../core/routing/app_routes.dart';
 import '../../../core/ui/app_feedback.dart';
 import '../../auth/data/auth_api_service.dart';
@@ -72,6 +74,7 @@ class _CitizenReportDetailScreenState extends State<CitizenReportDetailScreen> {
   }
 
   Future<void> _deleteReport() async {
+    final l10n = context.l10n;
     try {
       final report = await widget.reportApiService.cancelReport(_reportId);
       if (!mounted) {
@@ -79,14 +82,14 @@ class _CitizenReportDetailScreenState extends State<CitizenReportDetailScreen> {
       }
       AppFeedback.showSuccess(
         context,
-        title: 'Report cancelled',
+        title: context.l10n.reportCancelledTitle,
         message: report.title,
       );
       Navigator.of(context).pop(true);
     } on ReportApiException catch (error) {
       await _showError(error.message);
     } catch (_) {
-      await _showError('Unable to delete report.');
+      await _showError(l10n.reportCancelFailed);
     }
   }
 
@@ -96,7 +99,7 @@ class _CitizenReportDetailScreenState extends State<CitizenReportDetailScreen> {
     }
     await AppFeedback.showErrorDialog(
       context,
-      title: 'Could not cancel report',
+      title: context.l10n.reportCancelFailedTitle,
       message: message,
     );
   }
@@ -114,17 +117,17 @@ class _CitizenReportDetailScreenState extends State<CitizenReportDetailScreen> {
 
         return Scaffold(
           appBar: AppBar(
-            title: const Text('Report Details'),
+            title: Text(context.l10n.reportDetailsTitle),
             actions: [
               if (report != null && isOwner && report.status.canCitizenEdit)
                 IconButton(
-                  tooltip: 'Edit',
+                  tooltip: context.l10n.commonEdit,
                   onPressed: _editReport,
                   icon: const Icon(Icons.edit_outlined),
                 ),
               if (report != null && isOwner && report.status.canCitizenCancel)
                 IconButton(
-                  tooltip: 'Delete',
+                  tooltip: context.l10n.commonDelete,
                   onPressed: _deleteReport,
                   icon: const Icon(Icons.delete_outline),
                 ),
@@ -142,7 +145,10 @@ class _CitizenReportDetailScreenState extends State<CitizenReportDetailScreen> {
     }
 
     if (snapshot.hasError) {
-      return _ErrorState(message: 'Unable to load report.', onRetry: _refresh);
+      return _ErrorState(
+        message: context.l10n.reportLoadFailed,
+        onRetry: _refresh,
+      );
     }
 
     final report = snapshot.requireData;
@@ -165,27 +171,33 @@ class _CitizenReportDetailScreenState extends State<CitizenReportDetailScreen> {
               _StatusChip(status: report.status),
               _InfoChip(
                 icon: Icons.category_outlined,
-                label: report.category.label,
+                label: report.category.localizedLabel(context),
               ),
               _InfoChip(
                 icon: Icons.thumb_up_alt_outlined,
-                label: '${report.upvoteCount} upvotes',
+                label: context.l10n.upvoteCount(report.upvoteCount),
               ),
               _InfoChip(
                 icon: Icons.trending_up,
-                label: 'Priority ${report.priorityScore}',
+                label: context.l10n.priorityValue(report.priorityScore),
               ),
             ],
           ),
           const SizedBox(height: 18),
-          _Section(title: 'Description', child: Text(report.description)),
           _Section(
-            title: 'Location',
+            title: context.l10n.commonDescription,
+            child: Text(report.description),
+          ),
+          _Section(
+            title: context.l10n.commonLocation,
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
-                  '${report.latitude.toStringAsFixed(6)}, ${report.longitude.toStringAsFixed(6)}',
+                  context.l10n.coordinatesValue(
+                    report.latitude.toStringAsFixed(6),
+                    report.longitude.toStringAsFixed(6),
+                  ),
                 ),
                 if ((report.addressText ?? '').trim().isNotEmpty) ...[
                   const SizedBox(height: 6),
@@ -195,15 +207,15 @@ class _CitizenReportDetailScreenState extends State<CitizenReportDetailScreen> {
             ),
           ),
           _Section(
-            title: 'Before photo',
+            title: context.l10n.commonBeforePhoto,
             child: UploadedPhotoView(fileUrl: report.beforePhotoUrl),
           ),
           _Section(
-            title: 'Submitted',
+            title: context.l10n.reportSubmittedAt,
             child: Text(_formatDateTime(report.createdAt)),
           ),
           _Section(
-            title: 'Last updated',
+            title: context.l10n.reportLastUpdated,
             child: Text(_formatDateTime(report.updatedAt)),
           ),
         ],
@@ -257,7 +269,7 @@ class _StatusChip extends StatelessWidget {
   Widget build(BuildContext context) {
     return Chip(
       visualDensity: VisualDensity.compact,
-      label: Text(status.label),
+      label: Text(status.localizedLabel(context)),
       side: BorderSide.none,
       backgroundColor: const Color(0xFFE2F3EE),
     );
@@ -301,7 +313,7 @@ class _ErrorState extends StatelessWidget {
             OutlinedButton.icon(
               onPressed: onRetry,
               icon: const Icon(Icons.refresh),
-              label: const Text('Retry'),
+              label: Text(context.l10n.commonRetry),
             ),
           ],
         ),

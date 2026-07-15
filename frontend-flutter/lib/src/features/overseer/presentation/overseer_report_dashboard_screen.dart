@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 
+import '../../../core/localization/app_localizations_extension.dart';
+import '../../../core/localization/domain_localizations.dart';
 import '../../../core/routing/app_routes.dart';
 import '../../reports/data/report_api_service.dart';
 import '../../reports/domain/report.dart';
@@ -83,7 +85,7 @@ class OverseerReportDashboardScreenState
             children: [
               Expanded(
                 child: Text(
-                  '${_selectedReportIds.length} selected',
+                  context.l10n.selectedReportCount(_selectedReportIds.length),
                   style: Theme.of(context).textTheme.titleSmall,
                 ),
               ),
@@ -92,7 +94,7 @@ class OverseerReportDashboardScreenState
                     ? null
                     : _createTaskFromSelection,
                 icon: const Icon(Icons.add_task_outlined),
-                label: const Text('Create task'),
+                label: Text(context.l10n.taskCreate),
               ),
             ],
           ),
@@ -107,7 +109,7 @@ class OverseerReportDashboardScreenState
 
               if (snapshot.hasError) {
                 return _ErrorState(
-                  message: 'Unable to load reports.',
+                  message: context.l10n.reportsLoadFailed,
                   onRetry: reload,
                 );
               }
@@ -119,9 +121,9 @@ class OverseerReportDashboardScreenState
                   child: ListView(
                     physics: const AlwaysScrollableScrollPhysics(),
                     padding: const EdgeInsets.all(24),
-                    children: const [
-                      SizedBox(height: 96),
-                      Center(child: Text('No reports yet')),
+                    children: [
+                      const SizedBox(height: 96),
+                      Center(child: Text(context.l10n.reportsEmpty)),
                     ],
                   ),
                 );
@@ -202,7 +204,9 @@ class _ReportTile extends StatelessWidget {
                           ),
                         ),
                         const SizedBox(width: 8),
-                        _StatusChip(label: report.status.label),
+                        _StatusChip(
+                          label: report.status.localizedLabel(context),
+                        ),
                       ],
                     ),
                     const SizedBox(height: 8),
@@ -218,20 +222,24 @@ class _ReportTile extends StatelessWidget {
                       children: [
                         _MetaChip(
                           icon: Icons.category_outlined,
-                          label: report.category.label,
+                          label: report.category.localizedLabel(context),
                         ),
                         _MetaChip(
                           icon: Icons.place_outlined,
-                          label:
-                              '${report.latitude.toStringAsFixed(4)}, ${report.longitude.toStringAsFixed(4)}',
+                          label: context.l10n.coordinatesValue(
+                            report.latitude.toStringAsFixed(4),
+                            report.longitude.toStringAsFixed(4),
+                          ),
                         ),
                         _MetaChip(
                           icon: Icons.trending_up,
-                          label: 'Priority ${report.priorityScore}',
+                          label: context.l10n.priorityValue(
+                            report.priorityScore,
+                          ),
                         ),
                         _MetaChip(
                           icon: Icons.thumb_up_alt_outlined,
-                          label: '${report.upvoteCount}',
+                          label: context.l10n.upvoteCount(report.upvoteCount),
                         ),
                       ],
                     ),
@@ -299,7 +307,7 @@ class _ErrorState extends StatelessWidget {
             OutlinedButton.icon(
               onPressed: onRetry,
               icon: const Icon(Icons.refresh),
-              label: const Text('Retry'),
+              label: Text(context.l10n.commonRetry),
             ),
           ],
         ),

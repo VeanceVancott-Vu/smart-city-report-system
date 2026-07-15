@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 
+import '../../../core/localization/app_localizations_extension.dart';
 import '../../../core/ui/app_feedback.dart';
 import '../data/report_api_service.dart';
 import '../domain/report.dart';
@@ -37,14 +38,17 @@ class _CitizenEditReportScreenState extends State<CitizenEditReportScreen> {
       }
       AppFeedback.showSuccess(
         context,
-        title: 'Report updated',
+        title: context.l10n.reportUpdatedTitle,
         message: report.title,
       );
       Navigator.of(context).pop(true);
     } on ReportApiException catch (error) {
       await _showError(error.message);
     } catch (_) {
-      await _showError('Unable to update report.');
+      if (!mounted) {
+        return;
+      }
+      await _showError(context.l10n.reportUpdateFailed);
     }
   }
 
@@ -54,7 +58,7 @@ class _CitizenEditReportScreenState extends State<CitizenEditReportScreen> {
     }
     await AppFeedback.showErrorDialog(
       context,
-      title: 'Could not update report',
+      title: context.l10n.reportUpdateFailedTitle,
       message: message,
     );
   }
@@ -62,7 +66,7 @@ class _CitizenEditReportScreenState extends State<CitizenEditReportScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: const Text('Edit Report')),
+      appBar: AppBar(title: Text(context.l10n.reportEditTitle)),
       body: SafeArea(
         child: FutureBuilder<Report>(
           future: _reportFuture,
@@ -72,7 +76,7 @@ class _CitizenEditReportScreenState extends State<CitizenEditReportScreen> {
             }
             if (snapshot.hasError) {
               return _ErrorState(
-                message: 'Unable to load report.',
+                message: context.l10n.reportLoadFailed,
                 onRetry: () => setState(
                   () => _reportFuture = widget.reportApiService.fetchReport(
                     _reportId,
@@ -83,17 +87,17 @@ class _CitizenEditReportScreenState extends State<CitizenEditReportScreen> {
 
             final report = snapshot.requireData;
             if (!report.status.canCitizenEdit) {
-              return const Center(
+              return Center(
                 child: Padding(
-                  padding: EdgeInsets.all(24),
-                  child: Text('Only submitted reports can be edited.'),
+                  padding: const EdgeInsets.all(24),
+                  child: Text(context.l10n.reportSubmittedOnlyEditable),
                 ),
               );
             }
 
             return CitizenReportForm(
               initialReport: report,
-              submitLabel: 'Save changes',
+              submitLabel: context.l10n.reportSaveChanges,
               onSubmit: _updateReport,
               onUploadBeforePhoto: widget.reportApiService.uploadBeforePhoto,
               reportApiService: widget.reportApiService,
@@ -124,7 +128,7 @@ class _ErrorState extends StatelessWidget {
             OutlinedButton.icon(
               onPressed: onRetry,
               icon: const Icon(Icons.refresh),
-              label: const Text('Retry'),
+              label: Text(context.l10n.commonRetry),
             ),
           ],
         ),

@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 
+import '../../../core/localization/app_localizations_extension.dart';
+import '../../../core/localization/language_menu_button.dart';
 import '../../../core/routing/app_routes.dart';
 import '../../auth/data/auth_api_service.dart';
 import '../../overseer/presentation/overseer_report_dashboard_screen.dart';
@@ -34,21 +36,27 @@ class _OverseerHomeScreenState extends State<OverseerHomeScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final titles = ['Report Dashboard', 'City Map', 'Tasks', 'Staff'];
+    final titles = [
+      context.l10n.homeReportDashboard,
+      context.l10n.homeCityMap,
+      context.l10n.commonTasks,
+      context.l10n.commonStaff,
+    ];
 
     return Scaffold(
       appBar: AppBar(
         title: Text(titles[_selectedIndex]),
         actions: [
+          const LanguageMenuButton(),
           IconButton(
-            tooltip: 'Create user',
+            tooltip: context.l10n.homeCreateUser,
             onPressed: () {
               Navigator.of(context).pushNamed(AppRoutes.overseerCreateUser);
             },
             icon: const Icon(Icons.person_add_alt_1),
           ),
           IconButton(
-            tooltip: 'Logout',
+            tooltip: context.l10n.commonLogout,
             onPressed: () => _logout(context),
             icon: const Icon(Icons.logout),
           ),
@@ -79,26 +87,26 @@ class _OverseerHomeScreenState extends State<OverseerHomeScreen> {
             _taskListKey.currentState?.reload();
           }
         },
-        destinations: const [
+        destinations: [
           NavigationDestination(
-            icon: Icon(Icons.dashboard_outlined),
-            selectedIcon: Icon(Icons.dashboard),
-            label: 'Reports',
+            icon: const Icon(Icons.dashboard_outlined),
+            selectedIcon: const Icon(Icons.dashboard),
+            label: context.l10n.commonReports,
           ),
           NavigationDestination(
-            icon: Icon(Icons.map_outlined),
-            selectedIcon: Icon(Icons.map),
-            label: 'Map',
+            icon: const Icon(Icons.map_outlined),
+            selectedIcon: const Icon(Icons.map),
+            label: context.l10n.commonMap,
           ),
           NavigationDestination(
-            icon: Icon(Icons.assignment_outlined),
-            selectedIcon: Icon(Icons.assignment),
-            label: 'Tasks',
+            icon: const Icon(Icons.assignment_outlined),
+            selectedIcon: const Icon(Icons.assignment),
+            label: context.l10n.commonTasks,
           ),
           NavigationDestination(
-            icon: Icon(Icons.people_outline),
-            selectedIcon: Icon(Icons.people),
-            label: 'Staff',
+            icon: const Icon(Icons.people_outline),
+            selectedIcon: const Icon(Icons.people),
+            label: context.l10n.commonStaff,
           ),
         ],
       ),

@@ -1,5 +1,10 @@
 import 'package:flutter/material.dart';
+import 'package:smart_city_report_frontend/l10n/app_localizations.dart';
 
+import 'core/localization/app_localizations_extension.dart';
+import 'core/localization/locale_controller.dart';
+import 'core/localization/locale_scope.dart';
+import 'core/localization/locale_storage.dart';
 import 'core/routing/app_routes.dart';
 import 'features/auth/data/auth_api_service.dart';
 import 'features/auth/presentation/login_screen.dart';
@@ -33,102 +38,115 @@ class SmartCityReportApp extends StatelessWidget {
     TaskApiService? taskApiService,
     UserApiService? userApiService,
     RoadRouteService? roadRouteService,
+    LocaleController? localeController,
   }) : authApiService = authApiService ?? BackendAuthApiService(),
        reportApiService = reportApiService ?? BackendReportApiService(),
        taskApiService = taskApiService ?? BackendTaskApiService(),
        userApiService = userApiService ?? BackendUserApiService(),
-       roadRouteService = roadRouteService ?? OsrmRoadRouteService();
+       roadRouteService = roadRouteService ?? OsrmRoadRouteService(),
+       localeController =
+           localeController ?? LocaleController(storage: MemoryLocaleStorage());
 
   final AuthApiService authApiService;
   final ReportApiService reportApiService;
   final TaskApiService taskApiService;
   final UserApiService userApiService;
   final RoadRouteService roadRouteService;
+  final LocaleController localeController;
 
   @override
   Widget build(BuildContext context) {
-    return MaterialApp(
-      title: 'Smart City Reports',
-      debugShowCheckedModeBanner: false,
-      theme: ThemeData(
-        colorScheme: ColorScheme.fromSeed(
-          seedColor: const Color(0xFF0F766E),
-          brightness: Brightness.light,
-        ),
-        useMaterial3: true,
-        scaffoldBackgroundColor: const Color(0xFFF7F9F8),
-        inputDecorationTheme: const InputDecorationTheme(
-          border: OutlineInputBorder(),
+    return LocaleScope(
+      controller: localeController,
+      child: AnimatedBuilder(
+        animation: localeController,
+        builder: (context, _) => MaterialApp(
+          onGenerateTitle: (context) => context.l10n.appTitle,
+          debugShowCheckedModeBanner: false,
+          locale: localeController.locale,
+          localizationsDelegates: AppLocalizations.localizationsDelegates,
+          supportedLocales: AppLocalizations.supportedLocales,
+          theme: ThemeData(
+            colorScheme: ColorScheme.fromSeed(
+              seedColor: const Color(0xFF0F766E),
+              brightness: Brightness.light,
+            ),
+            useMaterial3: true,
+            scaffoldBackgroundColor: const Color(0xFFF7F9F8),
+            inputDecorationTheme: const InputDecorationTheme(
+              border: OutlineInputBorder(),
+            ),
+          ),
+          initialRoute: AppRoutes.login,
+          routes: {
+            AppRoutes.login: (_) => LoginScreen(authApiService: authApiService),
+            AppRoutes.register: (_) =>
+                RegisterScreen(authApiService: authApiService),
+            AppRoutes.citizenHome: (_) => CitizenHomeScreen(
+              authApiService: authApiService,
+              reportApiService: reportApiService,
+            ),
+            AppRoutes.citizenReports: (_) => CitizenHomeScreen(
+              authApiService: authApiService,
+              reportApiService: reportApiService,
+            ),
+            AppRoutes.staffHome: (_) => StaffHomeScreen(
+              authApiService: authApiService,
+              taskApiService: taskApiService,
+              reportApiService: reportApiService,
+            ),
+            AppRoutes.overseerHome: (_) => OverseerHomeScreen(
+              authApiService: authApiService,
+              reportApiService: reportApiService,
+              taskApiService: taskApiService,
+              userApiService: userApiService,
+            ),
+            AppRoutes.overseerCreateUser: (_) =>
+                OverseerCreateUserScreen(userApiService: userApiService),
+            AppRoutes.citizenCreateReport: (_) =>
+                CitizenCreateReportScreen(reportApiService: reportApiService),
+            AppRoutes.citizenReportDetail: (_) => CitizenReportDetailScreen(
+              reportApiService: reportApiService,
+              authApiService: authApiService,
+            ),
+            AppRoutes.citizenEditReport: (_) =>
+                CitizenEditReportScreen(reportApiService: reportApiService),
+            AppRoutes.overseerReportDetail: (_) =>
+                OverseerReportDetailScreen(reportApiService: reportApiService),
+            AppRoutes.overseerCreateTask: (_) => OverseerCreateTaskScreen(
+              taskApiService: taskApiService,
+              reportApiService: reportApiService,
+              userApiService: userApiService,
+            ),
+            AppRoutes.overseerTaskDetail: (_) =>
+                OverseerTaskDetailScreen(taskApiService: taskApiService),
+            AppRoutes.overseerAssignStaff: (_) => OverseerAssignStaffScreen(
+              taskApiService: taskApiService,
+              userApiService: userApiService,
+            ),
+            AppRoutes.overseerMap: (_) => OverseerMapScreen(
+              reportApiService: reportApiService,
+              authApiService: authApiService,
+            ),
+            AppRoutes.staffTasks: (_) => StaffTaskInboxScreen(
+              taskApiService: taskApiService,
+              reportApiService: reportApiService,
+            ),
+            AppRoutes.staffTaskDetail: (_) => StaffTaskDetailScreen(
+              taskApiService: taskApiService,
+              reportApiService: reportApiService,
+            ),
+            AppRoutes.staffTaskRoute: (_) => StaffTaskRouteMapScreen(
+              taskApiService: taskApiService,
+              reportApiService: reportApiService,
+            ),
+            AppRoutes.staffReportDetail: (_) =>
+                StaffReportDetailScreen(reportApiService: reportApiService),
+            AppRoutes.staffCompleteTask: (_) =>
+                StaffCompleteTaskScreen(taskApiService: taskApiService),
+          },
         ),
       ),
-      initialRoute: AppRoutes.login,
-      routes: {
-        AppRoutes.login: (_) => LoginScreen(authApiService: authApiService),
-        AppRoutes.register: (_) =>
-            RegisterScreen(authApiService: authApiService),
-        AppRoutes.citizenHome: (_) => CitizenHomeScreen(
-          authApiService: authApiService,
-          reportApiService: reportApiService,
-        ),
-        AppRoutes.citizenReports: (_) => CitizenHomeScreen(
-          authApiService: authApiService,
-          reportApiService: reportApiService,
-        ),
-        AppRoutes.staffHome: (_) => StaffHomeScreen(
-          authApiService: authApiService,
-          taskApiService: taskApiService,
-          reportApiService: reportApiService,
-        ),
-        AppRoutes.overseerHome: (_) => OverseerHomeScreen(
-          authApiService: authApiService,
-          reportApiService: reportApiService,
-          taskApiService: taskApiService,
-          userApiService: userApiService,
-        ),
-        AppRoutes.overseerCreateUser: (_) =>
-            OverseerCreateUserScreen(userApiService: userApiService),
-        AppRoutes.citizenCreateReport: (_) =>
-            CitizenCreateReportScreen(reportApiService: reportApiService),
-        AppRoutes.citizenReportDetail: (_) => CitizenReportDetailScreen(
-          reportApiService: reportApiService,
-          authApiService: authApiService,
-        ),
-        AppRoutes.citizenEditReport: (_) =>
-            CitizenEditReportScreen(reportApiService: reportApiService),
-        AppRoutes.overseerReportDetail: (_) =>
-            OverseerReportDetailScreen(reportApiService: reportApiService),
-        AppRoutes.overseerCreateTask: (_) => OverseerCreateTaskScreen(
-          taskApiService: taskApiService,
-          reportApiService: reportApiService,
-          userApiService: userApiService,
-        ),
-        AppRoutes.overseerTaskDetail: (_) =>
-            OverseerTaskDetailScreen(taskApiService: taskApiService),
-        AppRoutes.overseerAssignStaff: (_) => OverseerAssignStaffScreen(
-          taskApiService: taskApiService,
-          userApiService: userApiService,
-        ),
-        AppRoutes.overseerMap: (_) => OverseerMapScreen(
-          reportApiService: reportApiService,
-          authApiService: authApiService,
-        ),
-        AppRoutes.staffTasks: (_) => StaffTaskInboxScreen(
-          taskApiService: taskApiService,
-          reportApiService: reportApiService,
-        ),
-        AppRoutes.staffTaskDetail: (_) => StaffTaskDetailScreen(
-          taskApiService: taskApiService,
-          reportApiService: reportApiService,
-        ),
-        AppRoutes.staffTaskRoute: (_) => StaffTaskRouteMapScreen(
-          taskApiService: taskApiService,
-          reportApiService: reportApiService,
-        ),
-        AppRoutes.staffReportDetail: (_) =>
-            StaffReportDetailScreen(reportApiService: reportApiService),
-        AppRoutes.staffCompleteTask: (_) =>
-            StaffCompleteTaskScreen(taskApiService: taskApiService),
-      },
     );
   }
 }

@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import '../../../core/files/upload_file_picker.dart';
+import '../../../core/localization/app_localizations_extension.dart';
 import '../data/task_api_service.dart';
 import '../domain/task.dart';
 
@@ -41,7 +42,7 @@ class _StaffCompleteTaskScreenState extends State<StaffCompleteTaskScreen> {
       return;
     }
     if ((_afterPhotoUrl ?? '').trim().isEmpty) {
-      setState(() => _afterPhotoError = 'Upload an after photo first');
+      setState(() => _afterPhotoError = context.l10n.staffAfterPhotoRequired);
       return;
     }
 
@@ -58,14 +59,17 @@ class _StaffCompleteTaskScreenState extends State<StaffCompleteTaskScreen> {
       if (!mounted) {
         return;
       }
-      ScaffoldMessenger.of(
-        context,
-      ).showSnackBar(SnackBar(content: Text('${task.title} completed')));
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(context.l10n.staffTaskCompleted(task.title))),
+      );
       Navigator.of(context).pop(true);
     } on TaskApiException catch (error) {
       _showError(error.message);
     } catch (_) {
-      _showError('Unable to complete task.');
+      if (!mounted) {
+        return;
+      }
+      _showError(context.l10n.taskUpdateFailed);
     } finally {
       if (mounted) {
         setState(() => _isSaving = false);
@@ -97,13 +101,16 @@ class _StaffCompleteTaskScreenState extends State<StaffCompleteTaskScreen> {
         return;
       }
       setState(() => _afterPhotoUrl = fileUrl);
-      ScaffoldMessenger.of(
-        context,
-      ).showSnackBar(const SnackBar(content: Text('After photo uploaded')));
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(context.l10n.staffAfterPhotoUploaded)),
+      );
     } on FilePickerException catch (error) {
       _setPhotoError(error.message);
     } catch (_) {
-      _setPhotoError('Unable to upload after photo.');
+      if (!mounted) {
+        return;
+      }
+      _setPhotoError(context.l10n.staffAfterPhotoUploadFailed);
     } finally {
       if (mounted) {
         setState(() => _isUploadingPhoto = false);
@@ -129,7 +136,7 @@ class _StaffCompleteTaskScreenState extends State<StaffCompleteTaskScreen> {
   String? _maxLength(String? value, int maxLength) {
     final raw = value ?? '';
     if (raw.length > maxLength) {
-      return 'Use $maxLength characters or fewer';
+      return context.l10n.validationMaximumCharacters(maxLength);
     }
     return null;
   }
@@ -146,7 +153,7 @@ class _StaffCompleteTaskScreenState extends State<StaffCompleteTaskScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: const Text('Complete Task')),
+      appBar: AppBar(title: Text(context.l10n.staffCompleteTask)),
       body: SafeArea(
         child: Form(
           key: _formKey,
@@ -154,7 +161,7 @@ class _StaffCompleteTaskScreenState extends State<StaffCompleteTaskScreen> {
             padding: const EdgeInsets.all(16),
             children: [
               _PhotoUploadField(
-                label: 'After photo',
+                label: context.l10n.commonAfterPhoto,
                 fileUrl: _afterPhotoUrl,
                 errorText: _afterPhotoError,
                 isUploading: _isUploadingPhoto,
@@ -163,9 +170,9 @@ class _StaffCompleteTaskScreenState extends State<StaffCompleteTaskScreen> {
               const SizedBox(height: 12),
               TextFormField(
                 controller: _staffNoteController,
-                decoration: const InputDecoration(
-                  labelText: 'Staff note',
-                  prefixIcon: Icon(Icons.note_alt_outlined),
+                decoration: InputDecoration(
+                  labelText: context.l10n.taskStaffNote,
+                  prefixIcon: const Icon(Icons.note_alt_outlined),
                 ),
                 minLines: 4,
                 maxLines: 8,
@@ -182,7 +189,7 @@ class _StaffCompleteTaskScreenState extends State<StaffCompleteTaskScreen> {
                         child: CircularProgressIndicator(strokeWidth: 2),
                       )
                     : const Icon(Icons.task_alt),
-                label: const Text('Complete task'),
+                label: Text(context.l10n.staffCompleteTask),
               ),
             ],
           ),
@@ -225,7 +232,9 @@ class _PhotoUploadField extends StatelessWidget {
                   child: CircularProgressIndicator(strokeWidth: 2),
                 )
               : const Icon(Icons.upload_file),
-          label: Text(hasFile ? 'Replace photo' : 'Upload photo'),
+          label: Text(
+            hasFile ? context.l10n.photoReplace : context.l10n.photoUpload,
+          ),
         ),
         if (hasFile) ...[
           const SizedBox(height: 8),

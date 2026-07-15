@@ -2,6 +2,8 @@ import 'dart:math' as math;
 
 import 'package:flutter/material.dart';
 
+import '../../../core/localization/app_localizations_extension.dart';
+import '../../../core/localization/domain_localizations.dart';
 import '../../../core/routing/app_routes.dart';
 import '../../../core/ui/app_feedback.dart';
 import '../../reports/data/report_api_service.dart';
@@ -125,7 +127,7 @@ class _OverseerCreateTaskScreenState extends State<OverseerCreateTaskScreen> {
     } on TaskApiException catch (error) {
       _showError(error.message);
     } catch (_) {
-      _showError('Unable to load task.');
+      _showError(context.l10n.taskLoadFailed);
     } finally {
       if (mounted) {
         setState(() => _isLoading = false);
@@ -138,7 +140,7 @@ class _OverseerCreateTaskScreenState extends State<OverseerCreateTaskScreen> {
     if (reportIds.isEmpty) {
       setState(() {
         _linkedReports = const <Report>[];
-        _linkedReportsError = 'No reports were selected.';
+        _linkedReportsError = context.l10n.taskNoReportsSelected;
       });
       return;
     }
@@ -173,7 +175,9 @@ class _OverseerCreateTaskScreenState extends State<OverseerCreateTaskScreen> {
       }
     } catch (_) {
       if (mounted) {
-        setState(() => _linkedReportsError = 'Unable to load linked reports.');
+        setState(
+          () => _linkedReportsError = context.l10n.taskLinkedReportsLoadFailed,
+        );
       }
     } finally {
       if (mounted) {
@@ -248,21 +252,27 @@ class _OverseerCreateTaskScreenState extends State<OverseerCreateTaskScreen> {
       }
       AppFeedback.showSuccess(
         context,
-        title: _isEditing ? 'Task updated' : 'Task created',
+        title: _isEditing
+            ? context.l10n.taskUpdatedTitle
+            : context.l10n.taskCreatedTitle,
         message: task.title,
       );
       Navigator.of(context).pop(true);
     } on TaskApiException catch (error) {
       await AppFeedback.showErrorDialog(
         context,
-        title: _isEditing ? 'Could not update task' : 'Could not create task',
+        title: _isEditing
+            ? context.l10n.taskUpdateFailedTitle
+            : context.l10n.taskCreateFailedTitle,
         message: error.message,
       );
     } catch (_) {
       await AppFeedback.showErrorDialog(
         context,
-        title: _isEditing ? 'Could not update task' : 'Could not create task',
-        message: 'Unable to save task.',
+        title: _isEditing
+            ? context.l10n.taskUpdateFailedTitle
+            : context.l10n.taskCreateFailedTitle,
+        message: context.l10n.taskSaveFailed,
       );
     } finally {
       if (mounted) {
@@ -293,9 +303,12 @@ class _OverseerCreateTaskScreenState extends State<OverseerCreateTaskScreen> {
 
   String _unavailableReportsMessage(List<Report> reports) {
     final labels = reports
-        .map((report) => '${report.title} (${report.status.label})')
+        .map(
+          (report) =>
+              '${report.title} (${report.status.localizedLabel(context)})',
+        )
         .join(', ');
-    return 'Only submitted reports can be used to create a task. Already handled: $labels';
+    return context.l10n.taskUnavailableReports(labels);
   }
 
   String? _nullableText(TextEditingController controller) {
@@ -365,7 +378,7 @@ class _OverseerCreateTaskScreenState extends State<OverseerCreateTaskScreen> {
     }
     AppFeedback.showError(
       context,
-      title: 'Something went wrong',
+      title: context.l10n.commonUnexpectedErrorTitle,
       message: message,
     );
   }
@@ -374,7 +387,13 @@ class _OverseerCreateTaskScreenState extends State<OverseerCreateTaskScreen> {
   Widget build(BuildContext context) {
     final isBusy = _isLoading || _isLoadingReports;
     return Scaffold(
-      appBar: AppBar(title: Text(_isEditing ? 'Edit Task' : 'Create Task')),
+      appBar: AppBar(
+        title: Text(
+          _isEditing
+              ? context.l10n.taskEditTitle
+              : context.l10n.taskCreateTitle,
+        ),
+      ),
       body: SafeArea(
         child: isBusy
             ? const Center(child: CircularProgressIndicator())
@@ -393,7 +412,7 @@ class _OverseerCreateTaskScreenState extends State<OverseerCreateTaskScreen> {
       }
       if (_linkedReports.isEmpty) {
         return _ErrorState(
-          message: 'No reports were selected.',
+          message: context.l10n.taskNoReportsSelected,
           onRetry: _retryLoadLinkedReports,
         );
       }
@@ -406,17 +425,17 @@ class _OverseerCreateTaskScreenState extends State<OverseerCreateTaskScreen> {
 
           if (snapshot.hasError) {
             return _ErrorState(
-              message: 'Unable to load staff users.',
+              message: context.l10n.staffUsersLoadFailed,
               onRetry: _retryLoadStaff,
             );
           }
 
           final staffUsers = snapshot.data ?? const <AppUser>[];
           if (staffUsers.isEmpty) {
-            return const Center(
+            return Center(
               child: Padding(
-                padding: EdgeInsets.all(24),
-                child: Text('No active staff users found.'),
+                padding: const EdgeInsets.all(24),
+                child: Text(context.l10n.taskNoActiveStaff),
               ),
             );
           }
@@ -443,17 +462,17 @@ class _OverseerCreateTaskScreenState extends State<OverseerCreateTaskScreen> {
 
         if (snapshot.hasError) {
           return _ErrorState(
-            message: 'Unable to load staff users.',
+            message: context.l10n.staffUsersLoadFailed,
             onRetry: _retryLoadStaff,
           );
         }
 
         final staffUsers = snapshot.data ?? const <AppUser>[];
         if (staffUsers.isEmpty) {
-          return const Center(
+          return Center(
             child: Padding(
-              padding: EdgeInsets.all(24),
-              child: Text('No active staff users found.'),
+              padding: const EdgeInsets.all(24),
+              child: Text(context.l10n.taskNoActiveStaff),
             ),
           );
         }
@@ -521,7 +540,7 @@ class _OverseerCreateTaskScreenState extends State<OverseerCreateTaskScreen> {
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
         Text(
-          'Task brief',
+          context.l10n.taskBrief,
           style: theme.textTheme.titleLarge?.copyWith(
             fontWeight: FontWeight.w800,
           ),
@@ -529,18 +548,18 @@ class _OverseerCreateTaskScreenState extends State<OverseerCreateTaskScreen> {
         const SizedBox(height: 16),
         TextFormField(
           controller: _titleController,
-          decoration: const InputDecoration(
-            labelText: 'Task title',
-            prefixIcon: Icon(Icons.title),
+          decoration: InputDecoration(
+            labelText: context.l10n.commonTitle,
+            prefixIcon: const Icon(Icons.title),
           ),
           validator: _required,
         ),
         const SizedBox(height: 12),
         TextFormField(
           controller: _descriptionController,
-          decoration: const InputDecoration(
-            labelText: 'Task description',
-            prefixIcon: Icon(Icons.notes_outlined),
+          decoration: InputDecoration(
+            labelText: context.l10n.commonDescription,
+            prefixIcon: const Icon(Icons.notes_outlined),
           ),
           minLines: 5,
           maxLines: 8,
@@ -569,7 +588,7 @@ class _OverseerCreateTaskScreenState extends State<OverseerCreateTaskScreen> {
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Text(
-          'Task data',
+          context.l10n.taskData,
           style: theme.textTheme.titleMedium?.copyWith(
             fontWeight: FontWeight.w800,
           ),
@@ -581,7 +600,7 @@ class _OverseerCreateTaskScreenState extends State<OverseerCreateTaskScreen> {
           children: [
             _InfoPill(
               icon: Icons.category_outlined,
-              label: anchor.category.label,
+              label: anchor.category.localizedLabel(context),
               color: _categoryColor(anchor.category),
             ),
             _InfoPill(
@@ -591,12 +610,14 @@ class _OverseerCreateTaskScreenState extends State<OverseerCreateTaskScreen> {
             ),
             _InfoPill(
               icon: Icons.trending_up,
-              label: 'Priority $priorityScore',
+              label: context.l10n.priorityValue(priorityScore),
               color: const Color(0xFFE67E22),
             ),
             _InfoPill(
               icon: Icons.photo_outlined,
-              label: photoUrl == null ? 'No photo' : 'Report photo',
+              label: photoUrl == null
+                  ? context.l10n.taskNoPhoto
+                  : context.l10n.taskReportPhoto,
               color: const Color(0xFF2563EB),
             ),
           ],
@@ -616,7 +637,7 @@ class _OverseerCreateTaskScreenState extends State<OverseerCreateTaskScreen> {
             const SizedBox(width: 8),
             Expanded(
               child: Text(
-                'Linked reports',
+                context.l10n.taskLinkedReports,
                 style: theme.textTheme.titleLarge?.copyWith(
                   fontWeight: FontWeight.w800,
                 ),
@@ -643,9 +664,9 @@ class _OverseerCreateTaskScreenState extends State<OverseerCreateTaskScreen> {
   }) {
     return DropdownButtonFormField<String>(
       value: selectedStaffId,
-      decoration: const InputDecoration(
-        labelText: 'Assigned staff',
-        prefixIcon: Icon(Icons.person_outline),
+      decoration: InputDecoration(
+        labelText: context.l10n.taskAssignedStaff,
+        prefixIcon: const Icon(Icons.person_outline),
       ),
       items: staffUsers
           .map(
@@ -665,7 +686,7 @@ class _OverseerCreateTaskScreenState extends State<OverseerCreateTaskScreen> {
             },
       validator: (value) {
         if ((value ?? '').isEmpty) {
-          return 'Required';
+          return context.l10n.commonRequired;
         }
         return null;
       },
@@ -683,18 +704,18 @@ class _OverseerCreateTaskScreenState extends State<OverseerCreateTaskScreen> {
         children: [
           TextFormField(
             controller: _titleController,
-            decoration: const InputDecoration(
-              labelText: 'Title',
-              prefixIcon: Icon(Icons.title),
+            decoration: InputDecoration(
+              labelText: context.l10n.commonTitle,
+              prefixIcon: const Icon(Icons.title),
             ),
             validator: _required,
           ),
           const SizedBox(height: 12),
           TextFormField(
             controller: _descriptionController,
-            decoration: const InputDecoration(
-              labelText: 'Description',
-              prefixIcon: Icon(Icons.notes_outlined),
+            decoration: InputDecoration(
+              labelText: context.l10n.commonDescription,
+              prefixIcon: const Icon(Icons.notes_outlined),
             ),
             minLines: 3,
             maxLines: 5,
@@ -703,15 +724,15 @@ class _OverseerCreateTaskScreenState extends State<OverseerCreateTaskScreen> {
           const SizedBox(height: 12),
           DropdownButtonFormField<ReportCategory>(
             value: _category,
-            decoration: const InputDecoration(
-              labelText: 'Category',
-              prefixIcon: Icon(Icons.category_outlined),
+            decoration: InputDecoration(
+              labelText: context.l10n.commonCategory,
+              prefixIcon: const Icon(Icons.category_outlined),
             ),
             items: ReportCategory.values
                 .map(
                   (category) => DropdownMenuItem<ReportCategory>(
                     value: category,
-                    child: Text(category.label),
+                    child: Text(category.localizedLabel(context)),
                   ),
                 )
                 .toList(growable: false),
@@ -729,9 +750,9 @@ class _OverseerCreateTaskScreenState extends State<OverseerCreateTaskScreen> {
               final isWide = constraints.maxWidth >= 560;
               final latitude = TextFormField(
                 controller: _latitudeController,
-                decoration: const InputDecoration(
-                  labelText: 'Latitude',
-                  prefixIcon: Icon(Icons.my_location_outlined),
+                decoration: InputDecoration(
+                  labelText: context.l10n.commonLatitude,
+                  prefixIcon: const Icon(Icons.my_location_outlined),
                 ),
                 keyboardType: const TextInputType.numberWithOptions(
                   signed: true,
@@ -741,9 +762,9 @@ class _OverseerCreateTaskScreenState extends State<OverseerCreateTaskScreen> {
               );
               final longitude = TextFormField(
                 controller: _longitudeController,
-                decoration: const InputDecoration(
-                  labelText: 'Longitude',
-                  prefixIcon: Icon(Icons.explore_outlined),
+                decoration: InputDecoration(
+                  labelText: context.l10n.commonLongitude,
+                  prefixIcon: const Icon(Icons.explore_outlined),
                 ),
                 keyboardType: const TextInputType.numberWithOptions(
                   signed: true,
@@ -772,17 +793,17 @@ class _OverseerCreateTaskScreenState extends State<OverseerCreateTaskScreen> {
           const SizedBox(height: 12),
           TextFormField(
             controller: _addressController,
-            decoration: const InputDecoration(
-              labelText: 'Address text',
-              prefixIcon: Icon(Icons.place_outlined),
+            decoration: InputDecoration(
+              labelText: context.l10n.commonAddress,
+              prefixIcon: const Icon(Icons.place_outlined),
             ),
           ),
           const SizedBox(height: 12),
           TextFormField(
             controller: _priorityController,
-            decoration: const InputDecoration(
-              labelText: 'Priority score',
-              prefixIcon: Icon(Icons.trending_up),
+            decoration: InputDecoration(
+              labelText: context.l10n.taskPriorityScore,
+              prefixIcon: const Icon(Icons.trending_up),
             ),
             keyboardType: TextInputType.number,
             validator: _nonNegativeInt,
@@ -795,9 +816,9 @@ class _OverseerCreateTaskScreenState extends State<OverseerCreateTaskScreen> {
           const SizedBox(height: 12),
           TextFormField(
             controller: _reportIdsController,
-            decoration: const InputDecoration(
-              labelText: 'Report IDs',
-              prefixIcon: Icon(Icons.link_outlined),
+            decoration: InputDecoration(
+              labelText: context.l10n.taskReportIds,
+              prefixIcon: const Icon(Icons.link_outlined),
             ),
             minLines: 2,
             maxLines: 5,
@@ -819,13 +840,15 @@ class _OverseerCreateTaskScreenState extends State<OverseerCreateTaskScreen> {
               child: CircularProgressIndicator(strokeWidth: 2),
             )
           : const Icon(Icons.save_outlined),
-      label: Text(_isEditing ? 'Save changes' : 'Create task'),
+      label: Text(
+        _isEditing ? context.l10n.commonSave : context.l10n.taskCreateTitle,
+      ),
     );
   }
 
   String? _required(String? value) {
     if (value == null || value.trim().isEmpty) {
-      return 'Required';
+      return context.l10n.commonRequired;
     }
     return null;
   }
@@ -845,14 +868,14 @@ class _OverseerCreateTaskScreenState extends State<OverseerCreateTaskScreen> {
   }) {
     final raw = value?.trim() ?? '';
     if (raw.isEmpty) {
-      return 'Required';
+      return context.l10n.commonRequired;
     }
     final parsed = double.tryParse(raw);
     if (parsed == null) {
-      return 'Use a number';
+      return context.l10n.validationNumber;
     }
     if (parsed < min || parsed > max) {
-      return 'Out of range';
+      return context.l10n.validationOutOfRange;
     }
     return null;
   }
@@ -860,14 +883,14 @@ class _OverseerCreateTaskScreenState extends State<OverseerCreateTaskScreen> {
   String? _nonNegativeInt(String? value) {
     final raw = value?.trim() ?? '';
     if (raw.isEmpty) {
-      return 'Required';
+      return context.l10n.commonRequired;
     }
     final parsed = int.tryParse(raw);
     if (parsed == null) {
-      return 'Use a whole number';
+      return context.l10n.validationWholeNumber;
     }
     if (parsed < 0) {
-      return 'Use 0 or higher';
+      return context.l10n.validationNonnegative;
     }
     return null;
   }
@@ -943,7 +966,7 @@ class _LinkedReportTile extends StatelessWidget {
                       children: [
                         _InfoPill(
                           icon: Icons.category_outlined,
-                          label: report.category.label,
+                          label: report.category.localizedLabel(context),
                           color: categoryColor,
                         ),
                         _InfoPill(
@@ -953,7 +976,9 @@ class _LinkedReportTile extends StatelessWidget {
                         ),
                         _InfoPill(
                           icon: Icons.trending_up,
-                          label: 'Priority ${report.priorityScore}',
+                          label: context.l10n.priorityValue(
+                            report.priorityScore,
+                          ),
                           color: const Color(0xFFE67E22),
                         ),
                         _InfoPill(
@@ -1038,7 +1063,7 @@ class _StatusPill extends StatelessWidget {
         border: Border.all(color: color.withValues(alpha: 0.2)),
       ),
       child: Text(
-        status.label,
+        status.localizedLabel(context),
         style: Theme.of(context).textTheme.labelSmall?.copyWith(
           color: color,
           fontWeight: FontWeight.w800,
@@ -1091,7 +1116,7 @@ class _ErrorState extends StatelessWidget {
             OutlinedButton.icon(
               onPressed: onRetry,
               icon: const Icon(Icons.refresh),
-              label: const Text('Retry'),
+              label: Text(context.l10n.commonRetry),
             ),
           ],
         ),

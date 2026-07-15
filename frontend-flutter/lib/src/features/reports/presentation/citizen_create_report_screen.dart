@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 
+import '../../../core/localization/app_localizations_extension.dart';
 import '../../../core/ui/app_feedback.dart';
 import '../data/report_api_service.dart';
 import '../domain/report.dart';
@@ -13,10 +14,10 @@ class CitizenCreateReportScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: const Text('Create Report')),
+      appBar: AppBar(title: Text(context.l10n.reportCreateTitle)),
       body: SafeArea(
         child: CitizenReportForm(
-          submitLabel: 'Submit report',
+          submitLabel: context.l10n.reportSubmit,
           onSubmit: (draft) => _createReport(context, draft),
           onUploadBeforePhoto: reportApiService.uploadBeforePhoto,
           reportApiService: reportApiService,
@@ -33,21 +34,27 @@ class CitizenCreateReportScreen extends StatelessWidget {
       }
       AppFeedback.showSuccess(
         context,
-        title: 'Report submitted',
+        title: context.l10n.reportSubmittedTitle,
         message: report.title,
       );
       Navigator.of(context).pop(true);
     } on ReportApiException catch (error) {
+      if (!context.mounted) {
+        return;
+      }
       await _showError(context, error.message);
     } catch (_) {
-      await _showError(context, 'Unable to create report.');
+      if (!context.mounted) {
+        return;
+      }
+      await _showError(context, context.l10n.reportCreateFailed);
     }
   }
 
   Future<void> _showError(BuildContext context, String message) async {
     await AppFeedback.showErrorDialog(
       context,
-      title: 'Could not submit report',
+      title: context.l10n.reportSubmitFailedTitle,
       message: message,
     );
   }

@@ -1,16 +1,19 @@
 import 'package:flutter/material.dart';
+import 'package:logger/logger.dart';
 
+import '../../../core/localization/app_localizations_extension.dart';
+import '../../../core/localization/language_menu_button.dart';
 import '../../../core/routing/app_routes.dart';
 import '../data/auth_api_service.dart';
 import '../domain/current_user.dart';
-import 'package:logger/logger.dart';
+
 final logger = Logger();
 
 class RegisterScreen extends StatefulWidget {
   const RegisterScreen({super.key, required this.authApiService});
 
   final AuthApiService authApiService;
- 
+
   @override
   State<RegisterScreen> createState() => _RegisterScreenState();
 }
@@ -55,18 +58,19 @@ class _RegisterScreenState extends State<RegisterScreen> {
 
       debugPrint('Full Session details: ${session.toString()}');
 
-
       _navigateForRole(session.user.role);
     } on AuthException catch (error) {
       debugPrint('❌ AuthException: ${error.message}');
-      _showError(error.message);
-    } 
-    catch (e, stackTrace) {
+      if (mounted) {
+        _showError(context.l10n.authRegistrationFailed);
+      }
+    } catch (e, stackTrace) {
       // Capture the generic error 'e' instead of using '_'
       logger.e('Failed to register user', error: e, stackTrace: stackTrace);
-      _showError('Unable to create account. Please try again.');
-
-    }finally {
+      if (mounted) {
+        _showError(context.l10n.authRegistrationFailed);
+      }
+    } finally {
       if (mounted) {
         setState(() => _isSubmitting = false);
       }
@@ -99,7 +103,10 @@ class _RegisterScreenState extends State<RegisterScreen> {
     final colorScheme = Theme.of(context).colorScheme;
 
     return Scaffold(
-      appBar: AppBar(title: const Text('Create Account')),
+      appBar: AppBar(
+        title: Text(context.l10n.authCreateAccountTitle),
+        actions: const [LanguageMenuButton()],
+      ),
       body: SafeArea(
         child: Center(
           child: SingleChildScrollView(
@@ -113,15 +120,15 @@ class _RegisterScreenState extends State<RegisterScreen> {
                   children: [
                     TextFormField(
                       controller: _fullNameController,
-                      decoration: const InputDecoration(
-                        labelText: 'Full name',
-                        prefixIcon: Icon(Icons.badge_outlined),
+                      decoration: InputDecoration(
+                        labelText: context.l10n.commonFullName,
+                        prefixIcon: const Icon(Icons.badge_outlined),
                       ),
                       textInputAction: TextInputAction.next,
                       autofillHints: const [AutofillHints.name],
                       validator: (value) {
                         if ((value?.trim() ?? '').isEmpty) {
-                          return 'Full name is required';
+                          return context.l10n.authFullNameRequired;
                         }
                         return null;
                       },
@@ -129,9 +136,9 @@ class _RegisterScreenState extends State<RegisterScreen> {
                     const SizedBox(height: 12),
                     TextFormField(
                       controller: _emailController,
-                      decoration: const InputDecoration(
-                        labelText: 'Email',
-                        prefixIcon: Icon(Icons.mail_outline),
+                      decoration: InputDecoration(
+                        labelText: context.l10n.commonEmail,
+                        prefixIcon: const Icon(Icons.mail_outline),
                       ),
                       keyboardType: TextInputType.emailAddress,
                       textInputAction: TextInputAction.next,
@@ -139,10 +146,10 @@ class _RegisterScreenState extends State<RegisterScreen> {
                       validator: (value) {
                         final email = value?.trim() ?? '';
                         if (email.isEmpty) {
-                          return 'Email is required';
+                          return context.l10n.authEmailRequired;
                         }
                         if (!email.contains('@')) {
-                          return 'Enter a valid email';
+                          return context.l10n.authEmailInvalid;
                         }
                         return null;
                       },
@@ -150,9 +157,9 @@ class _RegisterScreenState extends State<RegisterScreen> {
                     const SizedBox(height: 12),
                     TextFormField(
                       controller: _passwordController,
-                      decoration: const InputDecoration(
-                        labelText: 'Password',
-                        prefixIcon: Icon(Icons.lock_outline),
+                      decoration: InputDecoration(
+                        labelText: context.l10n.commonPassword,
+                        prefixIcon: const Icon(Icons.lock_outline),
                       ),
                       obscureText: true,
                       textInputAction: TextInputAction.next,
@@ -160,10 +167,10 @@ class _RegisterScreenState extends State<RegisterScreen> {
                       validator: (value) {
                         final password = value ?? '';
                         if (password.isEmpty) {
-                          return 'Password is required';
+                          return context.l10n.authPasswordRequired;
                         }
                         if (password.length < 8) {
-                          return 'Use at least 8 characters';
+                          return context.l10n.authPasswordMinLength(8);
                         }
                         return null;
                       },
@@ -184,14 +191,14 @@ class _RegisterScreenState extends State<RegisterScreen> {
                               child: CircularProgressIndicator(strokeWidth: 2),
                             )
                           : const Icon(Icons.person_add_alt_1),
-                      label: const Text('Create account'),
+                      label: Text(context.l10n.authCreateAccountButton),
                     ),
                     const SizedBox(height: 8),
                     TextButton(
                       onPressed: _isSubmitting
                           ? null
                           : () => Navigator.of(context).pop(),
-                      child: const Text('Back to login'),
+                      child: Text(context.l10n.authBackToLogin),
                     ),
                   ],
                 ),

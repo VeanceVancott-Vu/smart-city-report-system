@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 
+import '../../../core/localization/app_localizations_extension.dart';
+import '../../../core/localization/domain_localizations.dart';
 import '../../../core/routing/app_routes.dart';
 import '../data/report_api_service.dart';
 import '../domain/report.dart';
@@ -67,7 +69,7 @@ class CitizenReportListScreenState extends State<CitizenReportListScreen> {
 
         if (snapshot.hasError) {
           return _ErrorState(
-            message: 'Unable to load reports.',
+            message: context.l10n.reportsLoadFailed,
             onRetry: reload,
           );
         }
@@ -79,9 +81,9 @@ class CitizenReportListScreenState extends State<CitizenReportListScreen> {
             child: ListView(
               physics: const AlwaysScrollableScrollPhysics(),
               padding: const EdgeInsets.all(24),
-              children: const [
-                SizedBox(height: 96),
-                Center(child: Text('No reports yet')),
+              children: [
+                const SizedBox(height: 96),
+                Center(child: Text(context.l10n.reportsEmpty)),
               ],
             ),
           );
@@ -113,6 +115,7 @@ class _ReportListTile extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final textTheme = Theme.of(context).textTheme;
+    final beforePhotoUrl = report.beforePhotoUrl?.trim();
 
     return Card(
       elevation: 0,
@@ -152,20 +155,24 @@ class _ReportListTile extends StatelessWidget {
                 children: [
                   _MetaChip(
                     icon: Icons.category_outlined,
-                    label: report.category.label,
+                    label: report.category.localizedLabel(context),
                   ),
                   _MetaChip(
                     icon: Icons.place_outlined,
-                    label:
-                        '${report.latitude.toStringAsFixed(4)}, ${report.longitude.toStringAsFixed(4)}',
+                    label: context.l10n.coordinatesValue(
+                      report.latitude.toStringAsFixed(4),
+                      report.longitude.toStringAsFixed(4),
+                    ),
                   ),
                   _MetaChip(
                     icon: Icons.thumb_up_alt_outlined,
-                    label: '${report.upvoteCount}',
+                    label: context.l10n.upvoteCount(report.upvoteCount),
                   ),
                   _MetaChip(
                     icon: Icons.photo_outlined,
-                    label: report.photoLabel,
+                    label: beforePhotoUrl == null || beforePhotoUrl.isEmpty
+                        ? context.l10n.photoNotAvailable
+                        : report.beforePhotoUrl!,
                   ),
                 ],
               ),
@@ -200,7 +207,7 @@ class _StatusChip extends StatelessWidget {
 
     return Chip(
       visualDensity: VisualDensity.compact,
-      label: Text(status.label),
+      label: Text(status.localizedLabel(context)),
       side: BorderSide.none,
       backgroundColor: backgroundColor,
       labelStyle: TextStyle(
@@ -248,7 +255,7 @@ class _ErrorState extends StatelessWidget {
             OutlinedButton.icon(
               onPressed: onRetry,
               icon: const Icon(Icons.refresh),
-              label: const Text('Retry'),
+              label: Text(context.l10n.commonRetry),
             ),
           ],
         ),

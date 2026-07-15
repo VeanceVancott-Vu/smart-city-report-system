@@ -1,11 +1,12 @@
 import 'dart:async';
-import 'dart:convert';
 
 import 'package:flutter/material.dart';
 import 'package:flutter_map/flutter_map.dart';
-import 'package:http/http.dart' as http;
 import 'package:latlong2/latlong.dart' hide Path;
 
+import '../../../core/location/geocoding_service.dart';
+import '../../../core/localization/app_localizations_extension.dart';
+import '../../../core/localization/domain_localizations.dart';
 import '../../../core/routing/app_routes.dart';
 import '../../../core/ui/app_feedback.dart';
 import '../../auth/data/auth_api_service.dart';
@@ -18,10 +19,12 @@ class CitizenMapScreen extends StatefulWidget {
     super.key,
     required this.reportApiService,
     required this.authApiService,
+    this.geocodingService,
   });
 
   final ReportApiService reportApiService;
   final AuthApiService authApiService;
+  final GeocodingService? geocodingService;
 
   @override
   State<CitizenMapScreen> createState() => _CitizenMapScreenState();
@@ -43,6 +46,7 @@ class _CitizenMapScreenState extends State<CitizenMapScreen> {
   ReportMapPin? _selectedPin;
 
   late final MapController _mapController;
+  late final GeocodingService _geocodingService;
   late Future<List<ReportMapPin>> _pinsFuture;
 
   List<ReportMapPin> _pins = const <ReportMapPin>[];
@@ -53,9 +57,9 @@ class _CitizenMapScreenState extends State<CitizenMapScreen> {
   String _searchQuery = '';
   Timer? _debounceTimer;
 
-  List<Map<String, dynamic>> _addressSuggestions = [];
+  List<PlaceSearchResult> _addressSuggestions = [];
   bool _isSearchingAddress = false;
-  Timer? _searchDebounceTimer;
+  bool _hasSearchedAddress = false;
   LatLng? _searchedPlaceLocation;
   String? _searchedPlaceName;
 
@@ -63,6 +67,7 @@ class _CitizenMapScreenState extends State<CitizenMapScreen> {
   void initState() {
     super.initState();
     _mapController = MapController();
+    _geocodingService = widget.geocodingService ?? NominatimGeocodingService();
     _pinsFuture = _loadPins();
     _loadCurrentUser();
   }
@@ -81,7 +86,6 @@ class _CitizenMapScreenState extends State<CitizenMapScreen> {
   @override
   void dispose() {
     _debounceTimer?.cancel();
-    _searchDebounceTimer?.cancel();
     _searchController.dispose();
     _searchFocusNode.dispose();
     super.dispose();
@@ -90,56 +94,36 @@ class _CitizenMapScreenState extends State<CitizenMapScreen> {
   void _onSearchQueryChanged(String query) {
     setState(() {
       _searchQuery = query;
-    });
-
-    _searchDebounceTimer?.cancel();
-    if (query.trim().isEmpty) {
-      setState(() {
-        _addressSuggestions = [];
-        _isSearchingAddress = false;
-      });
-      return;
-    }
-
-    _searchDebounceTimer = Timer(const Duration(milliseconds: 500), () {
-      _fetchAddressSuggestions(query);
+      _addressSuggestions = [];
+      _isSearchingAddress = false;
+      _hasSearchedAddress = false;
     });
   }
 
-  Future<void> _fetchAddressSuggestions(String query) async {
+  Future<void> _searchAddresses([String? submittedQuery]) async {
+    final query = (submittedQuery ?? _searchController.text).trim();
+    if (query.isEmpty || _isSearchingAddress) {
+      return;
+    }
+
     setState(() {
       _isSearchingAddress = true;
+      _hasSearchedAddress = true;
     });
 
     try {
-      final encodedQuery = Uri.encodeComponent(query);
-      final url = Uri.parse(
-        'https://nominatim.openstreetmap.org/search?q=$encodedQuery&format=json&limit=5&accept-language=en',
+      final suggestions = await _geocodingService.searchPlaces(
+        query: query,
+        languageCode: Localizations.localeOf(context).languageCode,
       );
-      final response = await http
-          .get(
-            url,
-            headers: const {
-              'User-Agent':
-                  'SmartCityReportSystem/1.0 (contact: admin@smartcity.com)',
-            },
-          )
-          .timeout(const Duration(seconds: 4));
 
-      if (response.statusCode == 200) {
-        final List<dynamic> data = jsonDecode(response.body);
-        if (mounted) {
-          setState(() {
-            _addressSuggestions = data.cast<Map<String, dynamic>>();
-            _isSearchingAddress = false;
-          });
-        }
-      } else {
-        if (mounted) {
-          setState(() => _isSearchingAddress = false);
-        }
+      if (!mounted || _searchController.text.trim() != query) {
+        return;
       }
+      setState(() => _addressSuggestions = suggestions);
     } catch (_) {
+      // Local report matching remains available if place search fails.
+    } finally {
       if (mounted) {
         setState(() => _isSearchingAddress = false);
       }
@@ -221,7 +205,7 @@ class _CitizenMapScreenState extends State<CitizenMapScreen> {
     } on ReportApiException catch (error) {
       _showError(error.message);
     } catch (_) {
-      _showError('Unable to update upvote.');
+      _showError(context.l10n.mapUpvoteUpdateFailed);
     }
   }
 
@@ -245,7 +229,7 @@ class _CitizenMapScreenState extends State<CitizenMapScreen> {
     setState(() => _errorMessage = message);
     AppFeedback.showError(
       context,
-      title: 'Unable to update report',
+      title: context.l10n.reportUpdateFailedTitle,
       message: message,
     );
   }
@@ -260,7 +244,9 @@ class _CitizenMapScreenState extends State<CitizenMapScreen> {
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
               Text(
-                _isMapView ? 'Map View' : 'Report List View',
+                _isMapView
+                    ? context.l10n.mapViewTitle
+                    : context.l10n.reportListViewTitle,
                 style: Theme.of(context).textTheme.titleMedium?.copyWith(
                   fontWeight: FontWeight.bold,
                   color: Colors.grey.shade800,
@@ -269,22 +255,22 @@ class _CitizenMapScreenState extends State<CitizenMapScreen> {
               Row(
                 children: [
                   IconButton(
-                    tooltip: 'Refresh visible area',
+                    tooltip: context.l10n.mapRefreshVisibleArea,
                     icon: const Icon(Icons.refresh),
                     onPressed: refresh,
                   ),
                   const SizedBox(width: 8),
                   SegmentedButton<bool>(
-                    segments: const [
+                    segments: [
                       ButtonSegment<bool>(
                         value: true,
-                        icon: Icon(Icons.map_outlined),
-                        label: Text('Map'),
+                        icon: const Icon(Icons.map_outlined),
+                        label: Text(context.l10n.commonMap),
                       ),
                       ButtonSegment<bool>(
                         value: false,
-                        icon: Icon(Icons.list_alt_outlined),
-                        label: Text('List'),
+                        icon: const Icon(Icons.list_alt_outlined),
+                        label: Text(context.l10n.commonList),
                       ),
                     ],
                     selected: {_isMapView},
@@ -313,7 +299,7 @@ class _CitizenMapScreenState extends State<CitizenMapScreen> {
             child: Row(
               children: [
                 FilterChip(
-                  label: const Text('All Types'),
+                  label: Text(context.l10n.mapAllCategories),
                   selected: _selectedCategory == null,
                   onSelected: (selected) {
                     setState(() {
@@ -333,7 +319,7 @@ class _CitizenMapScreenState extends State<CitizenMapScreen> {
                   return Padding(
                     padding: const EdgeInsets.only(right: 8),
                     child: FilterChip(
-                      label: Text(category.label),
+                      label: Text(category.localizedLabel(context)),
                       selected: isSelected,
                       onSelected: (selected) {
                         setState(() {
@@ -360,7 +346,7 @@ class _CitizenMapScreenState extends State<CitizenMapScreen> {
                           ? const Color(0xFF00796B)
                           : Colors.grey,
                     ),
-                    label: const Text('Hide My Reports'),
+                    label: Text(context.l10n.mapHideMyReports),
                     selected: _hideOwnReports,
                     onSelected: (selected) {
                       setState(() {
@@ -400,7 +386,7 @@ class _CitizenMapScreenState extends State<CitizenMapScreen> {
 
               if (snapshot.hasError && _pins.isEmpty) {
                 return _ErrorState(
-                  message: 'Unable to load open report pins.',
+                  message: context.l10n.mapOpenPinsLoadFailed,
                   onRetry: refresh,
                 );
               }
@@ -492,7 +478,7 @@ class _CitizenMapScreenState extends State<CitizenMapScreen> {
                                       child: _SearchedPlaceMarker(
                                         name:
                                             _searchedPlaceName ??
-                                            'Searched location',
+                                            context.l10n.mapSearchedLocation,
                                         onClear: () {
                                           setState(() {
                                             _searchedPlaceLocation = null;
@@ -519,11 +505,16 @@ class _CitizenMapScreenState extends State<CitizenMapScreen> {
                             controller: _searchController,
                             focusNode: _searchFocusNode,
                             onChanged: _onSearchQueryChanged,
+                            onSubmitted: _searchAddresses,
+                            onSearch: () => _searchAddresses(),
+                            isSearching: _isSearchingAddress,
                             onClear: () {
                               setState(() {
                                 _searchController.clear();
                                 _searchQuery = '';
                                 _addressSuggestions = [];
+                                _isSearchingAddress = false;
+                                _hasSearchedAddress = false;
                                 _searchedPlaceLocation = null;
                                 _searchedPlaceName = null;
                               });
@@ -536,12 +527,14 @@ class _CitizenMapScreenState extends State<CitizenMapScreen> {
                               addresses: _addressSuggestions,
                               query: _searchQuery,
                               isSearchingAddress: _isSearchingAddress,
+                              hasSearchedAddress: _hasSearchedAddress,
                               onSelectPin: (pin) {
                                 setState(() {
                                   _selectedPin = pin;
                                   _searchController.text = pin.title;
                                   _searchQuery = '';
                                   _addressSuggestions = [];
+                                  _hasSearchedAddress = false;
                                   _searchFocusNode.unfocus();
                                 });
                                 _mapController.move(
@@ -550,20 +543,18 @@ class _CitizenMapScreenState extends State<CitizenMapScreen> {
                                 );
                               },
                               onSelectAddress: (addr) {
-                                final displayName =
-                                    addr['display_name'] ?? 'Searched place';
-                                final lat =
-                                    double.tryParse(addr['lat'] ?? '') ?? 0.0;
-                                final lon =
-                                    double.tryParse(addr['lon'] ?? '') ?? 0.0;
-                                final point = LatLng(lat, lon);
+                                final point = LatLng(
+                                  addr.latitude,
+                                  addr.longitude,
+                                );
 
                                 setState(() {
                                   _searchedPlaceLocation = point;
-                                  _searchedPlaceName = displayName;
-                                  _searchController.text = displayName;
+                                  _searchedPlaceName = addr.displayName;
+                                  _searchController.text = addr.displayName;
                                   _searchQuery = '';
                                   _addressSuggestions = [];
+                                  _hasSearchedAddress = false;
                                   _searchFocusNode.unfocus();
                                 });
                                 _mapController.move(point, 15.0);
@@ -604,9 +595,9 @@ class _CitizenMapScreenState extends State<CitizenMapScreen> {
                   child: ListView(
                     physics: const AlwaysScrollableScrollPhysics(),
                     padding: const EdgeInsets.all(24),
-                    children: const [
-                      SizedBox(height: 96),
-                      Center(child: Text('No open report pins in bounds')),
+                    children: [
+                      const SizedBox(height: 96),
+                      Center(child: Text(context.l10n.mapNoOpenPins)),
                     ],
                   ),
                 );
@@ -644,12 +635,18 @@ class _SearchBar extends StatelessWidget {
     required this.controller,
     required this.focusNode,
     required this.onChanged,
+    required this.onSubmitted,
+    required this.onSearch,
+    required this.isSearching,
     required this.onClear,
   });
 
   final TextEditingController controller;
   final FocusNode focusNode;
   final ValueChanged<String> onChanged;
+  final ValueChanged<String> onSubmitted;
+  final VoidCallback onSearch;
+  final bool isSearching;
   final VoidCallback onClear;
 
   @override
@@ -671,11 +668,17 @@ class _SearchBar extends StatelessWidget {
         controller: controller,
         focusNode: focusNode,
         onChanged: onChanged,
+        onSubmitted: onSubmitted,
+        textInputAction: TextInputAction.search,
         style: const TextStyle(fontSize: 14),
         decoration: InputDecoration(
-          hintText: 'Search reports or categories...',
+          hintText: context.l10n.mapCitizenSearchHint,
           hintStyle: const TextStyle(color: Colors.grey),
-          prefixIcon: const Icon(Icons.search, color: Colors.grey),
+          prefixIcon: IconButton(
+            tooltip: context.l10n.mapSearchPlacesTooltip,
+            onPressed: isSearching ? null : onSearch,
+            icon: const Icon(Icons.search, color: Colors.grey),
+          ),
           suffixIcon: controller.text.isNotEmpty
               ? IconButton(
                   icon: const Icon(Icons.clear, color: Colors.grey, size: 18),
@@ -696,28 +699,37 @@ class _SearchSuggestions extends StatelessWidget {
     required this.addresses,
     required this.query,
     required this.isSearchingAddress,
+    required this.hasSearchedAddress,
     required this.onSelectPin,
     required this.onSelectAddress,
   });
 
   final List<ReportMapPin> pins;
-  final List<Map<String, dynamic>> addresses;
+  final List<PlaceSearchResult> addresses;
   final String query;
   final bool isSearchingAddress;
+  final bool hasSearchedAddress;
   final ValueChanged<ReportMapPin> onSelectPin;
-  final ValueChanged<Map<String, dynamic>> onSelectAddress;
+  final ValueChanged<PlaceSearchResult> onSelectAddress;
 
   @override
   Widget build(BuildContext context) {
     final filteredPins = pins.where((pin) {
       final titleMatch = pin.title.toLowerCase().contains(query.toLowerCase());
-      final categoryMatch = pin.category.label.toLowerCase().contains(
-        query.toLowerCase(),
-      );
+      final normalizedQuery = query.toLowerCase();
+      final categoryMatch =
+          pin.category
+              .localizedLabel(context)
+              .toLowerCase()
+              .contains(normalizedQuery) ||
+          pin.category.label.toLowerCase().contains(normalizedQuery);
       return titleMatch || categoryMatch;
     }).toList();
 
     if (filteredPins.isEmpty && addresses.isEmpty && !isSearchingAddress) {
+      if (!hasSearchedAddress) {
+        return const SizedBox.shrink();
+      }
       return Container(
         margin: const EdgeInsets.only(top: 4),
         width: double.infinity,
@@ -734,9 +746,9 @@ class _SearchSuggestions extends StatelessWidget {
           ],
         ),
         padding: const EdgeInsets.all(16),
-        child: const Text(
-          'No matching reports or addresses found',
-          style: TextStyle(color: Colors.grey),
+        child: Text(
+          context.l10n.mapNoSearchMatches,
+          style: const TextStyle(color: Colors.grey),
         ),
       );
     }
@@ -763,11 +775,11 @@ class _SearchSuggestions extends StatelessWidget {
           padding: EdgeInsets.zero,
           children: [
             if (filteredPins.isNotEmpty) ...[
-              const Padding(
-                padding: EdgeInsets.fromLTRB(12, 8, 12, 4),
+              Padding(
+                padding: const EdgeInsets.fromLTRB(12, 8, 12, 4),
                 child: Text(
-                  'REPORTS',
-                  style: TextStyle(
+                  context.l10n.mapReportsHeader,
+                  style: const TextStyle(
                     fontSize: 10,
                     fontWeight: FontWeight.bold,
                     color: Colors.grey,
@@ -790,7 +802,7 @@ class _SearchSuggestions extends StatelessWidget {
                     ),
                   ),
                   subtitle: Text(
-                    pin.category.label,
+                    pin.category.localizedLabel(context),
                     style: TextStyle(
                       color: color,
                       fontSize: 11,
@@ -802,11 +814,11 @@ class _SearchSuggestions extends StatelessWidget {
               }),
             ],
             if (addresses.isNotEmpty) ...[
-              const Padding(
-                padding: EdgeInsets.fromLTRB(12, 8, 12, 4),
+              Padding(
+                padding: const EdgeInsets.fromLTRB(12, 8, 12, 4),
                 child: Text(
-                  'ADDRESSES & PLACES',
-                  style: TextStyle(
+                  context.l10n.mapPlacesHeader,
+                  style: const TextStyle(
                     fontSize: 10,
                     fontWeight: FontWeight.bold,
                     color: Colors.grey,
@@ -814,7 +826,6 @@ class _SearchSuggestions extends StatelessWidget {
                 ),
               ),
               ...addresses.map((addr) {
-                final displayName = addr['display_name'] ?? '';
                 return ListTile(
                   dense: true,
                   leading: const Icon(
@@ -823,7 +834,7 @@ class _SearchSuggestions extends StatelessWidget {
                     size: 18,
                   ),
                   title: Text(
-                    displayName,
+                    addr.displayName,
                     maxLines: 2,
                     overflow: TextOverflow.ellipsis,
                     style: const TextStyle(
@@ -895,7 +906,7 @@ class _PinTile extends StatelessWidget {
                 const SizedBox(width: 8),
                 Chip(
                   visualDensity: VisualDensity.compact,
-                  label: Text(pin.category.label),
+                  label: Text(pin.category.localizedLabel(context)),
                   side: BorderSide.none,
                   backgroundColor: const Color(0xFFE2F3EE),
                 ),
@@ -913,11 +924,11 @@ class _PinTile extends StatelessWidget {
                 ),
                 _MetaChip(
                   icon: Icons.thumb_up_alt_outlined,
-                  label: '${pin.upvoteCount} upvotes',
+                  label: context.l10n.upvoteCount(pin.upvoteCount),
                 ),
                 _MetaChip(
                   icon: Icons.trending_up,
-                  label: 'Priority ${pin.priorityScore}',
+                  label: context.l10n.priorityValue(pin.priorityScore),
                 ),
               ],
             ),
@@ -932,7 +943,7 @@ class _PinTile extends StatelessWidget {
                   OutlinedButton.icon(
                     onPressed: onViewDetails,
                     icon: const Icon(Icons.info_outline),
-                    label: const Text('View details'),
+                    label: Text(context.l10n.mapViewDetails),
                   ),
                   if (showUpvote)
                     OutlinedButton.icon(
@@ -943,7 +954,9 @@ class _PinTile extends StatelessWidget {
                             : Icons.thumb_up_alt_outlined,
                       ),
                       label: Text(
-                        hasUpvoted ? 'Remove upvote' : 'I see this too',
+                        hasUpvoted
+                            ? context.l10n.mapRemoveUpvote
+                            : context.l10n.mapSeeThisToo,
                       ),
                     ),
                 ],
@@ -993,7 +1006,7 @@ class _ErrorState extends StatelessWidget {
             OutlinedButton.icon(
               onPressed: onRetry,
               icon: const Icon(Icons.refresh),
-              label: const Text('Retry'),
+              label: Text(context.l10n.commonRetry),
             ),
           ],
         ),
@@ -1234,7 +1247,9 @@ class _SelectedPinCard extends StatelessWidget {
                       ),
                       const SizedBox(height: 4),
                       Text(
-                        'Category: ${pin.category.label}',
+                        context.l10n.mapCategoryValue(
+                          pin.category.localizedLabel(context),
+                        ),
                         style: Theme.of(context).textTheme.bodySmall?.copyWith(
                           color: Colors.grey.shade600,
                         ),
@@ -1266,12 +1281,12 @@ class _SelectedPinCard extends StatelessWidget {
                 ),
                 _MiniTag(
                   icon: Icons.thumb_up_alt_outlined,
-                  label: '${pin.upvoteCount} upvotes',
+                  label: context.l10n.upvoteCount(pin.upvoteCount),
                   color: color,
                 ),
                 _MiniTag(
                   icon: Icons.trending_up,
-                  label: 'Priority ${pin.priorityScore}',
+                  label: context.l10n.priorityValue(pin.priorityScore),
                   color: color,
                 ),
               ],
@@ -1287,7 +1302,7 @@ class _SelectedPinCard extends StatelessWidget {
                   OutlinedButton.icon(
                     onPressed: onViewDetails,
                     icon: const Icon(Icons.info_outline, size: 16),
-                    label: const Text('View details'),
+                    label: Text(context.l10n.mapViewDetails),
                     style: OutlinedButton.styleFrom(
                       foregroundColor: color,
                       side: BorderSide(color: color.withValues(alpha: 0.55)),
@@ -1313,7 +1328,9 @@ class _SelectedPinCard extends StatelessWidget {
                         size: 16,
                       ),
                       label: Text(
-                        hasUpvoted ? 'Remove upvote' : 'I see this too',
+                        hasUpvoted
+                            ? context.l10n.mapRemoveUpvote
+                            : context.l10n.mapSeeThisToo,
                       ),
                     ),
                 ],

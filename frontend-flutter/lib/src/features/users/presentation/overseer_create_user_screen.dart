@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 
+import '../../../core/localization/app_localizations_extension.dart';
+import '../../../core/localization/domain_localizations.dart';
 import '../../auth/domain/current_user.dart';
 import '../data/user_api_service.dart';
 import '../domain/app_user.dart';
@@ -56,9 +58,9 @@ class _OverseerCreateUserScreenState extends State<OverseerCreateUserScreen> {
         return;
       }
 
-      ScaffoldMessenger.of(
-        context,
-      ).showSnackBar(SnackBar(content: Text('Created ${user.fullName}')));
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(context.l10n.userCreated(user.fullName))),
+      );
       Navigator.of(context).pop(true);
     } on UserApiException catch (error) {
       if (!mounted) {
@@ -72,7 +74,7 @@ class _OverseerCreateUserScreenState extends State<OverseerCreateUserScreen> {
         return;
       }
       setState(() {
-        _errorMessage = 'Unable to create user right now.';
+        _errorMessage = context.l10n.userCreateFailed;
       });
     } finally {
       if (mounted) {
@@ -85,7 +87,7 @@ class _OverseerCreateUserScreenState extends State<OverseerCreateUserScreen> {
 
   String? _required(String? value) {
     if (value == null || value.trim().isEmpty) {
-      return 'Required';
+      return context.l10n.commonRequired;
     }
     return null;
   }
@@ -93,7 +95,7 @@ class _OverseerCreateUserScreenState extends State<OverseerCreateUserScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: const Text('Create user')),
+      appBar: AppBar(title: Text(context.l10n.userCreateTitle)),
       body: Center(
         child: ConstrainedBox(
           constraints: const BoxConstraints(maxWidth: 520),
@@ -105,14 +107,18 @@ class _OverseerCreateUserScreenState extends State<OverseerCreateUserScreen> {
                 children: [
                   TextFormField(
                     controller: _fullNameController,
-                    decoration: const InputDecoration(labelText: 'Full name'),
+                    decoration: InputDecoration(
+                      labelText: context.l10n.commonFullName,
+                    ),
                     textInputAction: TextInputAction.next,
                     validator: _required,
                   ),
                   const SizedBox(height: 12),
                   TextFormField(
                     controller: _emailController,
-                    decoration: const InputDecoration(labelText: 'Email'),
+                    decoration: InputDecoration(
+                      labelText: context.l10n.commonEmail,
+                    ),
                     keyboardType: TextInputType.emailAddress,
                     textInputAction: TextInputAction.next,
                     validator: (value) {
@@ -121,7 +127,7 @@ class _OverseerCreateUserScreenState extends State<OverseerCreateUserScreen> {
                         return message;
                       }
                       if (!value!.contains('@')) {
-                        return 'Enter a valid email';
+                        return context.l10n.authEmailInvalid;
                       }
                       return null;
                     },
@@ -129,7 +135,9 @@ class _OverseerCreateUserScreenState extends State<OverseerCreateUserScreen> {
                   const SizedBox(height: 12),
                   TextFormField(
                     controller: _passwordController,
-                    decoration: const InputDecoration(labelText: 'Password'),
+                    decoration: InputDecoration(
+                      labelText: context.l10n.commonPassword,
+                    ),
                     obscureText: true,
                     validator: (value) {
                       final message = _required(value);
@@ -137,7 +145,7 @@ class _OverseerCreateUserScreenState extends State<OverseerCreateUserScreen> {
                         return message;
                       }
                       if (value!.length < 6) {
-                        return 'Use at least 6 characters';
+                        return context.l10n.userPasswordMinLength(6);
                       }
                       return null;
                     },
@@ -145,15 +153,17 @@ class _OverseerCreateUserScreenState extends State<OverseerCreateUserScreen> {
                   const SizedBox(height: 12),
                   DropdownButtonFormField<UserRole>(
                     value: _role,
-                    decoration: const InputDecoration(labelText: 'Role'),
-                    items: const [
+                    decoration: InputDecoration(
+                      labelText: context.l10n.commonRole,
+                    ),
+                    items: [
                       DropdownMenuItem(
                         value: UserRole.staff,
-                        child: Text('STAFF'),
+                        child: Text(UserRole.staff.localizedLabel(context)),
                       ),
                       DropdownMenuItem(
                         value: UserRole.overseer,
-                        child: Text('OVERSEER'),
+                        child: Text(UserRole.overseer.localizedLabel(context)),
                       ),
                     ],
                     onChanged: _isSaving
@@ -184,7 +194,7 @@ class _OverseerCreateUserScreenState extends State<OverseerCreateUserScreen> {
                             height: 18,
                             child: CircularProgressIndicator(strokeWidth: 2),
                           )
-                        : const Text('Create user'),
+                        : Text(context.l10n.userCreateTitle),
                   ),
                 ],
               ),

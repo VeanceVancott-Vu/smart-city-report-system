@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:latlong2/latlong.dart' hide Path;
 
 import '../../../core/files/upload_file_picker.dart';
+import '../../../core/localization/app_localizations_extension.dart';
+import '../../../core/localization/domain_localizations.dart';
 import '../../../core/ui/app_feedback.dart';
 import '../data/report_api_service.dart';
 import '../domain/report.dart';
@@ -112,11 +114,11 @@ class _CitizenReportFormState extends State<CitizenReportForm> {
       return;
     }
     if ((_beforePhotoUrl ?? '').trim().isEmpty) {
-      setState(() => _beforePhotoError = 'Upload a before photo first');
+      setState(() => _beforePhotoError = context.l10n.beforePhotoRequiredError);
       AppFeedback.showError(
         context,
-        title: 'Before photo required',
-        message: 'Upload a photo before submitting the report.',
+        title: context.l10n.beforePhotoRequiredTitle,
+        message: context.l10n.beforePhotoRequiredMessage,
       );
       return;
     }
@@ -168,13 +170,16 @@ class _CitizenReportFormState extends State<CitizenReportForm> {
         return;
       }
       setState(() => _beforePhotoUrl = fileUrl);
-      AppFeedback.showSuccess(context, title: 'Before photo uploaded');
+      AppFeedback.showSuccess(context, title: context.l10n.beforePhotoUploaded);
     } on FilePickerException catch (error) {
       _setPhotoError(error.message);
     } catch (error) {
+      if (!mounted) {
+        return;
+      }
       final message = error.toString();
       _setPhotoError(
-        message.isEmpty ? 'Unable to upload before photo.' : message,
+        message.isEmpty ? context.l10n.beforePhotoUploadFailed : message,
       );
     } finally {
       if (mounted) {
@@ -190,7 +195,7 @@ class _CitizenReportFormState extends State<CitizenReportForm> {
     setState(() => _beforePhotoError = message);
     AppFeedback.showError(
       context,
-      title: 'Photo upload failed',
+      title: context.l10n.photoUploadFailedTitle,
       message: message,
     );
   }
@@ -221,9 +226,9 @@ class _CitizenReportFormState extends State<CitizenReportForm> {
           children: [
             TextFormField(
               controller: _titleController,
-              decoration: const InputDecoration(
-                labelText: 'Title',
-                prefixIcon: Icon(Icons.title),
+              decoration: InputDecoration(
+                labelText: context.l10n.commonTitle,
+                prefixIcon: const Icon(Icons.title),
               ),
               textInputAction: TextInputAction.next,
               validator: _required,
@@ -231,9 +236,9 @@ class _CitizenReportFormState extends State<CitizenReportForm> {
             const SizedBox(height: 12),
             TextFormField(
               controller: _descriptionController,
-              decoration: const InputDecoration(
-                labelText: 'Description',
-                prefixIcon: Icon(Icons.notes_outlined),
+              decoration: InputDecoration(
+                labelText: context.l10n.commonDescription,
+                prefixIcon: const Icon(Icons.notes_outlined),
               ),
               minLines: 3,
               maxLines: 5,
@@ -242,15 +247,15 @@ class _CitizenReportFormState extends State<CitizenReportForm> {
             const SizedBox(height: 12),
             DropdownButtonFormField<ReportCategory>(
               value: _category,
-              decoration: const InputDecoration(
-                labelText: 'Category',
-                prefixIcon: Icon(Icons.category_outlined),
+              decoration: InputDecoration(
+                labelText: context.l10n.commonCategory,
+                prefixIcon: const Icon(Icons.category_outlined),
               ),
               items: ReportCategory.values
                   .map(
                     (category) => DropdownMenuItem<ReportCategory>(
                       value: category,
-                      child: Text(category.label),
+                      child: Text(category.localizedLabel(context)),
                     ),
                   )
                   .toList(growable: false),
@@ -267,7 +272,7 @@ class _CitizenReportFormState extends State<CitizenReportForm> {
               Padding(
                 padding: const EdgeInsets.only(bottom: 8.0),
                 child: Text(
-                  'Location Selection',
+                  context.l10n.reportLocationSelection,
                   style: Theme.of(context).textTheme.bodyMedium?.copyWith(
                     fontWeight: FontWeight.bold,
                     color: Colors.grey.shade700,
@@ -277,7 +282,7 @@ class _CitizenReportFormState extends State<CitizenReportForm> {
               OutlinedButton.icon(
                 onPressed: _isSaving ? null : _openMapPicker,
                 icon: const Icon(Icons.map_outlined),
-                label: const Text('Select Location on Map'),
+                label: Text(context.l10n.reportSelectLocationMap),
                 style: OutlinedButton.styleFrom(
                   padding: const EdgeInsets.symmetric(vertical: 14),
                   shape: RoundedRectangleBorder(
@@ -299,17 +304,17 @@ class _CitizenReportFormState extends State<CitizenReportForm> {
                 final latitudeField = TextFormField(
                   controller: _latitudeController,
                   readOnly: true,
-                  decoration: const InputDecoration(
-                    labelText: 'Latitude',
-                    prefixIcon: Icon(Icons.my_location_outlined),
+                  decoration: InputDecoration(
+                    labelText: context.l10n.commonLatitude,
+                    prefixIcon: const Icon(Icons.my_location_outlined),
                   ),
                 );
                 final longitudeField = TextFormField(
                   controller: _longitudeController,
                   readOnly: true,
-                  decoration: const InputDecoration(
-                    labelText: 'Longitude',
-                    prefixIcon: Icon(Icons.explore_outlined),
+                  decoration: InputDecoration(
+                    labelText: context.l10n.commonLongitude,
+                    prefixIcon: const Icon(Icons.explore_outlined),
                   ),
                 );
 
@@ -333,15 +338,15 @@ class _CitizenReportFormState extends State<CitizenReportForm> {
             const SizedBox(height: 12),
             TextFormField(
               controller: _addressController,
-              decoration: const InputDecoration(
-                labelText: 'Address text',
-                prefixIcon: Icon(Icons.place_outlined),
+              decoration: InputDecoration(
+                labelText: context.l10n.commonAddress,
+                prefixIcon: const Icon(Icons.place_outlined),
               ),
               textInputAction: TextInputAction.next,
             ),
             const SizedBox(height: 12),
             _PhotoUploadField(
-              label: 'Before photo',
+              label: context.l10n.commonBeforePhoto,
               fileUrl: _beforePhotoUrl,
               errorText: _beforePhotoError,
               isUploading: _isUploadingPhoto,
@@ -354,7 +359,7 @@ class _CitizenReportFormState extends State<CitizenReportForm> {
                 onChanged: _isSaving
                     ? null
                     : (value) => setState(() => _anonymous = value ?? false),
-                title: const Text('Submit anonymously'),
+                title: Text(context.l10n.reportSubmitAnonymously),
                 controlAffinity: ListTileControlAffinity.leading,
                 contentPadding: EdgeInsets.zero,
               ),
@@ -378,7 +383,7 @@ class _CitizenReportFormState extends State<CitizenReportForm> {
 
   String? _required(String? value) {
     if (value == null || value.trim().isEmpty) {
-      return 'Required';
+      return context.l10n.commonRequired;
     }
     return null;
   }
@@ -391,7 +396,7 @@ class _CitizenReportFormState extends State<CitizenReportForm> {
 
     final number = double.parse(value!.trim());
     if (number < -90 || number > 90) {
-      return 'Use -90 to 90';
+      return context.l10n.validationLatitudeRange;
     }
     return null;
   }
@@ -404,19 +409,19 @@ class _CitizenReportFormState extends State<CitizenReportForm> {
 
     final number = double.parse(value!.trim());
     if (number < -180 || number > 180) {
-      return 'Use -180 to 180';
+      return context.l10n.validationLongitudeRange;
     }
     return null;
   }
 
   String? _coordinate(String? value) {
     if (_required(value) != null) {
-      return 'Required';
+      return context.l10n.commonRequired;
     }
 
     final parsed = double.tryParse(value!.trim());
     if (parsed == null) {
-      return 'Use a number';
+      return context.l10n.validationNumber;
     }
     return null;
   }
@@ -455,7 +460,9 @@ class _PhotoUploadField extends StatelessWidget {
                   child: CircularProgressIndicator(strokeWidth: 2),
                 )
               : const Icon(Icons.upload_file),
-          label: Text(hasFile ? 'Replace photo' : 'Upload photo'),
+          label: Text(
+            hasFile ? context.l10n.photoReplace : context.l10n.photoUpload,
+          ),
         ),
         if (hasFile) ...[
           const SizedBox(height: 8),

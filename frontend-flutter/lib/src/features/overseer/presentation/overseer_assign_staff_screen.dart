@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 
+import '../../../core/localization/app_localizations_extension.dart';
 import '../../tasks/data/task_api_service.dart';
 import '../../users/data/user_api_service.dart';
 import '../../users/domain/app_user.dart';
@@ -62,7 +63,9 @@ class _OverseerAssignStaffScreenState extends State<OverseerAssignStaffScreen> {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: Text(
-            'Assigned to ${task.assignedStaff?.fullName ?? 'staff'}',
+            context.l10n.staffAssignedTo(
+              task.assignedStaff?.fullName ?? context.l10n.commonStaff,
+            ),
           ),
         ),
       );
@@ -70,7 +73,10 @@ class _OverseerAssignStaffScreenState extends State<OverseerAssignStaffScreen> {
     } on TaskApiException catch (error) {
       _showError(error.message);
     } catch (_) {
-      _showError('Unable to assign staff.');
+      if (!mounted) {
+        return;
+      }
+      _showError(context.l10n.taskUpdateFailed);
     } finally {
       if (mounted) {
         setState(() => _isSaving = false);
@@ -90,7 +96,9 @@ class _OverseerAssignStaffScreenState extends State<OverseerAssignStaffScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: const Text('Assign Staff')),
+      appBar: AppBar(
+        title: Text('${context.l10n.commonAssign} ${context.l10n.commonStaff}'),
+      ),
       body: SafeArea(
         child: FutureBuilder<List<AppUser>>(
           future: _staffFuture,
@@ -101,14 +109,14 @@ class _OverseerAssignStaffScreenState extends State<OverseerAssignStaffScreen> {
 
             if (snapshot.hasError) {
               return _ErrorState(
-                message: 'Unable to load staff users.',
+                message: context.l10n.staffUsersLoadFailed,
                 onRetry: _retryLoadStaff,
               );
             }
 
             final staffUsers = snapshot.data ?? const <AppUser>[];
             if (staffUsers.isEmpty) {
-              return const Center(child: Text('No active staff users found.'));
+              return Center(child: Text(context.l10n.taskNoActiveStaff));
             }
 
             return Form(
@@ -118,9 +126,9 @@ class _OverseerAssignStaffScreenState extends State<OverseerAssignStaffScreen> {
                 children: [
                   DropdownButtonFormField<String>(
                     value: _selectedStaffId,
-                    decoration: const InputDecoration(
-                      labelText: 'Staff',
-                      prefixIcon: Icon(Icons.person_outline),
+                    decoration: InputDecoration(
+                      labelText: context.l10n.commonStaff,
+                      prefixIcon: const Icon(Icons.person_outline),
                     ),
                     items: staffUsers
                         .map(
@@ -140,7 +148,7 @@ class _OverseerAssignStaffScreenState extends State<OverseerAssignStaffScreen> {
                           },
                     validator: (value) {
                       if ((value ?? '').isEmpty) {
-                        return 'Required';
+                        return context.l10n.commonRequired;
                       }
                       return null;
                     },
@@ -154,7 +162,7 @@ class _OverseerAssignStaffScreenState extends State<OverseerAssignStaffScreen> {
                             child: CircularProgressIndicator(strokeWidth: 2),
                           )
                         : const Icon(Icons.person_add_alt_1),
-                    label: const Text('Assign'),
+                    label: Text(context.l10n.commonAssign),
                   ),
                 ],
               ),
@@ -185,7 +193,7 @@ class _ErrorState extends StatelessWidget {
             OutlinedButton.icon(
               onPressed: onRetry,
               icon: const Icon(Icons.refresh),
-              label: const Text('Retry'),
+              label: Text(context.l10n.commonRetry),
             ),
           ],
         ),

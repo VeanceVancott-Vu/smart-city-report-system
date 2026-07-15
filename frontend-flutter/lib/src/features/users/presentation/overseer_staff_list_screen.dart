@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 
+import '../../../core/localization/app_localizations_extension.dart';
+import '../../../core/localization/domain_localizations.dart';
 import '../../../core/routing/app_routes.dart';
 import '../../tasks/domain/task.dart';
 import '../data/user_api_service.dart';
@@ -11,7 +13,8 @@ class OverseerStaffListScreen extends StatefulWidget {
   final UserApiService userApiService;
 
   @override
-  State<OverseerStaffListScreen> createState() => _OverseerStaffListScreenState();
+  State<OverseerStaffListScreen> createState() =>
+      _OverseerStaffListScreenState();
 }
 
 class _OverseerStaffListScreenState extends State<OverseerStaffListScreen> {
@@ -51,14 +54,21 @@ class _OverseerStaffListScreenState extends State<OverseerStaffListScreen> {
         FutureBuilder<List<StaffSummary>>(
           future: _staffSummaryFuture,
           builder: (context, snapshot) {
-            if (snapshot.connectionState != ConnectionState.done || snapshot.hasError) {
+            if (snapshot.connectionState != ConnectionState.done ||
+                snapshot.hasError) {
               return const SizedBox.shrink();
             }
             final staff = snapshot.requireData;
             final activeAccounts = staff.where((s) => s.active).length;
             final inactiveAccounts = staff.where((s) => !s.active).length;
-            final totalActiveTasks = staff.fold<int>(0, (sum, s) => sum + s.activeTasksCount);
-            final totalCompletedTasks = staff.fold<int>(0, (sum, s) => sum + s.completedTasksCount);
+            final totalActiveTasks = staff.fold<int>(
+              0,
+              (sum, s) => sum + s.activeTasksCount,
+            );
+            final totalCompletedTasks = staff.fold<int>(
+              0,
+              (sum, s) => sum + s.completedTasksCount,
+            );
 
             return Container(
               margin: const EdgeInsets.all(16),
@@ -68,16 +78,36 @@ class _OverseerStaffListScreenState extends State<OverseerStaffListScreen> {
                 borderRadius: BorderRadius.circular(12),
                 border: Border.all(color: const Color(0xFFDDE5E2)),
                 boxShadow: const [
-                  BoxShadow(color: Color(0x08000000), blurRadius: 8, offset: Offset(0, 4)),
+                  BoxShadow(
+                    color: Color(0x08000000),
+                    blurRadius: 8,
+                    offset: Offset(0, 4),
+                  ),
                 ],
               ),
               child: Row(
                 mainAxisAlignment: MainAxisAlignment.spaceAround,
                 children: [
-                  _SummaryMetric(label: 'Active Staff', value: activeAccounts.toString(), color: const Color(0xFF0F766E)),
-                  _SummaryMetric(label: 'Inactive Staff', value: inactiveAccounts.toString(), color: Colors.redAccent),
-                  _SummaryMetric(label: 'Ongoing Tasks', value: totalActiveTasks.toString(), color: Colors.orange.shade800),
-                  _SummaryMetric(label: 'Completed Tasks', value: totalCompletedTasks.toString(), color: Colors.teal.shade700),
+                  _SummaryMetric(
+                    label: context.l10n.staffActiveMetric,
+                    value: activeAccounts.toString(),
+                    color: const Color(0xFF0F766E),
+                  ),
+                  _SummaryMetric(
+                    label: context.l10n.staffInactiveMetric,
+                    value: inactiveAccounts.toString(),
+                    color: Colors.redAccent,
+                  ),
+                  _SummaryMetric(
+                    label: context.l10n.staffOngoingTasksMetric,
+                    value: totalActiveTasks.toString(),
+                    color: Colors.orange.shade800,
+                  ),
+                  _SummaryMetric(
+                    label: context.l10n.staffCompletedTasksMetric,
+                    value: totalCompletedTasks.toString(),
+                    color: Colors.teal.shade700,
+                  ),
                 ],
               ),
             );
@@ -95,7 +125,7 @@ class _OverseerStaffListScreenState extends State<OverseerStaffListScreen> {
 
               if (snapshot.hasError) {
                 return _ErrorState(
-                  message: 'Unable to load staff summaries.',
+                  message: context.l10n.staffSummariesLoadFailed,
                   onRetry: _refresh,
                 );
               }
@@ -106,9 +136,9 @@ class _OverseerStaffListScreenState extends State<OverseerStaffListScreen> {
                   onRefresh: _refresh,
                   child: ListView(
                     padding: const EdgeInsets.all(24),
-                    children: const [
-                      SizedBox(height: 96),
-                      Center(child: Text('No staff members registered yet')),
+                    children: [
+                      const SizedBox(height: 96),
+                      Center(child: Text(context.l10n.staffEmpty)),
                     ],
                   ),
                 );
@@ -126,10 +156,12 @@ class _OverseerStaffListScreenState extends State<OverseerStaffListScreen> {
                       member: member,
                       initials: _getInitials(member.fullName),
                       onTaskTapped: (taskId) {
-                        Navigator.of(context).pushNamed(
-                          AppRoutes.overseerTaskDetail,
-                          arguments: taskId,
-                        ).then((_) => _loadSummary());
+                        Navigator.of(context)
+                            .pushNamed(
+                              AppRoutes.overseerTaskDetail,
+                              arguments: taskId,
+                            )
+                            .then((_) => _loadSummary());
                       },
                     );
                   },
@@ -162,16 +194,16 @@ class _SummaryMetric extends StatelessWidget {
         Text(
           value,
           style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                fontWeight: FontWeight.bold,
-                color: color,
-              ),
+            fontWeight: FontWeight.bold,
+            color: color,
+          ),
         ),
         const SizedBox(height: 4),
         Text(
           label,
-          style: Theme.of(context).textTheme.labelSmall?.copyWith(
-                color: Colors.grey.shade600,
-              ),
+          style: Theme.of(
+            context,
+          ).textTheme.labelSmall?.copyWith(color: Colors.grey.shade600),
         ),
       ],
     );
@@ -191,12 +223,30 @@ class _StaffSummaryCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final avatarColor = member.active ? const Color(0xFFE2F3EE) : Colors.red.shade50;
-    final avatarTextColor = member.active ? const Color(0xFF0F766E) : Colors.red.shade700;
+    final avatarColor = member.active
+        ? const Color(0xFFE2F3EE)
+        : Colors.red.shade50;
+    final avatarTextColor = member.active
+        ? const Color(0xFF0F766E)
+        : Colors.red.shade700;
 
     // Filter tasks
-    final activeTasks = member.tasks.where((t) => t.status == TaskStatus.assigned || t.status == TaskStatus.inProgress).toList();
-    final completedTasks = member.tasks.where((t) => t.status == TaskStatus.done || t.status == TaskStatus.closed || t.status == TaskStatus.approved || t.status == TaskStatus.pendingReview).toList();
+    final activeTasks = member.tasks
+        .where(
+          (t) =>
+              t.status == TaskStatus.assigned ||
+              t.status == TaskStatus.inProgress,
+        )
+        .toList();
+    final completedTasks = member.tasks
+        .where(
+          (t) =>
+              t.status == TaskStatus.done ||
+              t.status == TaskStatus.closed ||
+              t.status == TaskStatus.approved ||
+              t.status == TaskStatus.pendingReview,
+        )
+        .toList();
 
     return Card(
       elevation: 0,
@@ -215,7 +265,10 @@ class _StaffSummaryCard extends StatelessWidget {
             backgroundColor: avatarColor,
             child: Text(
               initials,
-              style: TextStyle(color: avatarTextColor, fontWeight: FontWeight.bold),
+              style: TextStyle(
+                color: avatarTextColor,
+                fontWeight: FontWeight.bold,
+              ),
             ),
           ),
           title: Row(
@@ -223,7 +276,10 @@ class _StaffSummaryCard extends StatelessWidget {
               Expanded(
                 child: Text(
                   member.fullName,
-                  style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
+                  style: const TextStyle(
+                    fontWeight: FontWeight.bold,
+                    fontSize: 16,
+                  ),
                 ),
               ),
               const SizedBox(width: 8),
@@ -243,13 +299,17 @@ class _StaffSummaryCard extends StatelessWidget {
                 Row(
                   children: [
                     _MiniStatChip(
-                      label: '${member.activeTasksCount} active',
+                      label: context.l10n.staffActiveTaskCount(
+                        member.activeTasksCount,
+                      ),
                       color: Colors.orange.shade800,
                       backgroundColor: Colors.orange.shade50,
                     ),
                     const SizedBox(width: 8),
                     _MiniStatChip(
-                      label: '${member.completedTasksCount} completed',
+                      label: context.l10n.staffCompletedTaskCount(
+                        member.completedTasksCount,
+                      ),
                       color: Colors.teal.shade700,
                       backgroundColor: Colors.teal.shade50,
                     ),
@@ -268,36 +328,64 @@ class _StaffSummaryCard extends StatelessWidget {
                 children: [
                   // Active Tasks Section
                   if (activeTasks.isNotEmpty) ...[
-                    const Padding(
-                      padding: EdgeInsets.symmetric(horizontal: 4, vertical: 6),
+                    Padding(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 4,
+                        vertical: 6,
+                      ),
                       child: Text(
-                        'ACTIVE TASKS',
-                        style: TextStyle(fontSize: 10, fontWeight: FontWeight.bold, color: Colors.grey),
+                        context.l10n.staffActiveTasksHeader,
+                        style: TextStyle(
+                          fontSize: 10,
+                          fontWeight: FontWeight.bold,
+                          color: Colors.grey,
+                        ),
                       ),
                     ),
-                    ...activeTasks.map((t) => _TaskSubTile(task: t, onTap: () => onTaskTapped(t.id))),
+                    ...activeTasks.map(
+                      (t) => _TaskSubTile(
+                        task: t,
+                        onTap: () => onTaskTapped(t.id),
+                      ),
+                    ),
                     const SizedBox(height: 10),
                   ],
 
                   // Completed Tasks Section
                   if (completedTasks.isNotEmpty) ...[
-                    const Padding(
-                      padding: EdgeInsets.symmetric(horizontal: 4, vertical: 6),
+                    Padding(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 4,
+                        vertical: 6,
+                      ),
                       child: Text(
-                        'COMPLETED TASKS',
-                        style: TextStyle(fontSize: 10, fontWeight: FontWeight.bold, color: Colors.grey),
+                        context.l10n.staffCompletedTasksHeader,
+                        style: TextStyle(
+                          fontSize: 10,
+                          fontWeight: FontWeight.bold,
+                          color: Colors.grey,
+                        ),
                       ),
                     ),
-                    ...completedTasks.map((t) => _TaskSubTile(task: t, onTap: () => onTaskTapped(t.id))),
+                    ...completedTasks.map(
+                      (t) => _TaskSubTile(
+                        task: t,
+                        onTap: () => onTaskTapped(t.id),
+                      ),
+                    ),
                   ],
 
                   if (activeTasks.isEmpty && completedTasks.isEmpty)
-                    const Padding(
-                      padding: EdgeInsets.symmetric(vertical: 16),
+                    Padding(
+                      padding: const EdgeInsets.symmetric(vertical: 16),
                       child: Center(
                         child: Text(
-                          'No tasks assigned to this staff member.',
-                          style: TextStyle(color: Colors.grey, fontSize: 13, fontStyle: FontStyle.italic),
+                          context.l10n.staffNoAssignedTasksForMember,
+                          style: TextStyle(
+                            color: Colors.grey,
+                            fontSize: 13,
+                            fontStyle: FontStyle.italic,
+                          ),
                         ),
                       ),
                     ),
@@ -318,16 +406,20 @@ class _AccountStatusChip extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final text = active ? 'Active' : 'Inactive';
+    final text = active
+        ? context.l10n.commonActive
+        : context.l10n.commonInactive;
     final color = active ? const Color(0xFF0F766E) : Colors.red.shade700;
-    final backgroundColor = active ? const Color(0xFFE2F3EE) : Colors.red.shade50;
+    final backgroundColor = active
+        ? const Color(0xFFE2F3EE)
+        : Colors.red.shade50;
 
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
       decoration: BoxDecoration(
         color: backgroundColor,
         borderRadius: BorderRadius.circular(4),
-        border: Border.all(color: color.withOpacity(0.2)),
+        border: Border.all(color: color.withValues(alpha: 0.2)),
       ),
       child: Text(
         text,
@@ -401,20 +493,27 @@ class _TaskSubTile extends StatelessWidget {
           child: Row(
             children: [
               Container(
-                padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 1.5),
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 6,
+                  vertical: 1.5,
+                ),
                 decoration: BoxDecoration(
-                  color: statusColor.withOpacity(0.08),
+                  color: statusColor.withValues(alpha: 0.08),
                   borderRadius: BorderRadius.circular(4),
-                  border: Border.all(color: statusColor.withOpacity(0.2)),
+                  border: Border.all(color: statusColor.withValues(alpha: 0.2)),
                 ),
                 child: Text(
-                  task.status.label,
-                  style: TextStyle(color: statusColor, fontSize: 9, fontWeight: FontWeight.bold),
+                  task.status.localizedLabel(context),
+                  style: TextStyle(
+                    color: statusColor,
+                    fontSize: 9,
+                    fontWeight: FontWeight.bold,
+                  ),
                 ),
               ),
               const SizedBox(width: 8),
               Text(
-                'Priority ${task.priorityScore}',
+                context.l10n.priorityValue(task.priorityScore),
                 style: TextStyle(color: Colors.grey.shade600, fontSize: 11),
               ),
             ],
@@ -466,7 +565,7 @@ class _ErrorState extends StatelessWidget {
             OutlinedButton.icon(
               onPressed: onRetry,
               icon: const Icon(Icons.refresh),
-              label: const Text('Retry'),
+              label: Text(context.l10n.commonRetry),
             ),
           ],
         ),

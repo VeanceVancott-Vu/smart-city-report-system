@@ -2,6 +2,9 @@ import 'package:flutter/material.dart';
 import 'package:flutter_map/flutter_map.dart';
 import 'package:latlong2/latlong.dart' hide Path;
 
+import '../../../core/localization/app_localizations_extension.dart';
+import '../../../core/localization/domain_localizations.dart';
+import '../../../core/localization/language_menu_button.dart';
 import '../../../core/routing/app_routes.dart';
 import '../../reports/data/report_api_service.dart';
 import '../../reports/domain/report.dart';
@@ -187,16 +190,17 @@ class _StaffTaskInboxScreenState extends State<StaffTaskInboxScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: const Text('My Tasks'),
+        title: Text(context.l10n.staffMyTasksTitle),
         actions: [
+          const LanguageMenuButton(),
           IconButton(
-            tooltip: 'Refresh',
+            tooltip: context.l10n.commonRefresh,
             onPressed: _refresh,
             icon: const Icon(Icons.refresh),
           ),
           if (widget.onLogout != null)
             IconButton(
-              tooltip: 'Logout',
+              tooltip: context.l10n.commonLogout,
               onPressed: widget.onLogout,
               icon: const Icon(Icons.logout),
             ),
@@ -213,7 +217,7 @@ class _StaffTaskInboxScreenState extends State<StaffTaskInboxScreen> {
 
             if (snapshot.hasError && _tasks.isEmpty) {
               return _ErrorState(
-                message: 'Unable to load assigned tasks.',
+                message: context.l10n.tasksLoadFailed,
                 onRetry: _refresh,
               );
             }
@@ -392,38 +396,38 @@ class _TaskSummary extends StatelessWidget {
       children: [
         _SummaryMetric(
           icon: Icons.assignment_ind_outlined,
-          label: 'Assigned to you',
+          label: context.l10n.staffAssignedToYou,
           value: tasks.length.toString(),
           color: const Color(0xFF0F766E),
         ),
         _SummaryMetric(
           icon: Icons.play_circle_outline,
-          label: 'In progress',
+          label: context.l10n.staffInProgress,
           value: inProgress.toString(),
           color: _statusColor(StaffTaskStatus.inProgress),
         ),
         _SummaryMetric(
           icon: Icons.rate_review_outlined,
-          label: 'Review',
+          label: context.l10n.staffReview,
           value: awaitingReview.toString(),
           color: _statusColor(StaffTaskStatus.awaitingReview),
         ),
         _SummaryMetric(
           icon: Icons.verified_outlined,
-          label: 'Approved',
+          label: context.l10n.staffApproved,
           value: approved.toString(),
           color: _statusColor(StaffTaskStatus.approved),
         ),
         _SummaryMetric(
           icon: Icons.trending_up,
-          label: 'Top priority',
+          label: context.l10n.staffTopPriority,
           value: topPriority.toString(),
           color: const Color(0xFFB45309),
         ),
         if (assigned > 0)
           _SummaryMetric(
             icon: Icons.radio_button_checked,
-            label: 'Ready',
+            label: context.l10n.staffReady,
             value: assigned.toString(),
             color: _statusColor(StaffTaskStatus.assigned),
           ),
@@ -527,7 +531,7 @@ class _StatusFilters extends StatelessWidget {
           Padding(
             padding: const EdgeInsets.only(right: 8),
             child: FilterChip(
-              label: Text('All (${tasks.length})'),
+              label: Text('${context.l10n.taskAllStatuses} (${tasks.length})'),
               selected: selectedStatus == null,
               onSelected: (_) => onSelected(null),
               selectedColor: const Color(0xFFE2F3EE),
@@ -550,7 +554,7 @@ class _StatusFilters extends StatelessWidget {
                       ? _statusColor(status)
                       : Colors.grey.shade600,
                 ),
-                label: Text('${status.label} ($count)'),
+                label: Text('${status.localizedLabel(context)} ($count)'),
                 selected: selectedStatus == status,
                 onSelected: (_) => onSelected(status),
                 selectedColor: _statusColor(status).withValues(alpha: 0.12),
@@ -684,7 +688,7 @@ class _MapCountBadge extends StatelessWidget {
             const Icon(Icons.map_outlined, size: 17, color: Color(0xFF0F766E)),
             const SizedBox(width: 6),
             Text(
-              count == 1 ? '1 task' : '$count tasks',
+              context.l10n.taskCount(count),
               style: const TextStyle(fontWeight: FontWeight.w700),
             ),
           ],
@@ -714,7 +718,7 @@ class _EmptyMapOverlay extends StatelessWidget {
               Icon(Icons.task_alt, color: Colors.grey.shade600),
               const SizedBox(width: 8),
               Text(
-                'No task locations',
+                context.l10n.staffNoTaskLocations,
                 style: TextStyle(
                   color: Colors.grey.shade700,
                   fontWeight: FontWeight.w700,
@@ -745,7 +749,7 @@ class _NumberedTaskMarker extends StatelessWidget {
     final size = isSelected ? 42.0 : 36.0;
 
     return Semantics(
-      label: 'Task $number ${task.reportTitle}',
+      label: context.l10n.staffTaskMarkerLabel(number, task.reportTitle),
       child: Column(
         mainAxisSize: MainAxisSize.min,
         children: [
@@ -828,7 +832,7 @@ class _SelectedTaskCard extends StatelessWidget {
                   ),
                 ),
                 IconButton(
-                  tooltip: 'Close',
+                  tooltip: context.l10n.commonClose,
                   visualDensity: VisualDensity.compact,
                   onPressed: onClose,
                   icon: const Icon(Icons.close, size: 18),
@@ -860,7 +864,7 @@ class _SelectedTaskCard extends StatelessWidget {
               child: FilledButton.icon(
                 onPressed: onOpen,
                 icon: const Icon(Icons.open_in_new, size: 17),
-                label: const Text('Open'),
+                label: Text(context.l10n.commonOpen),
               ),
             ),
           ],
@@ -931,7 +935,7 @@ class _TaskListPanel extends StatelessWidget {
                 const SizedBox(width: 8),
                 Expanded(
                   child: Text(
-                    'Task queue',
+                    context.l10n.staffTaskQueue,
                     style: Theme.of(context).textTheme.titleSmall?.copyWith(
                       fontWeight: FontWeight.w800,
                     ),
@@ -985,7 +989,7 @@ class _EmptyTaskList extends StatelessWidget {
           ),
           const SizedBox(height: 10),
           Text(
-            'No assigned tasks yet.',
+            context.l10n.staffNoAssignedTasks,
             textAlign: TextAlign.center,
             style: TextStyle(
               color: Colors.grey.shade700,
@@ -1040,9 +1044,7 @@ class _TaskTileState extends State<_TaskTile> {
         ? widget.reports.length
         : widget.task.reportIds.length;
     final hasMultipleReports = widget.reports.length > 1;
-    final reportCountLabel = reportCount == 1
-        ? '1 report'
-        : '$reportCount reports';
+    final reportCountLabel = context.l10n.reportCount(reportCount);
 
     return Card(
       elevation: 0,
@@ -1079,7 +1081,10 @@ class _TaskTileState extends State<_TaskTile> {
                       _TaskStatusPill(status: widget.task.status),
                       _TaskChip(
                         icon: Icons.category_outlined,
-                        label: widget.task.category,
+                        label: _localizedStaffTaskCategory(
+                          context,
+                          widget.task.category,
+                        ),
                       ),
                       _TaskChip(
                         icon: Icons.place_outlined,
@@ -1087,7 +1092,9 @@ class _TaskTileState extends State<_TaskTile> {
                       ),
                       _TaskChip(
                         icon: Icons.trending_up,
-                        label: 'Priority ${widget.task.priorityScore}',
+                        label: context.l10n.priorityValue(
+                          widget.task.priorityScore,
+                        ),
                       ),
                       _TaskChip(
                         icon: Icons.event_outlined,
@@ -1113,7 +1120,9 @@ class _TaskTileState extends State<_TaskTile> {
                           size: 18,
                         ),
                         label: Text(
-                          _expanded ? 'Hide reports' : reportCountLabel,
+                          _expanded
+                              ? context.l10n.staffHideReports
+                              : reportCountLabel,
                         ),
                       ),
                     ),
@@ -1121,7 +1130,7 @@ class _TaskTileState extends State<_TaskTile> {
               ),
             ),
             trailing: IconButton(
-              tooltip: 'Show on map',
+              tooltip: context.l10n.staffShowOnMap,
               onPressed: widget.onFocusOnMap,
               icon: const Icon(Icons.my_location_outlined),
             ),
@@ -1239,7 +1248,7 @@ class _TaskLinkedReportRow extends StatelessWidget {
                       _ReportStatusPill(status: report.status),
                       _TaskChip(
                         icon: Icons.trending_up,
-                        label: 'Priority ${report.priorityScore}',
+                        label: context.l10n.priorityValue(report.priorityScore),
                       ),
                     ],
                   ),
@@ -1271,7 +1280,7 @@ class _ReportStatusPill extends StatelessWidget {
         border: Border.all(color: color.withValues(alpha: 0.24)),
       ),
       child: Text(
-        status.label,
+        status.localizedLabel(context),
         style: TextStyle(
           color: color,
           fontSize: 12,
@@ -1351,7 +1360,7 @@ class _TaskStatusPill extends StatelessWidget {
           Icon(_statusIcon(status), size: 13, color: color),
           const SizedBox(width: 4),
           Text(
-            status.label,
+            status.localizedLabel(context),
             style: TextStyle(
               color: color,
               fontSize: 12,
@@ -1383,7 +1392,7 @@ class _ErrorState extends StatelessWidget {
             OutlinedButton.icon(
               onPressed: onRetry,
               icon: const Icon(Icons.refresh),
-              label: const Text('Retry'),
+              label: Text(context.l10n.commonRetry),
             ),
           ],
         ),
@@ -1422,6 +1431,15 @@ String _reportLocationLabel(Report report) {
     return address;
   }
   return '${report.latitude.toStringAsFixed(4)}, ${report.longitude.toStringAsFixed(4)}';
+}
+
+String _localizedStaffTaskCategory(BuildContext context, String label) {
+  for (final category in ReportCategory.values) {
+    if (category.label == label) {
+      return category.localizedLabel(context);
+    }
+  }
+  return label;
 }
 
 Color _reportStatusColor(ReportStatus status) {

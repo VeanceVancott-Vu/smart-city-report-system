@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 
 import '../../../core/files/uploaded_photo_view.dart';
+import '../../../core/localization/app_localizations_extension.dart';
+import '../../../core/localization/domain_localizations.dart';
 import '../../../core/routing/app_routes.dart';
 import '../../reports/data/report_api_service.dart';
 import '../../reports/domain/report.dart';
@@ -40,9 +42,7 @@ class _OverseerReportDetailScreenState
   Future<void> _createTask(Report report) async {
     if (report.status != ReportStatus.submitted) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Only submitted reports can be turned into tasks.'),
-        ),
+        SnackBar(content: Text(context.l10n.reportSubmittedOnlyTaskable)),
       );
       return;
     }
@@ -63,7 +63,7 @@ class _OverseerReportDetailScreenState
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Report Details'),
+        title: Text(context.l10n.reportDetailsTitle),
         actions: [
           FutureBuilder<Report>(
             future: _reportFuture,
@@ -71,7 +71,7 @@ class _OverseerReportDetailScreenState
               final report = snapshot.data;
               final canCreateTask = report?.status == ReportStatus.submitted;
               return IconButton(
-                tooltip: 'Create task',
+                tooltip: context.l10n.taskCreate,
                 onPressed: canCreateTask ? () => _createTask(report!) : null,
                 icon: const Icon(Icons.add_task_outlined),
               );
@@ -88,7 +88,7 @@ class _OverseerReportDetailScreenState
             }
             if (snapshot.hasError) {
               return _ErrorState(
-                message: 'Unable to load report.',
+                message: context.l10n.reportLoadFailed,
                 onRetry: _refresh,
               );
             }
@@ -113,46 +113,52 @@ class _OverseerReportDetailScreenState
                     children: [
                       _InfoChip(
                         icon: Icons.flag_outlined,
-                        label: report.status.label,
+                        label: report.status.localizedLabel(context),
                       ),
                       _InfoChip(
                         icon: Icons.category_outlined,
-                        label: report.category.label,
+                        label: report.category.localizedLabel(context),
                       ),
                       _InfoChip(
                         icon: Icons.trending_up,
-                        label: 'Priority ${report.priorityScore}',
+                        label: context.l10n.priorityValue(report.priorityScore),
                       ),
                     ],
                   ),
                   _Section(
-                    title: 'Description',
+                    title: context.l10n.commonDescription,
                     child: Text(report.description),
                   ),
                   _Section(
-                    title: 'Location',
+                    title: context.l10n.commonLocation,
                     child: Text(
-                      '${report.latitude.toStringAsFixed(6)}, ${report.longitude.toStringAsFixed(6)}',
+                      context.l10n.coordinatesValue(
+                        report.latitude.toStringAsFixed(6),
+                        report.longitude.toStringAsFixed(6),
+                      ),
                     ),
                   ),
                   if ((report.addressText ?? '').trim().isNotEmpty)
                     _Section(
-                      title: 'Address',
+                      title: context.l10n.commonAddress,
                       child: Text(report.addressText!),
                     ),
                   _Section(
-                    title: 'Before photo',
+                    title: context.l10n.commonBeforePhoto,
                     child: UploadedPhotoView(fileUrl: report.beforePhotoUrl),
                   ),
                   _Section(
-                    title: 'Created by',
-                    child: Text(report.createdBy?.fullName ?? 'Unknown user'),
+                    title: context.l10n.reportCreatedBy,
+                    child: Text(
+                      report.createdBy?.fullName ??
+                          context.l10n.commonUnknownUser,
+                    ),
                   ),
                   const SizedBox(height: 18),
                   FilledButton.icon(
                     onPressed: canCreateTask ? () => _createTask(report) : null,
                     icon: const Icon(Icons.add_task_outlined),
-                    label: const Text('Create task from report'),
+                    label: Text(context.l10n.taskCreateFromReport),
                   ),
                 ],
               ),
@@ -228,7 +234,7 @@ class _ErrorState extends StatelessWidget {
             OutlinedButton.icon(
               onPressed: onRetry,
               icon: const Icon(Icons.refresh),
-              label: const Text('Retry'),
+              label: Text(context.l10n.commonRetry),
             ),
           ],
         ),

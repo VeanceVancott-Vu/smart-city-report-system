@@ -1,11 +1,11 @@
 import 'dart:async';
-import 'dart:convert';
 
 import 'package:flutter/material.dart';
 import 'package:flutter_map/flutter_map.dart';
-import 'package:http/http.dart' as http;
 import 'package:latlong2/latlong.dart' hide Path;
 
+import '../../../core/location/geocoding_service.dart';
+import '../../../core/localization/app_localizations_extension.dart';
 import '../data/report_api_service.dart';
 import '../domain/report.dart';
 
@@ -22,11 +22,13 @@ class CitizenReportMapPicker extends StatefulWidget {
     required this.reportApiService,
     this.initialLocation,
     this.initialAddress,
+    this.geocodingService,
   });
 
   final ReportApiService reportApiService;
   final LatLng? initialLocation;
   final String? initialAddress;
+  final GeocodingService? geocodingService;
 
   @override
   State<CitizenReportMapPicker> createState() => _CitizenReportMapPickerState();
@@ -34,6 +36,7 @@ class CitizenReportMapPicker extends StatefulWidget {
 
 class _CitizenReportMapPickerState extends State<CitizenReportMapPicker> {
   late final MapController _mapController;
+  late final GeocodingService _geocodingService;
   LatLng? _pinnedLocation;
   String _addressText = '';
   bool _isGeocoding = false;
@@ -48,14 +51,16 @@ class _CitizenReportMapPickerState extends State<CitizenReportMapPicker> {
   final TextEditingController _searchController = TextEditingController();
   final FocusNode _searchFocusNode = FocusNode();
   String _searchQuery = '';
-  List<Map<String, dynamic>> _addressSuggestions = [];
+  List<PlaceSearchResult> _addressSuggestions = [];
   bool _isSearchingAddress = false;
-  Timer? _searchDebounceTimer;
+  bool _hasSearchedAddress = false;
+  int _reverseGeocodeRequestId = 0;
 
   @override
   void initState() {
     super.initState();
     _mapController = MapController();
+    _geocodingService = widget.geocodingService ?? NominatimGeocodingService();
     _pinnedLocation = widget.initialLocation ?? const LatLng(10.7769, 106.7009);
     _addressText = widget.initialAddress ?? '';
 
@@ -71,7 +76,6 @@ class _CitizenReportMapPickerState extends State<CitizenReportMapPicker> {
   @override
   void dispose() {
     _debounceTimer?.cancel();
-    _searchDebounceTimer?.cancel();
     _searchController.dispose();
     _searchFocusNode.dispose();
     _mapController.dispose();
@@ -121,42 +125,48 @@ class _CitizenReportMapPickerState extends State<CitizenReportMapPicker> {
     });
   }
 
-  Future<void> _reverseGeocode(double lat, double lng) async {
+  Future<void> _reverseGeocode(
+    double lat,
+    double lng, {
+    String? fallbackAddress,
+  }) async {
+    final requestId = ++_reverseGeocodeRequestId;
     setState(() {
       _isGeocoding = true;
+      _addressText =
+          fallbackAddress ??
+          '${lat.toStringAsFixed(6)}, ${lng.toStringAsFixed(6)}';
     });
 
     try {
-      final url = Uri.parse(
-        'https://nominatim.openstreetmap.org/reverse?lat=$lat&lon=$lng&format=json&accept-language=en',
+      final result = await _geocodingService.reverseGeocode(
+        latitude: lat,
+        longitude: lng,
+        languageCode: Localizations.localeOf(context).languageCode,
       );
-      final response = await http.get(
-        url,
-        headers: const {
-          'User-Agent': 'SmartCityReportSystem/1.0 (contact: admin@smartcity.com)',
-        },
-      ).timeout(const Duration(seconds: 4));
 
-      if (response.statusCode == 200) {
-        final Map<String, dynamic> data = jsonDecode(response.body);
-        final displayName = data['display_name'];
-        if (displayName is String && displayName.isNotEmpty) {
-          if (mounted) {
-            setState(() {
-              _addressText = displayName;
-            });
-          }
-        }
+      if (!_isCurrentReverseRequest(requestId, lat, lng) || result == null) {
+        return;
       }
+      setState(() => _addressText = result.displayName);
     } catch (_) {
-      // Fail silently
+      // Keep the coordinate or report-title fallback.
     } finally {
-      if (mounted) {
-        setState(() {
-          _isGeocoding = false;
-        });
+      if (_isCurrentReverseRequest(requestId, lat, lng)) {
+        setState(() => _isGeocoding = false);
       }
     }
+  }
+
+  bool _isCurrentReverseRequest(
+    int requestId,
+    double latitude,
+    double longitude,
+  ) {
+    return mounted &&
+        requestId == _reverseGeocodeRequestId &&
+        _pinnedLocation?.latitude == latitude &&
+        _pinnedLocation?.longitude == longitude;
   }
 
   void _onMapTapped(LatLng point) {
@@ -169,53 +179,36 @@ class _CitizenReportMapPickerState extends State<CitizenReportMapPicker> {
   void _onSearchQueryChanged(String query) {
     setState(() {
       _searchQuery = query;
-    });
-
-    _searchDebounceTimer?.cancel();
-    if (query.trim().isEmpty) {
-      setState(() {
-        _addressSuggestions = [];
-        _isSearchingAddress = false;
-      });
-      return;
-    }
-
-    _searchDebounceTimer = Timer(const Duration(milliseconds: 500), () {
-      _fetchAddressSuggestions(query);
+      _addressSuggestions = [];
+      _isSearchingAddress = false;
+      _hasSearchedAddress = false;
     });
   }
 
-  Future<void> _fetchAddressSuggestions(String query) async {
+  Future<void> _searchAddresses([String? submittedQuery]) async {
+    final query = (submittedQuery ?? _searchController.text).trim();
+    if (query.isEmpty || _isSearchingAddress) {
+      return;
+    }
+
     setState(() {
       _isSearchingAddress = true;
+      _hasSearchedAddress = true;
     });
 
     try {
-      final encodedQuery = Uri.encodeComponent(query);
-      final url = Uri.parse(
-        'https://nominatim.openstreetmap.org/search?q=$encodedQuery&format=json&limit=5&accept-language=en',
+      final suggestions = await _geocodingService.searchPlaces(
+        query: query,
+        languageCode: Localizations.localeOf(context).languageCode,
       );
-      final response = await http.get(
-        url,
-        headers: const {
-          'User-Agent': 'SmartCityReportSystem/1.0 (contact: admin@smartcity.com)',
-        },
-      ).timeout(const Duration(seconds: 4));
 
-      if (response.statusCode == 200) {
-        final List<dynamic> data = jsonDecode(response.body);
-        if (mounted) {
-          setState(() {
-            _addressSuggestions = data.cast<Map<String, dynamic>>();
-            _isSearchingAddress = false;
-          });
-        }
-      } else {
-        if (mounted) {
-          setState(() => _isSearchingAddress = false);
-        }
+      if (!mounted || _searchController.text.trim() != query) {
+        return;
       }
+      setState(() => _addressSuggestions = suggestions);
     } catch (_) {
+      // Active-report matching remains available if place search fails.
+    } finally {
       if (mounted) {
         setState(() => _isSearchingAddress = false);
       }
@@ -224,9 +217,9 @@ class _CitizenReportMapPickerState extends State<CitizenReportMapPicker> {
 
   void _confirmSelection() {
     if (_pinnedLocation == null) return;
-    Navigator.of(context).pop(
-      MapPickerResult(location: _pinnedLocation!, address: _addressText),
-    );
+    Navigator.of(
+      context,
+    ).pop(MapPickerResult(location: _pinnedLocation!, address: _addressText));
   }
 
   @override
@@ -235,12 +228,14 @@ class _CitizenReportMapPickerState extends State<CitizenReportMapPicker> {
 
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Pin Location'),
+        title: Text(context.l10n.mapPinLocationTitle),
         actions: [
           IconButton(
-            tooltip: 'Confirm location',
+            tooltip: context.l10n.mapConfirmLocationTooltip,
             icon: const Icon(Icons.check, size: 28, color: Colors.teal),
-            onPressed: _pinnedLocation == null || _isGeocoding ? null : _confirmSelection,
+            onPressed: _pinnedLocation == null || _isGeocoding
+                ? null
+                : _confirmSelection,
           ),
           const SizedBox(width: 8),
         ],
@@ -252,7 +247,8 @@ class _CitizenReportMapPickerState extends State<CitizenReportMapPicker> {
             child: FlutterMap(
               mapController: _mapController,
               options: MapOptions(
-                initialCenter: _pinnedLocation ?? const LatLng(10.7769, 106.7009),
+                initialCenter:
+                    _pinnedLocation ?? const LatLng(10.7769, 106.7009),
                 initialZoom: 15.0,
                 minZoom: 4.0,
                 maxZoom: 18.0,
@@ -273,9 +269,12 @@ class _CitizenReportMapPickerState extends State<CitizenReportMapPicker> {
                   markers: [
                     // Render existing report pins
                     ..._pins.map((pin) {
-                      final isSelectedPin = _pinnedLocation != null &&
-                          (pin.latitude - _pinnedLocation!.latitude).abs() < 1e-6 &&
-                          (pin.longitude - _pinnedLocation!.longitude).abs() < 1e-6;
+                      final isSelectedPin =
+                          _pinnedLocation != null &&
+                          (pin.latitude - _pinnedLocation!.latitude).abs() <
+                              1e-6 &&
+                          (pin.longitude - _pinnedLocation!.longitude).abs() <
+                              1e-6;
 
                       return Marker(
                         point: LatLng(pin.latitude, pin.longitude),
@@ -286,11 +285,19 @@ class _CitizenReportMapPickerState extends State<CitizenReportMapPicker> {
                           onTap: () {
                             _searchFocusNode.unfocus();
                             setState(() {
-                              _pinnedLocation = LatLng(pin.latitude, pin.longitude);
-                              _addressText = pin.title; // Default to report title as address hint
+                              _pinnedLocation = LatLng(
+                                pin.latitude,
+                                pin.longitude,
+                              );
+                              _addressText = pin
+                                  .title; // Default to report title as address hint
                             });
                             // Trigger reverse geocoding to update address
-                            _reverseGeocode(pin.latitude, pin.longitude);
+                            _reverseGeocode(
+                              pin.latitude,
+                              pin.longitude,
+                              fallbackAddress: pin.title,
+                            );
                           },
                           child: _MapMarker(
                             pin: pin,
@@ -331,26 +338,44 @@ class _CitizenReportMapPickerState extends State<CitizenReportMapPicker> {
                     borderRadius: BorderRadius.circular(12),
                     border: Border.all(color: const Color(0xFFDDE5E2)),
                     boxShadow: const [
-                      BoxShadow(color: Color(0x11000000), blurRadius: 10, offset: Offset(0, 4)),
+                      BoxShadow(
+                        color: Color(0x11000000),
+                        blurRadius: 10,
+                        offset: Offset(0, 4),
+                      ),
                     ],
                   ),
                   child: TextField(
                     controller: _searchController,
                     focusNode: _searchFocusNode,
                     onChanged: _onSearchQueryChanged,
+                    onSubmitted: _searchAddresses,
+                    textInputAction: TextInputAction.search,
                     style: const TextStyle(fontSize: 14),
                     decoration: InputDecoration(
-                      hintText: 'Search address or open reports...',
+                      hintText: context.l10n.mapPickerSearchHint,
                       hintStyle: const TextStyle(color: Colors.grey),
-                      prefixIcon: const Icon(Icons.search, color: Colors.grey),
+                      prefixIcon: IconButton(
+                        tooltip: context.l10n.mapSearchPlacesTooltip,
+                        onPressed: _isSearchingAddress
+                            ? null
+                            : () => _searchAddresses(),
+                        icon: const Icon(Icons.search, color: Colors.grey),
+                      ),
                       suffixIcon: _searchController.text.isNotEmpty
                           ? IconButton(
-                              icon: const Icon(Icons.clear, color: Colors.grey, size: 18),
+                              icon: const Icon(
+                                Icons.clear,
+                                color: Colors.grey,
+                                size: 18,
+                              ),
                               onPressed: () {
                                 setState(() {
                                   _searchController.clear();
                                   _searchQuery = '';
                                   _addressSuggestions = [];
+                                  _isSearchingAddress = false;
+                                  _hasSearchedAddress = false;
                                 });
                               },
                             )
@@ -360,7 +385,16 @@ class _CitizenReportMapPickerState extends State<CitizenReportMapPicker> {
                     ),
                   ),
                 ),
-                if (_searchQuery.isNotEmpty && _searchFocusNode.hasFocus)
+                if (_searchQuery.isNotEmpty &&
+                    _searchFocusNode.hasFocus &&
+                    (_pins.any(
+                          (pin) => pin.title.toLowerCase().contains(
+                            _searchQuery.toLowerCase(),
+                          ),
+                        ) ||
+                        _addressSuggestions.isNotEmpty ||
+                        _isSearchingAddress ||
+                        _hasSearchedAddress))
                   Container(
                     margin: const EdgeInsets.only(top: 4),
                     constraints: const BoxConstraints(maxHeight: 250),
@@ -369,7 +403,11 @@ class _CitizenReportMapPickerState extends State<CitizenReportMapPicker> {
                       borderRadius: BorderRadius.circular(12),
                       border: Border.all(color: const Color(0xFFDDE5E2)),
                       boxShadow: const [
-                        BoxShadow(color: Color(0x11000000), blurRadius: 8, offset: Offset(0, 4)),
+                        BoxShadow(
+                          color: Color(0x11000000),
+                          blurRadius: 8,
+                          offset: Offset(0, 4),
+                        ),
                       ],
                     ),
                     child: ClipRRect(
@@ -379,70 +417,107 @@ class _CitizenReportMapPickerState extends State<CitizenReportMapPicker> {
                         padding: EdgeInsets.zero,
                         children: [
                           // Search inside active report pins
-                          if (_pins.any((pin) =>
-                              pin.title.toLowerCase().contains(_searchQuery.toLowerCase()))) ...[
-                            const Padding(
-                              padding: EdgeInsets.fromLTRB(12, 8, 12, 4),
+                          if (_pins.any(
+                            (pin) => pin.title.toLowerCase().contains(
+                              _searchQuery.toLowerCase(),
+                            ),
+                          )) ...[
+                            Padding(
+                              padding: const EdgeInsets.fromLTRB(12, 8, 12, 4),
                               child: Text(
-                                'ACTIVE REPORTS',
-                                style: TextStyle(fontSize: 10, fontWeight: FontWeight.bold, color: Colors.grey),
+                                context.l10n.mapActiveReportsHeader,
+                                style: const TextStyle(
+                                  fontSize: 10,
+                                  fontWeight: FontWeight.bold,
+                                  color: Colors.grey,
+                                ),
                               ),
                             ),
                             ..._pins
-                                .where((pin) =>
-                                    pin.title.toLowerCase().contains(_searchQuery.toLowerCase()))
+                                .where(
+                                  (pin) => pin.title.toLowerCase().contains(
+                                    _searchQuery.toLowerCase(),
+                                  ),
+                                )
                                 .map((pin) {
-                              final color = _getCategoryColor(pin.category);
-                              return ListTile(
-                                dense: true,
-                                leading: Icon(_getCategoryIcon(pin.category), color: color, size: 16),
-                                title: Text(pin.title, style: const TextStyle(fontSize: 13)),
-                                onTap: () {
-                                  setState(() {
-                                    _pinnedLocation = LatLng(pin.latitude, pin.longitude);
-                                    _addressText = pin.title;
-                                    _searchController.clear();
-                                    _searchQuery = '';
-                                    _addressSuggestions = [];
-                                    _searchFocusNode.unfocus();
-                                  });
-                                  _mapController.move(LatLng(pin.latitude, pin.longitude), 16.0);
-                                  _reverseGeocode(pin.latitude, pin.longitude);
-                                },
-                              );
-                            }),
+                                  final color = _getCategoryColor(pin.category);
+                                  return ListTile(
+                                    dense: true,
+                                    leading: Icon(
+                                      _getCategoryIcon(pin.category),
+                                      color: color,
+                                      size: 16,
+                                    ),
+                                    title: Text(
+                                      pin.title,
+                                      style: const TextStyle(fontSize: 13),
+                                    ),
+                                    onTap: () {
+                                      setState(() {
+                                        _pinnedLocation = LatLng(
+                                          pin.latitude,
+                                          pin.longitude,
+                                        );
+                                        _addressText = pin.title;
+                                        _searchController.clear();
+                                        _searchQuery = '';
+                                        _addressSuggestions = [];
+                                        _hasSearchedAddress = false;
+                                        _searchFocusNode.unfocus();
+                                      });
+                                      _mapController.move(
+                                        LatLng(pin.latitude, pin.longitude),
+                                        16.0,
+                                      );
+                                      _reverseGeocode(
+                                        pin.latitude,
+                                        pin.longitude,
+                                        fallbackAddress: pin.title,
+                                      );
+                                    },
+                                  );
+                                }),
                           ],
                           // Nominatim Search Suggestions
                           if (_addressSuggestions.isNotEmpty) ...[
-                            const Padding(
-                              padding: EdgeInsets.fromLTRB(12, 8, 12, 4),
+                            Padding(
+                              padding: const EdgeInsets.fromLTRB(12, 8, 12, 4),
                               child: Text(
-                                'ADDRESSES & PLACES',
-                                style: TextStyle(fontSize: 10, fontWeight: FontWeight.bold, color: Colors.grey),
+                                context.l10n.mapPlacesHeader,
+                                style: const TextStyle(
+                                  fontSize: 10,
+                                  fontWeight: FontWeight.bold,
+                                  color: Colors.grey,
+                                ),
                               ),
                             ),
                             ..._addressSuggestions.map((addr) {
-                              final name = addr['display_name'] ?? 'Address';
                               return ListTile(
                                 dense: true,
-                                leading: const Icon(Icons.place, color: Colors.redAccent, size: 16),
+                                leading: const Icon(
+                                  Icons.place,
+                                  color: Colors.redAccent,
+                                  size: 16,
+                                ),
                                 title: Text(
-                                  name,
+                                  addr.displayName,
                                   maxLines: 2,
                                   overflow: TextOverflow.ellipsis,
                                   style: const TextStyle(fontSize: 12),
                                 ),
                                 onTap: () {
-                                  final lat = double.tryParse(addr['lat'] ?? '') ?? 0.0;
-                                  final lon = double.tryParse(addr['lon'] ?? '') ?? 0.0;
-                                  final point = LatLng(lat, lon);
+                                  final point = LatLng(
+                                    addr.latitude,
+                                    addr.longitude,
+                                  );
 
                                   setState(() {
                                     _pinnedLocation = point;
-                                    _addressText = name;
+                                    _addressText = addr.displayName;
                                     _searchController.clear();
                                     _searchQuery = '';
                                     _addressSuggestions = [];
+                                    _hasSearchedAddress = false;
                                     _searchFocusNode.unfocus();
                                   });
                                   _mapController.move(point, 16.0);
@@ -450,6 +525,21 @@ class _CitizenReportMapPickerState extends State<CitizenReportMapPicker> {
                               );
                             }),
                           ],
+                          if (_hasSearchedAddress &&
+                              !_isSearchingAddress &&
+                              _addressSuggestions.isEmpty &&
+                              !_pins.any(
+                                (pin) => pin.title.toLowerCase().contains(
+                                  _searchQuery.toLowerCase(),
+                                ),
+                              ))
+                            Padding(
+                              padding: const EdgeInsets.all(12),
+                              child: Text(
+                                context.l10n.mapNoSearchMatches,
+                                style: const TextStyle(color: Colors.grey),
+                              ),
+                            ),
                           if (_isSearchingAddress)
                             const Padding(
                               padding: EdgeInsets.all(12),
@@ -457,7 +547,9 @@ class _CitizenReportMapPickerState extends State<CitizenReportMapPicker> {
                                 child: SizedBox(
                                   width: 16,
                                   height: 16,
-                                  child: CircularProgressIndicator(strokeWidth: 2),
+                                  child: CircularProgressIndicator(
+                                    strokeWidth: 2,
+                                  ),
                                 ),
                               ),
                             ),
@@ -478,7 +570,9 @@ class _CitizenReportMapPickerState extends State<CitizenReportMapPicker> {
               child: Card(
                 elevation: 8,
                 shadowColor: Colors.black.withOpacity(0.1),
-                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(16),
+                ),
                 color: Colors.white.withOpacity(0.95),
                 child: Padding(
                   padding: const EdgeInsets.all(16),
@@ -490,7 +584,7 @@ class _CitizenReportMapPickerState extends State<CitizenReportMapPicker> {
                         mainAxisAlignment: MainAxisAlignment.spaceBetween,
                         children: [
                           Text(
-                            'Selected Location',
+                            context.l10n.mapSelectedLocation,
                             style: theme.textTheme.titleMedium?.copyWith(
                               fontWeight: FontWeight.bold,
                               color: theme.colorScheme.primary,
@@ -506,17 +600,26 @@ class _CitizenReportMapPickerState extends State<CitizenReportMapPicker> {
                       ),
                       const SizedBox(height: 8),
                       Text(
-                        _addressText.isNotEmpty ? _addressText : 'Loading address...',
+                        _addressText.isNotEmpty
+                            ? _addressText
+                            : context.l10n.mapLoadingAddress,
                         style: theme.textTheme.bodyMedium?.copyWith(
-                          color: _addressText.isNotEmpty ? Colors.black87 : Colors.grey,
+                          color: _addressText.isNotEmpty
+                              ? Colors.black87
+                              : Colors.grey,
                         ),
                         maxLines: 2,
                         overflow: TextOverflow.ellipsis,
                       ),
                       const SizedBox(height: 8),
                       Text(
-                        'Coordinates: ${_pinnedLocation!.latitude.toStringAsFixed(6)}, ${_pinnedLocation!.longitude.toStringAsFixed(6)}',
-                        style: theme.textTheme.bodySmall?.copyWith(color: Colors.grey.shade600),
+                        context.l10n.coordinatesValue(
+                          _pinnedLocation!.latitude.toStringAsFixed(6),
+                          _pinnedLocation!.longitude.toStringAsFixed(6),
+                        ),
+                        style: theme.textTheme.bodySmall?.copyWith(
+                          color: Colors.grey.shade600,
+                        ),
                       ),
                       const SizedBox(height: 12),
                       SizedBox(
@@ -524,9 +627,11 @@ class _CitizenReportMapPickerState extends State<CitizenReportMapPicker> {
                         child: FilledButton.icon(
                           onPressed: _isGeocoding ? null : _confirmSelection,
                           icon: const Icon(Icons.check_circle_outline),
-                          label: const Text('Confirm Pinned Location'),
+                          label: Text(context.l10n.mapConfirmPinnedLocation),
                           style: FilledButton.styleFrom(
-                            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(8),
+                            ),
                           ),
                         ),
                       ),

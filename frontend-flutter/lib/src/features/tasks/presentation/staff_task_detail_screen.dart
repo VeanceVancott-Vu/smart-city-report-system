@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 
 import '../../../core/files/uploaded_photo_view.dart';
+import '../../../core/localization/app_localizations_extension.dart';
+import '../../../core/localization/domain_localizations.dart';
 import '../../../core/routing/app_routes.dart';
 import '../../reports/data/report_api_service.dart';
 import '../../reports/domain/report.dart';
@@ -74,9 +76,9 @@ class _StaffTaskDetailScreenState extends State<StaffTaskDetailScreen> {
       if (!mounted) {
         return;
       }
-      ScaffoldMessenger.of(
-        context,
-      ).showSnackBar(SnackBar(content: Text('${task.title} started')));
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(context.l10n.staffTaskStarted(task.title))),
+      );
       setState(_loadTask);
       await Navigator.of(
         context,
@@ -84,7 +86,10 @@ class _StaffTaskDetailScreenState extends State<StaffTaskDetailScreen> {
     } on TaskApiException catch (error) {
       _showError(error.message);
     } catch (_) {
-      _showError('Unable to start task.');
+      if (!mounted) {
+        return;
+      }
+      _showError(context.l10n.taskUpdateFailed);
     } finally {
       if (mounted) {
         setState(() => _isUpdating = false);
@@ -143,10 +148,10 @@ class _StaffTaskDetailScreenState extends State<StaffTaskDetailScreen> {
 
         return Scaffold(
           appBar: AppBar(
-            title: const Text('Task Details'),
+            title: Text(context.l10n.taskDetailsTitle),
             actions: [
               IconButton(
-                tooltip: 'Refresh',
+                tooltip: context.l10n.commonRefresh,
                 onPressed: _refresh,
                 icon: const Icon(Icons.refresh),
               ),
@@ -178,7 +183,10 @@ class _StaffTaskDetailScreenState extends State<StaffTaskDetailScreen> {
     }
 
     if (snapshot.hasError) {
-      return _ErrorState(message: 'Unable to load task.', onRetry: _refresh);
+      return _ErrorState(
+        message: context.l10n.taskLoadFailed,
+        onRetry: _refresh,
+      );
     }
 
     final detail = snapshot.requireData;
@@ -199,38 +207,50 @@ class _StaffTaskDetailScreenState extends State<StaffTaskDetailScreen> {
             spacing: 8,
             runSpacing: 8,
             children: [
-              _InfoChip(icon: Icons.flag_outlined, label: task.status.label),
+              _InfoChip(
+                icon: Icons.flag_outlined,
+                label: task.status.localizedLabel(context),
+              ),
               _InfoChip(
                 icon: Icons.category_outlined,
-                label: task.category.label,
+                label: task.category.localizedLabel(context),
               ),
               _InfoChip(
                 icon: Icons.trending_up,
-                label: 'Priority ${task.priorityScore}',
+                label: context.l10n.priorityValue(task.priorityScore),
               ),
             ],
           ),
-          _Section(title: 'Description', child: Text(task.description)),
-          _Section(title: 'Location', child: Text(task.locationLabel)),
           _Section(
-            title: 'Coordinates',
+            title: context.l10n.commonDescription,
+            child: Text(task.description),
+          ),
+          _Section(
+            title: context.l10n.commonLocation,
+            child: Text(task.locationLabel),
+          ),
+          _Section(
+            title: context.l10n.commonCoordinates,
             child: Text(
               '${task.latitude.toStringAsFixed(6)}, ${task.longitude.toStringAsFixed(6)}',
             ),
           ),
           _Section(
-            title: 'Before photo',
+            title: context.l10n.commonBeforePhoto,
             child: UploadedPhotoView(fileUrl: task.beforePhotoUrl),
           ),
           if ((task.afterPhotoUrl ?? '').trim().isNotEmpty)
             _Section(
-              title: 'After photo',
+              title: context.l10n.commonAfterPhoto,
               child: UploadedPhotoView(fileUrl: task.afterPhotoUrl),
             ),
           if ((task.staffNote ?? '').trim().isNotEmpty)
-            _Section(title: 'Staff note', child: Text(task.staffNote!)),
+            _Section(
+              title: context.l10n.taskStaffNote,
+              child: Text(task.staffNote!),
+            ),
           _Section(
-            title: 'Linked reports',
+            title: context.l10n.taskLinkedReports,
             child: _LinkedReportsList(
               reports: detail.reports,
               reportIds: task.reportIds,
@@ -265,11 +285,11 @@ class _LinkedReportsList extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     if (reportIds.isEmpty) {
-      return const Text('None');
+      return Text(context.l10n.commonNone);
     }
 
     if (reports.isEmpty) {
-      return const Text('No linked report details found.');
+      return Text(context.l10n.staffNoLinkedReportDetails);
     }
 
     return Column(
@@ -329,14 +349,17 @@ class _LinkedReportTile extends StatelessWidget {
             spacing: 8,
             runSpacing: 8,
             children: [
-              _SmallMeta(icon: Icons.flag_outlined, label: report.status.label),
+              _SmallMeta(
+                icon: Icons.flag_outlined,
+                label: report.status.localizedLabel(context),
+              ),
               _SmallMeta(
                 icon: Icons.category_outlined,
-                label: report.category.label,
+                label: report.category.localizedLabel(context),
               ),
               _SmallMeta(
                 icon: Icons.trending_up,
-                label: 'Priority ${report.priorityScore}',
+                label: context.l10n.priorityValue(report.priorityScore),
               ),
               if ((report.addressText ?? '').trim().isNotEmpty)
                 _SmallMeta(
@@ -402,7 +425,7 @@ class _TaskActions extends StatelessWidget {
                 child: CircularProgressIndicator(strokeWidth: 2),
               )
             : const Icon(Icons.play_arrow),
-        label: const Text('Start task'),
+        label: Text(context.l10n.staffStartTask),
       );
     }
 
@@ -414,13 +437,13 @@ class _TaskActions extends StatelessWidget {
           OutlinedButton.icon(
             onPressed: onRoute,
             icon: const Icon(Icons.route),
-            label: const Text('Route map'),
+            label: Text(context.l10n.staffRouteMap),
           ),
           const SizedBox(height: 8),
           FilledButton.icon(
             onPressed: onComplete,
             icon: const Icon(Icons.task_alt),
-            label: const Text('Complete task'),
+            label: Text(context.l10n.staffCompleteTask),
           ),
         ],
       );
@@ -429,7 +452,9 @@ class _TaskActions extends StatelessWidget {
     return OutlinedButton.icon(
       onPressed: null,
       icon: const Icon(Icons.lock_outline),
-      label: Text('Status: ${task.status.label}'),
+      label: Text(
+        context.l10n.statusValue(task.status.localizedLabel(context)),
+      ),
     );
   }
 }
@@ -498,7 +523,7 @@ class _ErrorState extends StatelessWidget {
             OutlinedButton.icon(
               onPressed: onRetry,
               icon: const Icon(Icons.refresh),
-              label: const Text('Retry'),
+              label: Text(context.l10n.commonRetry),
             ),
           ],
         ),

@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 
+import '../../../core/localization/app_localizations_extension.dart';
+import '../../../core/localization/language_menu_button.dart';
 import '../../../core/routing/app_routes.dart';
 import '../data/auth_api_service.dart';
 import '../domain/current_user.dart';
@@ -74,10 +76,14 @@ class _LoginScreenState extends State<LoginScreen> {
         return;
       }
       _navigateForRole(session.user.role);
-    } on AuthException catch (error) {
-      _showError(error.message);
+    } on AuthException {
+      if (mounted) {
+        _showError(context.l10n.authLoginFailed);
+      }
     } catch (_) {
-      _showError('Unable to log in. Please try again.');
+      if (mounted) {
+        _showError(context.l10n.authLoginFailed);
+      }
     } finally {
       if (mounted) {
         setState(() => _isSubmitting = false);
@@ -111,6 +117,7 @@ class _LoginScreenState extends State<LoginScreen> {
     final colorScheme = Theme.of(context).colorScheme;
 
     return Scaffold(
+      appBar: AppBar(actions: const [LanguageMenuButton()]),
       body: SafeArea(
         child: Center(
           child: SingleChildScrollView(
@@ -129,7 +136,7 @@ class _LoginScreenState extends State<LoginScreen> {
                     ),
                     const SizedBox(height: 16),
                     Text(
-                      'Smart City Reports',
+                      context.l10n.appTitle,
                       textAlign: TextAlign.center,
                       style: Theme.of(context).textTheme.headlineSmall
                           ?.copyWith(fontWeight: FontWeight.w700),
@@ -140,19 +147,19 @@ class _LoginScreenState extends State<LoginScreen> {
                     else ...[
                       TextFormField(
                         controller: _emailController,
-                        decoration: const InputDecoration(
-                          labelText: 'Email',
-                          prefixIcon: Icon(Icons.mail_outline),
+                        decoration: InputDecoration(
+                          labelText: context.l10n.commonEmail,
+                          prefixIcon: const Icon(Icons.mail_outline),
                         ),
                         keyboardType: TextInputType.emailAddress,
                         autofillHints: const [AutofillHints.email],
                         validator: (value) {
                           final email = value?.trim() ?? '';
                           if (email.isEmpty) {
-                            return 'Email is required';
+                            return context.l10n.authEmailRequired;
                           }
                           if (!email.contains('@')) {
-                            return 'Enter a valid email';
+                            return context.l10n.authEmailInvalid;
                           }
                           return null;
                         },
@@ -160,16 +167,16 @@ class _LoginScreenState extends State<LoginScreen> {
                       const SizedBox(height: 12),
                       TextFormField(
                         controller: _passwordController,
-                        decoration: const InputDecoration(
-                          labelText: 'Password',
-                          prefixIcon: Icon(Icons.lock_outline),
+                        decoration: InputDecoration(
+                          labelText: context.l10n.commonPassword,
+                          prefixIcon: const Icon(Icons.lock_outline),
                         ),
                         obscureText: true,
                         autofillHints: const [AutofillHints.password],
                         onFieldSubmitted: (_) => _login(),
                         validator: (value) {
                           if (value == null || value.isEmpty) {
-                            return 'Password is required';
+                            return context.l10n.authPasswordRequired;
                           }
                           return null;
                         },
@@ -192,7 +199,7 @@ class _LoginScreenState extends State<LoginScreen> {
                                 ),
                               )
                             : const Icon(Icons.login),
-                        label: const Text('Log in'),
+                        label: Text(context.l10n.authLoginButton),
                       ),
                       const SizedBox(height: 8),
                       TextButton(
@@ -201,7 +208,7 @@ class _LoginScreenState extends State<LoginScreen> {
                             : () => Navigator.of(
                                 context,
                               ).pushNamed(AppRoutes.register),
-                        child: const Text('Create account'),
+                        child: Text(context.l10n.authCreateAccountButton),
                       ),
                     ],
                   ],

@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 
 import '../../../core/files/uploaded_photo_view.dart';
+import '../../../core/localization/app_localizations_extension.dart';
+import '../../../core/localization/domain_localizations.dart';
 import '../../reports/data/report_api_service.dart';
 import '../../reports/domain/report.dart';
 
@@ -48,10 +50,10 @@ class _StaffReportDetailScreenState extends State<StaffReportDetailScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Report Details'),
+        title: Text(context.l10n.reportDetailsTitle),
         actions: [
           IconButton(
-            tooltip: 'Refresh',
+            tooltip: context.l10n.commonRefresh,
             onPressed: _refresh,
             icon: const Icon(Icons.refresh),
           ),
@@ -67,7 +69,7 @@ class _StaffReportDetailScreenState extends State<StaffReportDetailScreen> {
 
             if (snapshot.hasError) {
               return _ErrorState(
-                message: 'Unable to load report.',
+                message: context.l10n.reportLoadFailed,
                 onRetry: _refresh,
               );
             }
@@ -91,50 +93,54 @@ class _StaffReportDetailScreenState extends State<StaffReportDetailScreen> {
                     children: [
                       _InfoChip(
                         icon: Icons.flag_outlined,
-                        label: report.status.label,
+                        label: report.status.localizedLabel(context),
                       ),
                       _InfoChip(
                         icon: Icons.category_outlined,
-                        label: report.category.label,
+                        label: report.category.localizedLabel(context),
                       ),
                       _InfoChip(
                         icon: Icons.thumb_up_alt_outlined,
-                        label: '${report.upvoteCount} upvotes',
+                        label: context.l10n.upvoteCount(report.upvoteCount),
                       ),
                       _InfoChip(
                         icon: Icons.trending_up,
-                        label: 'Priority ${report.priorityScore}',
+                        label: context.l10n.priorityValue(report.priorityScore),
                       ),
                     ],
                   ),
                   _Section(
-                    title: 'Description',
+                    title: context.l10n.commonDescription,
                     child: Text(report.description),
                   ),
                   _Section(
-                    title: 'Location',
-                    child: Text(_locationLabel(report)),
+                    title: context.l10n.commonLocation,
+                    child: Text(_locationLabel(context, report)),
                   ),
                   _Section(
-                    title: 'Coordinates',
+                    title: context.l10n.commonCoordinates,
                     child: Text(
-                      '${report.latitude.toStringAsFixed(6)}, ${report.longitude.toStringAsFixed(6)}',
+                      context.l10n.coordinatesValue(
+                        report.latitude.toStringAsFixed(6),
+                        report.longitude.toStringAsFixed(6),
+                      ),
                     ),
                   ),
                   _Section(
-                    title: 'Before photo',
+                    title: context.l10n.commonBeforePhoto,
                     child: UploadedPhotoView(fileUrl: report.beforePhotoUrl),
                   ),
                   _Section(
-                    title: 'Reporter',
+                    title: context.l10n.reportReporter,
                     child: Text(
                       report.anonymous
-                          ? 'Anonymous'
-                          : report.createdBy?.fullName ?? 'Unknown user',
+                          ? context.l10n.commonAnonymous
+                          : report.createdBy?.fullName ??
+                                context.l10n.commonUnknownUser,
                     ),
                   ),
                   _Section(
-                    title: 'Report ID',
+                    title: context.l10n.reportId,
                     child: SelectableText(report.id),
                   ),
                 ],
@@ -146,12 +152,15 @@ class _StaffReportDetailScreenState extends State<StaffReportDetailScreen> {
     );
   }
 
-  String _locationLabel(Report report) {
+  String _locationLabel(BuildContext context, Report report) {
     final address = report.addressText?.trim();
     if (address != null && address.isNotEmpty) {
       return address;
     }
-    return '${report.latitude.toStringAsFixed(4)}, ${report.longitude.toStringAsFixed(4)}';
+    return context.l10n.coordinatesValue(
+      report.latitude.toStringAsFixed(4),
+      report.longitude.toStringAsFixed(4),
+    );
   }
 }
 
@@ -219,7 +228,7 @@ class _ErrorState extends StatelessWidget {
             OutlinedButton.icon(
               onPressed: onRetry,
               icon: const Icon(Icons.refresh),
-              label: const Text('Retry'),
+              label: Text(context.l10n.commonRetry),
             ),
           ],
         ),

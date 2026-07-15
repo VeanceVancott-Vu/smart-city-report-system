@@ -1,12 +1,13 @@
 import 'dart:async';
-import 'dart:convert';
 
 import 'package:flutter/material.dart';
 import 'package:flutter_map/flutter_map.dart';
-import 'package:http/http.dart' as http;
 import 'package:latlong2/latlong.dart' hide Path;
 
 import '../../../core/files/uploaded_photo_view.dart';
+import '../../../core/location/geocoding_service.dart';
+import '../../../core/localization/app_localizations_extension.dart';
+import '../../../core/localization/domain_localizations.dart';
 import '../../../core/routing/app_routes.dart';
 import '../../auth/data/auth_api_service.dart';
 import '../../reports/data/report_api_service.dart';
@@ -18,10 +19,12 @@ class OverseerMapScreen extends StatefulWidget {
     super.key,
     required this.reportApiService,
     required this.authApiService,
+    this.geocodingService,
   });
 
   final ReportApiService reportApiService;
   final AuthApiService authApiService;
+  final GeocodingService? geocodingService;
 
   @override
   State<OverseerMapScreen> createState() => _OverseerMapScreenState();
@@ -45,6 +48,7 @@ class _OverseerMapScreenState extends State<OverseerMapScreen> {
   bool _isLoadingDetails = false;
 
   late final MapController _mapController;
+  late final GeocodingService _geocodingService;
   late Future<List<ReportMapPin>> _pinsFuture;
 
   List<ReportMapPin> _pins = const <ReportMapPin>[];
@@ -55,9 +59,9 @@ class _OverseerMapScreenState extends State<OverseerMapScreen> {
   String _searchQuery = '';
   Timer? _debounceTimer;
 
-  List<Map<String, dynamic>> _addressSuggestions = [];
+  List<PlaceSearchResult> _addressSuggestions = [];
   bool _isSearchingAddress = false;
-  Timer? _searchDebounceTimer;
+  bool _hasSearchedAddress = false;
   LatLng? _searchedPlaceLocation;
   String? _searchedPlaceName;
 
@@ -65,13 +69,13 @@ class _OverseerMapScreenState extends State<OverseerMapScreen> {
   void initState() {
     super.initState();
     _mapController = MapController();
+    _geocodingService = widget.geocodingService ?? NominatimGeocodingService();
     _pinsFuture = _loadPins();
   }
 
   @override
   void dispose() {
     _debounceTimer?.cancel();
-    _searchDebounceTimer?.cancel();
     _searchController.dispose();
     _searchFocusNode.dispose();
     super.dispose();
@@ -80,56 +84,36 @@ class _OverseerMapScreenState extends State<OverseerMapScreen> {
   void _onSearchQueryChanged(String query) {
     setState(() {
       _searchQuery = query;
-    });
-
-    _searchDebounceTimer?.cancel();
-    if (query.trim().isEmpty) {
-      setState(() {
-        _addressSuggestions = [];
-        _isSearchingAddress = false;
-      });
-      return;
-    }
-
-    _searchDebounceTimer = Timer(const Duration(milliseconds: 500), () {
-      _fetchAddressSuggestions(query);
+      _addressSuggestions = [];
+      _isSearchingAddress = false;
+      _hasSearchedAddress = false;
     });
   }
 
-  Future<void> _fetchAddressSuggestions(String query) async {
+  Future<void> _searchAddresses([String? submittedQuery]) async {
+    final query = (submittedQuery ?? _searchController.text).trim();
+    if (query.isEmpty || _isSearchingAddress) {
+      return;
+    }
+
     setState(() {
       _isSearchingAddress = true;
+      _hasSearchedAddress = true;
     });
 
     try {
-      final encodedQuery = Uri.encodeComponent(query);
-      final url = Uri.parse(
-        'https://nominatim.openstreetmap.org/search?q=$encodedQuery&format=json&limit=5&accept-language=en',
+      final suggestions = await _geocodingService.searchPlaces(
+        query: query,
+        languageCode: Localizations.localeOf(context).languageCode,
       );
-      final response = await http
-          .get(
-            url,
-            headers: const {
-              'User-Agent':
-                  'SmartCityReportSystem/1.0 (contact: admin@smartcity.com)',
-            },
-          )
-          .timeout(const Duration(seconds: 4));
 
-      if (response.statusCode == 200) {
-        final List<dynamic> data = jsonDecode(response.body);
-        if (mounted) {
-          setState(() {
-            _addressSuggestions = data.cast<Map<String, dynamic>>();
-            _isSearchingAddress = false;
-          });
-        }
-      } else {
-        if (mounted) {
-          setState(() => _isSearchingAddress = false);
-        }
+      if (!mounted || _searchController.text.trim() != query) {
+        return;
       }
+      setState(() => _addressSuggestions = suggestions);
     } catch (_) {
+      // Local report matching remains available if place search fails.
+    } finally {
       if (mounted) {
         setState(() => _isSearchingAddress = false);
       }
@@ -193,7 +177,7 @@ class _OverseerMapScreenState extends State<OverseerMapScreen> {
       if (mounted && _selectedPin?.id == pin.id) {
         setState(() {
           _isLoadingDetails = false;
-          _errorMessage = 'Failed to load report details: $e';
+          _errorMessage = context.l10n.reportLoadFailed;
         });
       }
     }
@@ -205,13 +189,15 @@ class _OverseerMapScreenState extends State<OverseerMapScreen> {
       if (!mounted) return;
       ScaffoldMessenger.of(
         context,
-      ).showSnackBar(const SnackBar(content: Text('Report marked as Fixed')));
+      ).showSnackBar(SnackBar(content: Text(context.l10n.overseerReportFixed)));
       _refresh();
     } catch (e) {
       if (!mounted) return;
-      ScaffoldMessenger.of(
-        context,
-      ).showSnackBar(SnackBar(content: Text('Failed to update report: $e')));
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(context.l10n.overseerReportUpdateFailed(e.toString())),
+        ),
+      );
     }
   }
 
@@ -230,9 +216,7 @@ class _OverseerMapScreenState extends State<OverseerMapScreen> {
 
   void _showTaskUnavailable() {
     ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(
-        content: Text('Only submitted reports can be turned into tasks.'),
-      ),
+      SnackBar(content: Text(context.l10n.taskOnlySubmittedReports)),
     );
   }
 
@@ -320,9 +304,9 @@ class _OverseerMapScreenState extends State<OverseerMapScreen> {
     _selectPin(pin);
   }
 
-  String _topCategoryLabel(List<ReportMapPin> pins) {
+  String _topCategoryLabel(BuildContext context, List<ReportMapPin> pins) {
     if (pins.isEmpty) {
-      return 'None';
+      return context.l10n.commonNone;
     }
 
     final counts = <ReportCategory, int>{};
@@ -339,7 +323,7 @@ class _OverseerMapScreenState extends State<OverseerMapScreen> {
       }
     }
 
-    return topCategory?.label ?? 'None';
+    return topCategory?.localizedLabel(context) ?? context.l10n.commonNone;
   }
 
   @override
@@ -354,7 +338,7 @@ class _OverseerMapScreenState extends State<OverseerMapScreen> {
             child: Row(
               children: [
                 FilterChip(
-                  label: const Text('All Categories'),
+                  label: Text(context.l10n.mapAllCategories),
                   selected: _selectedCategory == null,
                   onSelected: (_) => setState(() => _selectedCategory = null),
                   selectedColor: const Color(0xFFE2F3EE),
@@ -370,7 +354,7 @@ class _OverseerMapScreenState extends State<OverseerMapScreen> {
                   return Padding(
                     padding: const EdgeInsets.only(right: 8),
                     child: FilterChip(
-                      label: Text(category.label),
+                      label: Text(category.localizedLabel(context)),
                       selected: isSelected,
                       onSelected: (selected) {
                         setState(() {
@@ -403,7 +387,7 @@ class _OverseerMapScreenState extends State<OverseerMapScreen> {
                     children: [
                       // Status Filters
                       FilterChip(
-                        label: const Text('All Statuses'),
+                        label: Text(context.l10n.mapAllStatuses),
                         selected: _selectedStatus == null,
                         onSelected: (_) =>
                             setState(() => _selectedStatus = null),
@@ -420,7 +404,7 @@ class _OverseerMapScreenState extends State<OverseerMapScreen> {
                         return Padding(
                           padding: const EdgeInsets.only(right: 8),
                           child: FilterChip(
-                            label: Text(status.label),
+                            label: Text(status.localizedLabel(context)),
                             selected: isSelected,
                             onSelected: (selected) {
                               setState(() {
@@ -451,22 +435,22 @@ class _OverseerMapScreenState extends State<OverseerMapScreen> {
                           fontSize: 13,
                           fontWeight: FontWeight.w600,
                         ),
-                        items: const [
+                        items: [
                           DropdownMenuItem(
                             value: 0,
-                            child: Text('All Priority'),
+                            child: Text(context.l10n.mapAllPriorities),
                           ),
                           DropdownMenuItem(
                             value: 3,
-                            child: Text('Priority >= 3'),
+                            child: Text(context.l10n.mapMinimumPriority(3)),
                           ),
                           DropdownMenuItem(
                             value: 5,
-                            child: Text('Priority >= 5'),
+                            child: Text(context.l10n.mapMinimumPriority(5)),
                           ),
                           DropdownMenuItem(
                             value: 10,
-                            child: Text('Priority >= 10'),
+                            child: Text(context.l10n.mapMinimumPriority(10)),
                           ),
                         ],
                       ),
@@ -537,7 +521,7 @@ class _OverseerMapScreenState extends State<OverseerMapScreen> {
               final averagePriority = filteredPins.isEmpty
                   ? 0
                   : (priorityTotal / filteredPins.length).round();
-              final topCategoryLabel = _topCategoryLabel(filteredPins);
+              final topCategoryLabel = _topCategoryLabel(context, filteredPins);
 
               return LayoutBuilder(
                 builder: (context, constraints) {
@@ -626,7 +610,7 @@ class _OverseerMapScreenState extends State<OverseerMapScreen> {
                                         child: _SearchedPlaceMarker(
                                           name:
                                               _searchedPlaceName ??
-                                              'Searched location',
+                                              context.l10n.mapSearchedLocation,
                                           onClear: () {
                                             setState(() {
                                               _searchedPlaceLocation = null;
@@ -655,11 +639,16 @@ class _OverseerMapScreenState extends State<OverseerMapScreen> {
                               controller: _searchController,
                               focusNode: _searchFocusNode,
                               onChanged: _onSearchQueryChanged,
+                              onSubmitted: _searchAddresses,
+                              onSearch: () => _searchAddresses(),
+                              isSearching: _isSearchingAddress,
                               onClear: () {
                                 setState(() {
                                   _searchController.clear();
                                   _searchQuery = '';
                                   _addressSuggestions = [];
+                                  _isSearchingAddress = false;
+                                  _hasSearchedAddress = false;
                                   _searchedPlaceLocation = null;
                                   _searchedPlaceName = null;
                                 });
@@ -672,12 +661,14 @@ class _OverseerMapScreenState extends State<OverseerMapScreen> {
                                 addresses: _addressSuggestions,
                                 query: _searchQuery,
                                 isSearchingAddress: _isSearchingAddress,
+                                hasSearchedAddress: _hasSearchedAddress,
                                 onSelectPin: (pin) {
                                   setState(() {
                                     _selectedPin = pin;
                                     _searchController.text = pin.title;
                                     _searchQuery = '';
                                     _addressSuggestions = [];
+                                    _hasSearchedAddress = false;
                                     _searchFocusNode.unfocus();
                                   });
                                   _mapController.move(
@@ -687,20 +678,18 @@ class _OverseerMapScreenState extends State<OverseerMapScreen> {
                                   _selectPin(pin);
                                 },
                                 onSelectAddress: (addr) {
-                                  final displayName =
-                                      addr['display_name'] ?? 'Searched place';
-                                  final lat =
-                                      double.tryParse(addr['lat'] ?? '') ?? 0.0;
-                                  final lon =
-                                      double.tryParse(addr['lon'] ?? '') ?? 0.0;
-                                  final point = LatLng(lat, lon);
+                                  final point = LatLng(
+                                    addr.latitude,
+                                    addr.longitude,
+                                  );
 
                                   setState(() {
                                     _searchedPlaceLocation = point;
-                                    _searchedPlaceName = displayName;
-                                    _searchController.text = displayName;
+                                    _searchedPlaceName = addr.displayName;
+                                    _searchController.text = addr.displayName;
                                     _searchQuery = '';
                                     _addressSuggestions = [];
+                                    _hasSearchedAddress = false;
                                     _searchFocusNode.unfocus();
                                   });
                                   _mapController.move(point, 15.0);
@@ -795,7 +784,9 @@ class _OverseerMapScreenState extends State<OverseerMapScreen> {
                                     MainAxisAlignment.spaceBetween,
                                 children: [
                                   Text(
-                                    '${_selectedReportIds.length} reports selected',
+                                    context.l10n.selectedReportCount(
+                                      _selectedReportIds.length,
+                                    ),
                                     style: const TextStyle(
                                       color: Colors.white,
                                       fontWeight: FontWeight.bold,
@@ -807,7 +798,9 @@ class _OverseerMapScreenState extends State<OverseerMapScreen> {
                                       Icons.add_task_outlined,
                                       size: 16,
                                     ),
-                                    label: const Text('Create Repair Task'),
+                                    label: Text(
+                                      context.l10n.mapCreateRepairTask,
+                                    ),
                                     style: ElevatedButton.styleFrom(
                                       foregroundColor: const Color(0xFF0F766E),
                                       backgroundColor: Colors.white,
@@ -1117,37 +1110,37 @@ class _OverseerAnalyticsPanel extends StatelessWidget {
     final tiles = [
       _AnalyticTile(
         icon: Icons.radar_outlined,
-        label: 'Visible',
+        label: context.l10n.mapMetricVisible,
         value: totalCount.toString(),
         color: const Color(0xFF1D4ED8),
       ),
       _AnalyticTile(
         icon: Icons.pending_actions_outlined,
-        label: 'Submitted',
+        label: context.l10n.reportStatusSubmitted,
         value: submittedCount.toString(),
         color: const Color(0xFFE11D48),
       ),
       _AnalyticTile(
         icon: Icons.priority_high_outlined,
-        label: 'High priority',
+        label: context.l10n.mapMetricHighPriority,
         value: highPriorityCount.toString(),
         color: const Color(0xFFD97706),
       ),
       _AnalyticTile(
         icon: Icons.speed_outlined,
-        label: 'Avg priority',
+        label: context.l10n.mapMetricAveragePriority,
         value: averagePriority.toString(),
         color: const Color(0xFF7C3AED),
       ),
       _AnalyticTile(
         icon: Icons.category_outlined,
-        label: 'Top category',
+        label: context.l10n.mapMetricTopCategory,
         value: topCategoryLabel,
         color: const Color(0xFF0F766E),
       ),
       _AnalyticTile(
         icon: Icons.done_all_outlined,
-        label: 'Closed out',
+        label: context.l10n.mapMetricClosedOut,
         value: (fixedCount + cancelledCount).toString(),
         color: Colors.blueGrey,
       ),
@@ -1345,7 +1338,7 @@ class _ReportQueuePanel extends StatelessWidget {
                   const SizedBox(width: 8),
                   Expanded(
                     child: Text(
-                      'Operations Queue',
+                      context.l10n.mapOperationsQueue,
                       style: Theme.of(context).textTheme.titleSmall?.copyWith(
                         fontWeight: FontWeight.w800,
                       ),
@@ -1371,7 +1364,7 @@ class _ReportQueuePanel extends StatelessWidget {
                   ),
                   const SizedBox(width: 8),
                   IconButton.filledTonal(
-                    tooltip: 'Select multiple for task',
+                    tooltip: context.l10n.mapSelectMultipleTooltip,
                     onPressed: onToggleMultiSelectMode,
                     icon: Icon(
                       multiSelectMode
@@ -1391,7 +1384,7 @@ class _ReportQueuePanel extends StatelessWidget {
               Expanded(
                 child: Center(
                   child: Text(
-                    'No reports in view',
+                    context.l10n.mapNoReportsInView,
                     style: TextStyle(color: Colors.grey.shade600),
                   ),
                 ),
@@ -1444,18 +1437,34 @@ class _QueueHeaderRow extends StatelessWidget {
         children: [
           SizedBox(
             width: 96,
-            child: Center(child: Text('CATEGORY', style: textStyle)),
+            child: Center(
+              child: Text(context.l10n.mapTableCategory, style: textStyle),
+            ),
           ),
           const SizedBox(width: 8),
-          Expanded(flex: 5, child: Text('REPORT', style: textStyle)),
-          SizedBox(width: 78, child: Text('STATUS', style: textStyle)),
+          Expanded(
+            flex: 5,
+            child: Text(context.l10n.mapTableReport, style: textStyle),
+          ),
+          SizedBox(
+            width: 78,
+            child: Text(context.l10n.mapTableStatus, style: textStyle),
+          ),
           SizedBox(
             width: 44,
-            child: Text('PRI', style: textStyle, textAlign: TextAlign.center),
+            child: Text(
+              context.l10n.mapTablePriority,
+              style: textStyle,
+              textAlign: TextAlign.center,
+            ),
           ),
           SizedBox(
             width: 46,
-            child: Text('VOTES', style: textStyle, textAlign: TextAlign.center),
+            child: Text(
+              context.l10n.mapTableVotes,
+              style: textStyle,
+              textAlign: TextAlign.center,
+            ),
           ),
           const SizedBox(width: 36),
         ],
@@ -1547,7 +1556,9 @@ class _ReportQueueRow extends StatelessWidget {
             SizedBox(
               width: 36,
               child: IconButton(
-                tooltip: isActionable ? 'Create task' : 'Task unavailable',
+                tooltip: isActionable
+                    ? context.l10n.taskCreate
+                    : context.l10n.mapTaskUnavailable,
                 onPressed: onCreateTask,
                 icon: Icon(
                   Icons.add_task_outlined,
@@ -1616,7 +1627,7 @@ class _QueueCategoryCell extends StatelessWidget {
         ),
         const SizedBox(height: 3),
         Text(
-          pin.category.label,
+          pin.category.localizedLabel(context),
           maxLines: 2,
           overflow: TextOverflow.ellipsis,
           textAlign: TextAlign.center,
@@ -1648,7 +1659,7 @@ class _StatusPill extends StatelessWidget {
         border: Border.all(color: color.withValues(alpha: 0.18)),
       ),
       child: Text(
-        status.label,
+        status.localizedLabel(context),
         maxLines: 1,
         overflow: TextOverflow.ellipsis,
         textAlign: TextAlign.center,
@@ -1668,12 +1679,18 @@ class _SearchBar extends StatelessWidget {
     required this.controller,
     required this.focusNode,
     required this.onChanged,
+    required this.onSubmitted,
+    required this.onSearch,
+    required this.isSearching,
     required this.onClear,
   });
 
   final TextEditingController controller;
   final FocusNode focusNode;
   final ValueChanged<String> onChanged;
+  final ValueChanged<String> onSubmitted;
+  final VoidCallback onSearch;
+  final bool isSearching;
   final VoidCallback onClear;
 
   @override
@@ -1695,11 +1712,17 @@ class _SearchBar extends StatelessWidget {
         controller: controller,
         focusNode: focusNode,
         onChanged: onChanged,
+        onSubmitted: onSubmitted,
+        textInputAction: TextInputAction.search,
         style: const TextStyle(fontSize: 14),
         decoration: InputDecoration(
-          hintText: 'Search reports or address...',
+          hintText: context.l10n.mapOverseerSearchHint,
           hintStyle: const TextStyle(color: Colors.grey),
-          prefixIcon: const Icon(Icons.search, color: Colors.grey),
+          prefixIcon: IconButton(
+            tooltip: context.l10n.mapSearchPlacesTooltip,
+            onPressed: isSearching ? null : onSearch,
+            icon: const Icon(Icons.search, color: Colors.grey),
+          ),
           suffixIcon: controller.text.isNotEmpty
               ? IconButton(
                   icon: const Icon(Icons.clear, color: Colors.grey, size: 18),
@@ -1720,28 +1743,37 @@ class _SearchSuggestions extends StatelessWidget {
     required this.addresses,
     required this.query,
     required this.isSearchingAddress,
+    required this.hasSearchedAddress,
     required this.onSelectPin,
     required this.onSelectAddress,
   });
 
   final List<ReportMapPin> pins;
-  final List<Map<String, dynamic>> addresses;
+  final List<PlaceSearchResult> addresses;
   final String query;
   final bool isSearchingAddress;
+  final bool hasSearchedAddress;
   final ValueChanged<ReportMapPin> onSelectPin;
-  final ValueChanged<Map<String, dynamic>> onSelectAddress;
+  final ValueChanged<PlaceSearchResult> onSelectAddress;
 
   @override
   Widget build(BuildContext context) {
     final filteredPins = pins.where((pin) {
       final titleMatch = pin.title.toLowerCase().contains(query.toLowerCase());
-      final categoryMatch = pin.category.label.toLowerCase().contains(
-        query.toLowerCase(),
-      );
+      final normalizedQuery = query.toLowerCase();
+      final categoryMatch =
+          pin.category
+              .localizedLabel(context)
+              .toLowerCase()
+              .contains(normalizedQuery) ||
+          pin.category.label.toLowerCase().contains(normalizedQuery);
       return titleMatch || categoryMatch;
     }).toList();
 
     if (filteredPins.isEmpty && addresses.isEmpty && !isSearchingAddress) {
+      if (!hasSearchedAddress) {
+        return const SizedBox.shrink();
+      }
       return Container(
         margin: const EdgeInsets.only(top: 4),
         width: double.infinity,
@@ -1758,9 +1790,9 @@ class _SearchSuggestions extends StatelessWidget {
           ],
         ),
         padding: const EdgeInsets.all(16),
-        child: const Text(
-          'No matching reports or addresses found',
-          style: TextStyle(color: Colors.grey),
+        child: Text(
+          context.l10n.mapNoSearchMatches,
+          style: const TextStyle(color: Colors.grey),
         ),
       );
     }
@@ -1787,11 +1819,11 @@ class _SearchSuggestions extends StatelessWidget {
           padding: EdgeInsets.zero,
           children: [
             if (filteredPins.isNotEmpty) ...[
-              const Padding(
-                padding: EdgeInsets.fromLTRB(12, 8, 12, 4),
+              Padding(
+                padding: const EdgeInsets.fromLTRB(12, 8, 12, 4),
                 child: Text(
-                  'REPORTS',
-                  style: TextStyle(
+                  context.l10n.mapReportsHeader,
+                  style: const TextStyle(
                     fontSize: 10,
                     fontWeight: FontWeight.bold,
                     color: Colors.grey,
@@ -1814,7 +1846,10 @@ class _SearchSuggestions extends StatelessWidget {
                     ),
                   ),
                   subtitle: Text(
-                    '${pin.category.label} - ${pin.status.label}',
+                    context.l10n.mapCategoryAndStatus(
+                      pin.category.localizedLabel(context),
+                      pin.status.localizedLabel(context),
+                    ),
                     style: TextStyle(
                       color: _getStatusColor(pin.status),
                       fontSize: 11,
@@ -1826,11 +1861,11 @@ class _SearchSuggestions extends StatelessWidget {
               }),
             ],
             if (addresses.isNotEmpty) ...[
-              const Padding(
-                padding: EdgeInsets.fromLTRB(12, 8, 12, 4),
+              Padding(
+                padding: const EdgeInsets.fromLTRB(12, 8, 12, 4),
                 child: Text(
-                  'ADDRESSES & PLACES',
-                  style: TextStyle(
+                  context.l10n.mapPlacesHeader,
+                  style: const TextStyle(
                     fontSize: 10,
                     fontWeight: FontWeight.bold,
                     color: Colors.grey,
@@ -1838,7 +1873,6 @@ class _SearchSuggestions extends StatelessWidget {
                 ),
               ),
               ...addresses.map((addr) {
-                final displayName = addr['display_name'] ?? '';
                 return ListTile(
                   dense: true,
                   leading: const Icon(
@@ -1847,7 +1881,7 @@ class _SearchSuggestions extends StatelessWidget {
                     size: 18,
                   ),
                   title: Text(
-                    displayName,
+                    addr.displayName,
                     maxLines: 2,
                     overflow: TextOverflow.ellipsis,
                     style: const TextStyle(
@@ -1990,7 +2024,7 @@ class _SelectedPinDetailsCard extends StatelessWidget {
                           _StatusLabelChip(status: pin.status),
                           const SizedBox(width: 8),
                           Text(
-                            pin.category.label,
+                            pin.category.localizedLabel(context),
                             style: TextStyle(
                               color: categoryColor,
                               fontSize: 12,
@@ -2094,11 +2128,11 @@ class _SelectedPinDetailsCard extends StatelessWidget {
                       children: [
                         _MiniMetadataTag(
                           icon: Icons.thumb_up_alt_outlined,
-                          label: '${pin.upvoteCount} votes',
+                          label: context.l10n.upvoteCount(pin.upvoteCount),
                         ),
                         _MiniMetadataTag(
                           icon: Icons.trending_up,
-                          label: 'Priority ${pin.priorityScore}',
+                          label: context.l10n.priorityValue(pin.priorityScore),
                         ),
                       ],
                     ),
@@ -2118,11 +2152,11 @@ class _SelectedPinDetailsCard extends StatelessWidget {
                   ),
                   _MiniMetadataTag(
                     icon: Icons.thumb_up_alt_outlined,
-                    label: '${pin.upvoteCount} votes',
+                    label: context.l10n.upvoteCount(pin.upvoteCount),
                   ),
                   _MiniMetadataTag(
                     icon: Icons.trending_up,
-                    label: 'Priority ${pin.priorityScore}',
+                    label: context.l10n.priorityValue(pin.priorityScore),
                   ),
                 ],
               ),
@@ -2140,14 +2174,14 @@ class _SelectedPinDetailsCard extends StatelessWidget {
                       borderRadius: BorderRadius.circular(8),
                     ),
                   ),
-                  child: const Text('View Full Info'),
+                  child: Text(context.l10n.mapViewFullDetails),
                 ),
                 const SizedBox(width: 8),
                 if (pin.status == ReportStatus.submitted) ...[
                   OutlinedButton.icon(
                     onPressed: onQuickFix,
                     icon: const Icon(Icons.check_circle_outline, size: 14),
-                    label: const Text('Mark Fixed'),
+                    label: Text(context.l10n.mapMarkFixed),
                     style: OutlinedButton.styleFrom(
                       foregroundColor: const Color(0xFF0F766E),
                       side: const BorderSide(color: Color(0xFF0F766E)),
@@ -2161,7 +2195,7 @@ class _SelectedPinDetailsCard extends StatelessWidget {
                   FilledButton.icon(
                     onPressed: onCreateTask,
                     icon: const Icon(Icons.add_task_outlined, size: 14),
-                    label: const Text('Create Task'),
+                    label: Text(context.l10n.taskCreate),
                     style: FilledButton.styleFrom(
                       backgroundColor: const Color(0xFF0F766E),
                       foregroundColor: Colors.white,
@@ -2197,7 +2231,7 @@ class _StatusLabelChip extends StatelessWidget {
         border: Border.all(color: color.withOpacity(0.2), width: 1),
       ),
       child: Text(
-        status.label,
+        status.localizedLabel(context),
         style: TextStyle(
           color: color,
           fontSize: 10,

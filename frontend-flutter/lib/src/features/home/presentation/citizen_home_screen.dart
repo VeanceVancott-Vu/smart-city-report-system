@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 
+import '../../../core/localization/app_localizations_extension.dart';
+import '../../../core/localization/language_menu_button.dart';
 import '../../../core/routing/app_routes.dart';
 import '../../auth/data/auth_api_service.dart';
 import '../../reports/data/report_api_service.dart';
@@ -26,14 +28,15 @@ class _CitizenHomeScreenState extends State<CitizenHomeScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final titles = ['My Reports', 'Pins Map'];
+    final titles = [context.l10n.homeMyReports, context.l10n.homePinsMap];
 
     return Scaffold(
       appBar: AppBar(
         title: Text(titles[_selectedIndex]),
         actions: [
+          const LanguageMenuButton(),
           IconButton(
-            tooltip: 'Logout',
+            tooltip: context.l10n.commonLogout,
             onPressed: () => _logout(context),
             icon: const Icon(Icons.logout),
           ),
@@ -57,7 +60,7 @@ class _CitizenHomeScreenState extends State<CitizenHomeScreen> {
               onPressed: () =>
                   widget._reportListKey.currentState?.openCreateReport(),
               icon: const Icon(Icons.add),
-              label: const Text('Report'),
+              label: Text(context.l10n.homeCreateReport),
             )
           : null,
       bottomNavigationBar: NavigationBar(
@@ -65,16 +68,16 @@ class _CitizenHomeScreenState extends State<CitizenHomeScreen> {
         onDestinationSelected: (index) {
           setState(() => _selectedIndex = index);
         },
-        destinations: const [
+        destinations: [
           NavigationDestination(
-            icon: Icon(Icons.list_alt_outlined),
-            selectedIcon: Icon(Icons.list_alt),
-            label: 'Reports',
+            icon: const Icon(Icons.list_alt_outlined),
+            selectedIcon: const Icon(Icons.list_alt),
+            label: context.l10n.commonReports,
           ),
           NavigationDestination(
-            icon: Icon(Icons.map_outlined),
-            selectedIcon: Icon(Icons.map),
-            label: 'Map',
+            icon: const Icon(Icons.map_outlined),
+            selectedIcon: const Icon(Icons.map),
+            label: context.l10n.commonMap,
           ),
         ],
       ),

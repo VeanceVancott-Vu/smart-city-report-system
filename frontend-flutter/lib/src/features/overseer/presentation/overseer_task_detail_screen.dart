@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 
 import '../../../core/files/uploaded_photo_view.dart';
+import '../../../core/localization/app_localizations_extension.dart';
+import '../../../core/localization/domain_localizations.dart';
 import '../../../core/routing/app_routes.dart';
 import '../../../core/ui/app_feedback.dart';
 import '../../tasks/data/task_api_service.dart';
@@ -65,14 +67,14 @@ class _OverseerTaskDetailScreenState extends State<OverseerTaskDetailScreen> {
   Future<void> _approveTask() async {
     await _changeTask(
       () => widget.taskApiService.approveTask(_taskId),
-      successTitle: 'Task approved',
+      successTitle: context.l10n.taskApprovedTitle,
     );
   }
 
   Future<void> _closeTask() async {
     await _changeTask(
       () => widget.taskApiService.closeTask(_taskId),
-      successTitle: 'Task closed',
+      successTitle: context.l10n.taskClosedTitle,
     );
   }
 
@@ -85,19 +87,17 @@ class _OverseerTaskDetailScreenState extends State<OverseerTaskDetailScreen> {
           Icons.delete_outline,
           color: Theme.of(context).colorScheme.error,
         ),
-        title: const Text('Delete task?'),
-        content: Text(
-          'This will permanently delete "${task.title}" and unlink its reports.',
-        ),
+        title: Text(context.l10n.taskDeleteQuestion),
+        content: Text(context.l10n.taskDeleteWarning(task.title)),
         actions: [
           TextButton(
             onPressed: () => Navigator.of(context).pop(false),
-            child: const Text('Keep task'),
+            child: Text(context.l10n.taskKeep),
           ),
           FilledButton.icon(
             onPressed: () => Navigator.of(context).pop(true),
             icon: const Icon(Icons.delete_outline),
-            label: const Text('Delete'),
+            label: Text(context.l10n.commonDelete),
           ),
         ],
       ),
@@ -113,14 +113,17 @@ class _OverseerTaskDetailScreenState extends State<OverseerTaskDetailScreen> {
       }
       AppFeedback.showSuccess(
         context,
-        title: 'Task deleted',
+        title: context.l10n.taskDeletedTitle,
         message: task.title,
       );
       Navigator.of(context).pop(true);
     } on TaskApiException catch (error) {
       _showError(error.message);
     } catch (_) {
-      _showError('Unable to delete task.');
+      if (!mounted) {
+        return;
+      }
+      _showError(context.l10n.taskDeleteFailed);
     }
   }
 
@@ -142,7 +145,10 @@ class _OverseerTaskDetailScreenState extends State<OverseerTaskDetailScreen> {
     } on TaskApiException catch (error) {
       _showError(error.message);
     } catch (_) {
-      _showError('Unable to update task.');
+      if (!mounted) {
+        return;
+      }
+      _showError(context.l10n.taskUpdateFailed);
     }
   }
 
@@ -152,7 +158,7 @@ class _OverseerTaskDetailScreenState extends State<OverseerTaskDetailScreen> {
     }
     AppFeedback.showError(
       context,
-      title: 'Unable to update task',
+      title: context.l10n.taskUpdateFailedTitle,
       message: message,
     );
   }
@@ -166,35 +172,36 @@ class _OverseerTaskDetailScreenState extends State<OverseerTaskDetailScreen> {
 
         return Scaffold(
           appBar: AppBar(
-            title: const Text('Task Details'),
+            title: Text(context.l10n.taskDetailsTitle),
             actions: [
               if (task != null)
                 IconButton(
-                  tooltip: 'Edit',
+                  tooltip: context.l10n.commonEdit,
                   onPressed: _editTask,
                   icon: const Icon(Icons.edit_outlined),
                 ),
               if (task != null && task.status.canAssign)
                 IconButton(
-                  tooltip: 'Assign staff',
+                  tooltip:
+                      '${context.l10n.commonAssign} ${context.l10n.commonStaff}',
                   onPressed: _assignTask,
                   icon: const Icon(Icons.person_add_alt_1),
                 ),
               if (task != null && task.status.canApprove)
                 IconButton(
-                  tooltip: 'Approve',
+                  tooltip: context.l10n.commonApprove,
                   onPressed: _approveTask,
                   icon: const Icon(Icons.verified_outlined),
                 ),
               if (task != null && task.status.canClose)
                 IconButton(
-                  tooltip: 'Close',
+                  tooltip: context.l10n.commonClose,
                   onPressed: _closeTask,
                   icon: const Icon(Icons.check_circle_outline),
                 ),
               if (task != null && task.status.canDelete)
                 IconButton(
-                  tooltip: 'Delete',
+                  tooltip: context.l10n.commonDelete,
                   onPressed: () => _deleteTask(task),
                   icon: const Icon(Icons.delete_outline),
                 ),
@@ -212,7 +219,10 @@ class _OverseerTaskDetailScreenState extends State<OverseerTaskDetailScreen> {
     }
 
     if (snapshot.hasError) {
-      return _ErrorState(message: 'Unable to load task.', onRetry: _refresh);
+      return _ErrorState(
+        message: context.l10n.taskLoadFailed,
+        onRetry: _refresh,
+      );
     }
 
     final task = snapshot.requireData;
@@ -232,18 +242,21 @@ class _OverseerTaskDetailScreenState extends State<OverseerTaskDetailScreen> {
             spacing: 8,
             runSpacing: 8,
             children: [
-              _InfoChip(icon: Icons.flag_outlined, label: task.status.label),
+              _InfoChip(
+                icon: Icons.flag_outlined,
+                label: task.status.localizedLabel(context),
+              ),
               _InfoChip(
                 icon: Icons.category_outlined,
-                label: task.category.label,
+                label: task.category.localizedLabel(context),
               ),
               _InfoChip(
                 icon: Icons.trending_up,
-                label: 'Priority ${task.priorityScore}',
+                label: context.l10n.priorityValue(task.priorityScore),
               ),
               _InfoChip(
                 icon: Icons.link_outlined,
-                label: '${task.reportIds.length} reports',
+                label: context.l10n.reportCount(task.reportIds.length),
               ),
             ],
           ),
@@ -251,35 +264,48 @@ class _OverseerTaskDetailScreenState extends State<OverseerTaskDetailScreen> {
             const SizedBox(height: 18),
             _ReviewComparison(task: task),
           ],
-          _Section(title: 'Description', child: Text(task.description)),
-          _Section(title: 'Location', child: Text(task.locationLabel)),
           _Section(
-            title: 'Coordinates',
+            title: context.l10n.commonDescription,
+            child: Text(task.description),
+          ),
+          _Section(
+            title: context.l10n.commonLocation,
+            child: Text(task.locationLabel),
+          ),
+          _Section(
+            title: context.l10n.commonCoordinates,
             child: Text(
               '${task.latitude.toStringAsFixed(6)}, ${task.longitude.toStringAsFixed(6)}',
             ),
           ),
           _Section(
-            title: 'Assigned staff',
-            child: Text(task.assignedStaff?.fullName ?? 'Unassigned'),
+            title: context.l10n.taskAssignedStaff,
+            child: Text(
+              task.assignedStaff?.fullName ?? context.l10n.commonUnassigned,
+            ),
           ),
           if (!task.status.needsReviewComparison) ...[
             _Section(
-              title: 'Before photo',
+              title: context.l10n.commonBeforePhoto,
               child: UploadedPhotoView(fileUrl: task.beforePhotoUrl),
             ),
             if ((task.afterPhotoUrl ?? '').trim().isNotEmpty)
               _Section(
-                title: 'After photo',
+                title: context.l10n.commonAfterPhoto,
                 child: UploadedPhotoView(fileUrl: task.afterPhotoUrl),
               ),
           ],
           if ((task.staffNote ?? '').trim().isNotEmpty)
-            _Section(title: 'Staff note', child: Text(task.staffNote!)),
+            _Section(
+              title: context.l10n.taskStaffNote,
+              child: Text(task.staffNote!),
+            ),
           _Section(
-            title: 'Report IDs',
+            title: context.l10n.taskReportIds,
             child: Text(
-              task.reportIds.isEmpty ? 'None' : task.reportIds.join('\n'),
+              task.reportIds.isEmpty
+                  ? context.l10n.commonNone
+                  : task.reportIds.join('\n'),
             ),
           ),
           const SizedBox(height: 18),
@@ -290,31 +316,31 @@ class _OverseerTaskDetailScreenState extends State<OverseerTaskDetailScreen> {
               OutlinedButton.icon(
                 onPressed: task.status.canAssign ? _assignTask : null,
                 icon: const Icon(Icons.person_add_alt_1),
-                label: const Text('Assign'),
+                label: Text(context.l10n.commonAssign),
               ),
               OutlinedButton.icon(
                 onPressed: _editTask,
                 icon: const Icon(Icons.edit_outlined),
-                label: const Text('Edit'),
+                label: Text(context.l10n.commonEdit),
               ),
               if (task.status.canApprove)
                 FilledButton.icon(
                   onPressed: _approveTask,
                   icon: const Icon(Icons.verified_outlined),
-                  label: const Text('Approve'),
+                  label: Text(context.l10n.commonApprove),
                 ),
               if (task.status.canClose)
                 FilledButton.icon(
                   onPressed: _closeTask,
                   icon: const Icon(Icons.check_circle_outline),
-                  label: const Text('Close'),
+                  label: Text(context.l10n.commonClose),
                 ),
               OutlinedButton.icon(
                 onPressed: task.status.canDelete
                     ? () => _deleteTask(task)
                     : null,
                 icon: const Icon(Icons.delete_outline),
-                label: const Text('Delete'),
+                label: Text(context.l10n.commonDelete),
                 style: OutlinedButton.styleFrom(
                   foregroundColor: Theme.of(context).colorScheme.error,
                 ),
@@ -338,7 +364,7 @@ class _ReviewComparison extends StatelessWidget {
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Text(
-          'Review evidence',
+          context.l10n.taskReviewEvidence,
           style: Theme.of(
             context,
           ).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.w800),
@@ -348,16 +374,16 @@ class _ReviewComparison extends StatelessWidget {
           builder: (context, constraints) {
             final isWide = constraints.maxWidth >= 760;
             final before = _ReviewPhotoCard(
-              title: 'Before',
+              title: context.l10n.commonBeforePhoto,
               icon: Icons.report_problem_outlined,
               fileUrl: task.beforePhotoUrl,
-              emptyLabel: 'No before photo uploaded',
+              emptyLabel: context.l10n.taskNoBeforePhoto,
             );
             final after = _ReviewPhotoCard(
-              title: 'After',
+              title: context.l10n.commonAfterPhoto,
               icon: Icons.task_alt_outlined,
               fileUrl: task.afterPhotoUrl,
-              emptyLabel: 'No after photo uploaded',
+              emptyLabel: context.l10n.taskNoAfterPhoto,
             );
 
             return isWide
@@ -488,7 +514,7 @@ class _ErrorState extends StatelessWidget {
             OutlinedButton.icon(
               onPressed: onRetry,
               icon: const Icon(Icons.refresh),
-              label: const Text('Retry'),
+              label: Text(context.l10n.commonRetry),
             ),
           ],
         ),

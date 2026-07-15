@@ -6,6 +6,7 @@ import 'package:flutter_map/flutter_map.dart';
 import 'package:http/http.dart' as http;
 import 'package:latlong2/latlong.dart';
 
+import '../../../core/localization/app_localizations_extension.dart';
 import '../../../core/routing/app_routes.dart';
 import '../../reports/data/report_api_service.dart';
 import '../../reports/domain/report.dart';
@@ -91,7 +92,7 @@ class _StaffTaskRouteMapScreenState extends State<StaffTaskRouteMapScreen> {
     if (value.isEmpty) {
       setState(() {
         _customStart = null;
-        _addressMessage = 'Using the task address as the route start.';
+        _addressMessage = context.l10n.routeUsingTaskAddress;
         _roadRouteKey = null;
         _roadRouteFuture = null;
       });
@@ -104,8 +105,8 @@ class _StaffTaskRouteMapScreenState extends State<StaffTaskRouteMapScreen> {
       _roadRouteKey = null;
       _roadRouteFuture = null;
       _addressMessage = resolved == null
-          ? 'Address not found locally. Try a linked report address or lat,lng.'
-          : 'Route starts from ${resolved.label}.';
+          ? context.l10n.routeAddressNotFound
+          : context.l10n.routeStartsFrom(resolved.label);
     });
   }
 
@@ -113,7 +114,7 @@ class _StaffTaskRouteMapScreenState extends State<StaffTaskRouteMapScreen> {
     _startAddressController.text = data.task.locationLabel;
     setState(() {
       _customStart = null;
-      _addressMessage = 'Using the task address as the route start.';
+      _addressMessage = context.l10n.routeUsingTaskAddress;
     });
   }
 
@@ -134,10 +135,10 @@ class _StaffTaskRouteMapScreenState extends State<StaffTaskRouteMapScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Route Map'),
+        title: Text(context.l10n.routeMapTitle),
         actions: [
           IconButton(
-            tooltip: 'Refresh',
+            tooltip: context.l10n.commonRefresh,
             onPressed: _refresh,
             icon: const Icon(Icons.refresh),
           ),
@@ -259,7 +260,7 @@ class _RouteMap extends StatelessWidget {
               ),
             ],
           ),
-        MarkerLayer(markers: _markersForPlan(plan)),
+        MarkerLayer(markers: _markersForPlan(context, plan)),
       ],
     );
   }
@@ -323,7 +324,11 @@ class _RouteStartPanel extends StatelessWidget {
                       ),
                       const SizedBox(height: 2),
                       Text(
-                        'From ${plan.startLabel} - ${plan.orderedReports.length} stops - ${_formatDistance(plan.totalDistanceKm)}',
+                        context.l10n.routeSummary(
+                          plan.orderedReports.length,
+                          _formatDistance(plan.totalDistanceKm),
+                          plan.startLabel,
+                        ),
                         maxLines: 1,
                         overflow: TextOverflow.ellipsis,
                         style: Theme.of(context).textTheme.bodySmall?.copyWith(
@@ -342,11 +347,11 @@ class _RouteStartPanel extends StatelessWidget {
               textInputAction: TextInputAction.search,
               onSubmitted: (_) => onRouteFromAddress(),
               decoration: InputDecoration(
-                labelText: 'Current address',
-                hintText: 'Enter current address, e.g. Bus stop near Le Loi',
+                labelText: context.l10n.routeCurrentAddress,
+                hintText: context.l10n.routeAddressHint,
                 prefixIcon: const Icon(Icons.my_location_outlined),
                 suffixIcon: IconButton(
-                  tooltip: 'Route from address',
+                  tooltip: context.l10n.routeFromAddress,
                   onPressed: onRouteFromAddress,
                   icon: const Icon(Icons.directions),
                 ),
@@ -358,13 +363,12 @@ class _RouteStartPanel extends StatelessWidget {
                 TextButton.icon(
                   onPressed: onUseTaskAddress,
                   icon: const Icon(Icons.assignment_return_outlined, size: 18),
-                  label: const Text('Use task address'),
+                  label: Text(context.l10n.routeUseTaskAddress),
                 ),
                 const SizedBox(width: 8),
                 Expanded(
                   child: Text(
-                    message ??
-                        'Known task/report addresses and lat,lng are supported.',
+                    message ?? context.l10n.routeKnownAddressesHelp,
                     maxLines: 2,
                     overflow: TextOverflow.ellipsis,
                     textAlign: TextAlign.right,
@@ -408,7 +412,7 @@ class _RouteStopPanel extends StatelessWidget {
                   const SizedBox(width: 8),
                   Expanded(
                     child: Text(
-                      'Visit order',
+                      context.l10n.routeVisitOrder,
                       style: Theme.of(context).textTheme.titleSmall?.copyWith(
                         fontWeight: FontWeight.w800,
                       ),
@@ -426,7 +430,7 @@ class _RouteStopPanel extends StatelessWidget {
                   shrinkWrap: true,
                   children: [
                     if (plan.orderedReports.isEmpty)
-                      const Text('No linked report stops.')
+                      Text(context.l10n.routeNoStops)
                     else
                       for (
                         var index = 0;
@@ -445,7 +449,7 @@ class _RouteStopPanel extends StatelessWidget {
                     if (plan.directions.isNotEmpty) ...[
                       const Divider(height: 18),
                       Text(
-                        'Directions',
+                        context.l10n.routeDirections,
                         style: Theme.of(context).textTheme.titleSmall?.copyWith(
                           fontWeight: FontWeight.w800,
                         ),
@@ -527,6 +531,7 @@ class _DirectionStepTile extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final instruction = localizeRoadRouteInstruction(context, step);
     return Padding(
       padding: const EdgeInsets.symmetric(vertical: 5),
       child: Row(
@@ -536,7 +541,7 @@ class _DirectionStepTile extends StatelessWidget {
           const SizedBox(width: 8),
           Expanded(
             child: Text(
-              '${step.instruction} - ${_formatDistance(step.distanceMeters / 1000)}',
+              '$instruction - ${_formatDistance(step.distanceMeters / 1000)}',
               maxLines: 2,
               overflow: TextOverflow.ellipsis,
             ),
@@ -645,15 +650,12 @@ class _RouteErrorState extends StatelessWidget {
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            const Text(
-              'Unable to load route map.',
-              textAlign: TextAlign.center,
-            ),
+            Text(context.l10n.routeLoadFailed, textAlign: TextAlign.center),
             const SizedBox(height: 12),
             OutlinedButton.icon(
               onPressed: onRetry,
               icon: const Icon(Icons.refresh),
-              label: const Text('Retry'),
+              label: Text(context.l10n.commonRetry),
             ),
           ],
         ),
@@ -759,7 +761,19 @@ class OsrmRoadRouteService implements RoadRouteService {
         continue;
       }
       for (final step in legSteps.whereType<Map<String, dynamic>>()) {
-        final instruction = _formatOsrmInstruction(step);
+        final maneuver = step['maneuver'];
+        final maneuverType = maneuver is Map<String, dynamic>
+            ? maneuver['type'] as String?
+            : null;
+        final maneuverModifier = maneuver is Map<String, dynamic>
+            ? maneuver['modifier'] as String?
+            : null;
+        final roadName = (step['name'] as String? ?? '').trim();
+        final instruction = _formatOsrmInstruction(
+          type: maneuverType,
+          modifier: maneuverModifier,
+          roadName: roadName,
+        );
         if (instruction.isEmpty) {
           continue;
         }
@@ -767,6 +781,9 @@ class OsrmRoadRouteService implements RoadRouteService {
           RoadRouteStep(
             instruction: instruction,
             distanceMeters: (step['distance'] as num?)?.toDouble() ?? 0,
+            maneuverType: maneuverType,
+            maneuverModifier: maneuverModifier,
+            roadName: roadName.isEmpty ? null : roadName,
           ),
         );
       }
@@ -774,15 +791,11 @@ class OsrmRoadRouteService implements RoadRouteService {
     return steps;
   }
 
-  String _formatOsrmInstruction(Map<String, dynamic> step) {
-    final maneuver = step['maneuver'];
-    final type = maneuver is Map<String, dynamic>
-        ? maneuver['type'] as String?
-        : null;
-    final modifier = maneuver is Map<String, dynamic>
-        ? maneuver['modifier'] as String?
-        : null;
-    final roadName = (step['name'] as String? ?? '').trim();
+  String _formatOsrmInstruction({
+    required String? type,
+    required String? modifier,
+    required String roadName,
+  }) {
     final action = switch (type) {
       'depart' => 'Head out',
       'arrive' => 'Arrive',
@@ -822,10 +835,72 @@ class RoadRouteStep {
   const RoadRouteStep({
     required this.instruction,
     required this.distanceMeters,
+    this.maneuverType,
+    this.maneuverModifier,
+    this.roadName,
   });
 
   final String instruction;
   final double distanceMeters;
+  final String? maneuverType;
+  final String? maneuverModifier;
+  final String? roadName;
+}
+
+String localizeRoadRouteInstruction(BuildContext context, RoadRouteStep step) {
+  final maneuverType = step.maneuverType?.trim().toLowerCase();
+  if (maneuverType == null || maneuverType.isEmpty) {
+    return step.instruction;
+  }
+
+  final direction = _localizedManeuverDirection(context, step.maneuverModifier);
+  final l10n = context.l10n;
+  final action = switch (maneuverType) {
+    'depart' => l10n.routeManeuverHeadOut,
+    'arrive' => l10n.routeManeuverArrive,
+    'turn' =>
+      direction == null
+          ? l10n.routeManeuverTurnGeneric
+          : l10n.routeManeuverTurn(direction),
+    'continue' || 'new name' => l10n.routeManeuverContinue,
+    'merge' =>
+      direction == null
+          ? l10n.routeManeuverMergeGeneric
+          : l10n.routeManeuverMerge(direction),
+    'on ramp' => l10n.routeManeuverTakeRamp,
+    'off ramp' => l10n.routeManeuverTakeExit,
+    'fork' =>
+      direction == null
+          ? l10n.routeManeuverKeepGeneric
+          : l10n.routeManeuverKeep(direction),
+    'roundabout' || 'rotary' => l10n.routeManeuverEnterRoundabout,
+    _ => l10n.routeManeuverContinue,
+  };
+
+  final roadName = step.roadName?.trim() ?? '';
+  if (roadName.isEmpty || maneuverType == 'arrive') {
+    return action;
+  }
+  return l10n.routeManeuverOnto(action, roadName);
+}
+
+String? _localizedManeuverDirection(BuildContext context, String? modifier) {
+  final normalized = modifier?.trim().toLowerCase();
+  if (normalized == null || normalized.isEmpty) {
+    return null;
+  }
+
+  return switch (normalized) {
+    'uturn' || 'u-turn' => context.l10n.routeDirectionUTurn,
+    'sharp right' => context.l10n.routeDirectionSharpRight,
+    'right' => context.l10n.routeDirectionRight,
+    'slight right' => context.l10n.routeDirectionSlightRight,
+    'straight' => context.l10n.routeDirectionStraight,
+    'slight left' => context.l10n.routeDirectionSlightLeft,
+    'left' => context.l10n.routeDirectionLeft,
+    'sharp left' => context.l10n.routeDirectionSharpLeft,
+    _ => modifier!.trim(),
+  };
 }
 
 class RouteServiceException implements Exception {
@@ -1019,15 +1094,15 @@ String _roadRouteCacheKey(List<LatLng> points) {
       .join('|');
 }
 
-List<Marker> _markersForPlan(_RoutePlan plan) {
+List<Marker> _markersForPlan(BuildContext context, _RoutePlan plan) {
   return <Marker>[
     Marker(
       point: plan.startPoint,
       width: 96,
       height: 72,
-      child: const _RouteMarker(
-        label: 'Start',
-        color: Color(0xFF2563EB),
+      child: _RouteMarker(
+        label: context.l10n.routeStartMarker,
+        color: const Color(0xFF2563EB),
         icon: Icons.navigation,
       ),
     ),
