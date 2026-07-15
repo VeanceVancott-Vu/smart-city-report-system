@@ -25,8 +25,7 @@ class CitizenReportForm extends StatefulWidget {
   final Future<String> Function({
     required String filename,
     required List<int> bytes,
-  })
-  onUploadBeforePhoto;
+  }) onUploadBeforePhoto;
   final ReportApiService reportApiService;
 
   @override
@@ -205,11 +204,33 @@ class _CitizenReportFormState extends State<CitizenReportForm> {
     return value.isEmpty ? null : value;
   }
 
+  IconData _getCategoryIconLocal(ReportCategory cat) {
+    switch (cat) {
+      case ReportCategory.roadDamage:
+        return Icons.warning_amber_rounded;
+      case ReportCategory.streetLight:
+        return Icons.lightbulb_outline;
+      case ReportCategory.garbage:
+        return Icons.delete_outline;
+      case ReportCategory.waterLeak:
+        return Icons.water_drop_outlined;
+      case ReportCategory.drainage:
+        return Icons.waves_outlined;
+      case ReportCategory.trafficSign:
+        return Icons.traffic_outlined;
+      case ReportCategory.treeBlockage:
+        return Icons.park_outlined;
+      case ReportCategory.other:
+        return Icons.help_outline_rounded;
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     final bool isTestMode = WidgetsBinding.instance.runtimeType
         .toString()
         .contains('Test');
+
     return Form(
       key: _formKey,
       child: NotificationListener<ScrollNotification>(
@@ -222,99 +243,179 @@ class _CitizenReportFormState extends State<CitizenReportForm> {
         child: ListView(
           controller: _scrollController,
           cacheExtent: 1000,
-          padding: const EdgeInsets.all(16),
+          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 24),
           children: [
-            TextFormField(
-              controller: _titleController,
-              decoration: InputDecoration(
-                labelText: context.l10n.commonTitle,
-                prefixIcon: const Icon(Icons.title),
-              ),
-              textInputAction: TextInputAction.next,
-              validator: _required,
-            ),
-            const SizedBox(height: 12),
-            TextFormField(
-              controller: _descriptionController,
-              decoration: InputDecoration(
-                labelText: context.l10n.commonDescription,
-                prefixIcon: const Icon(Icons.notes_outlined),
-              ),
-              minLines: 3,
-              maxLines: 5,
-              validator: _required,
-            ),
-            const SizedBox(height: 12),
-            DropdownButtonFormField<ReportCategory>(
-              value: _category,
-              decoration: InputDecoration(
-                labelText: context.l10n.commonCategory,
-                prefixIcon: const Icon(Icons.category_outlined),
-              ),
-              items: ReportCategory.values
-                  .map(
-                    (category) => DropdownMenuItem<ReportCategory>(
-                      value: category,
-                      child: Text(category.localizedLabel(context)),
-                    ),
-                  )
-                  .toList(growable: false),
-              onChanged: _isSaving
-                  ? null
-                  : (category) {
-                      if (category != null) {
-                        setState(() => _category = category);
-                      }
-                    },
-            ),
-            const SizedBox(height: 12),
-            if (!isTestMode) ...[
-              Padding(
-                padding: const EdgeInsets.only(bottom: 8.0),
-                child: Text(
-                  context.l10n.reportLocationSelection,
-                  style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+            // SECTION 1: INCIDENT CATEGORY SELECTOR (GRID CARD STATEFUL VIEW)
+            Text(
+              'Incident Category',
+              style: Theme.of(context).textTheme.titleMedium?.copyWith(
                     fontWeight: FontWeight.bold,
-                    color: Colors.grey.shade700,
+                    color: const Color(0xFF111C2D),
                   ),
-                ),
+            ),
+            const SizedBox(height: 12),
+            GridView.builder(
+              shrinkWrap: true,
+              physics: const NeverScrollableScrollPhysics(),
+              gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+                crossAxisCount: 2,
+                crossAxisSpacing: 16,
+                mainAxisSpacing: 16,
+                mainAxisExtent: 100,
               ),
-              OutlinedButton.icon(
-                onPressed: _isSaving ? null : _openMapPicker,
-                icon: const Icon(Icons.map_outlined),
-                label: Text(context.l10n.reportSelectLocationMap),
-                style: OutlinedButton.styleFrom(
-                  padding: const EdgeInsets.symmetric(vertical: 14),
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(10),
+              itemCount: ReportCategory.values.length,
+              itemBuilder: (context, index) {
+                final currentCat = ReportCategory.values[index];
+                final isSelected = _category == currentCat;
+
+                return InkWell(
+                  onTap: _isSaving
+                      ? null
+                      : () {
+                          setState(() => _category = currentCat);
+                        },
+                  borderRadius: BorderRadius.circular(12),
+                  child: Container(
+                    decoration: BoxDecoration(
+                      color: isSelected ? const Color(0xFFBDECE2) : const Color(0xFFF9F9FF),
+                      borderRadius: BorderRadius.circular(12),
+                      border: Border.all(
+                        color: isSelected ? const Color(0xFF0F766E) : const Color(0xFFBDC9C6).withOpacity(0.5),
+                        width: isSelected ? 2.0 : 1.0,
+                      ),
+                    ),
+                    child: Stack(
+                      children: [
+                        Center(
+                          child: Column(
+                            mainAxisAlignment: MainAxisAlignment.center,
+                            children: [
+                              Icon(
+                                _getCategoryIconLocal(currentCat),
+                                size: 36,
+                                color: isSelected ? const Color(0xFF0F766E) : const Color(0xFF3E4947),
+                              ),
+                              const SizedBox(height: 6),
+                              Text(
+                                currentCat.label,
+                                textAlign: TextAlign.center,
+                                style: TextStyle(
+                                  fontSize: 14,
+                                  fontWeight: isSelected ? FontWeight.bold : FontWeight.w500,
+                                  color: isSelected ? const Color(0xFF0F766E) : const Color(0xFF111C2D),
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                        if (isSelected)
+                          Positioned(
+                            top: 8,
+                            right: 8,
+                            child: Container(
+                              width: 22,
+                              height: 22,
+                              decoration: const BoxDecoration(
+                                color: Color(0xFF0F766E),
+                                shape: BoxShape.circle,
+                              ),
+                              child: const Icon(
+                                Icons.check,
+                                size: 14,
+                                color: Colors.white,
+                              ),
+                            ),
+                          ),
+                      ],
+                    ),
                   ),
-                  side: BorderSide(
-                    color: Theme.of(
-                      context,
-                    ).colorScheme.primary.withOpacity(0.5),
-                    width: 1.5,
+                );
+              },
+            ),
+            const SizedBox(height: 28),
+
+            // SECTION 2: VISUAL PROOF & IMAGE PREVIEW PANEL
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                Text(
+                  'Visual Proof',
+                  style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                        fontWeight: FontWeight.bold,
+                        color: const Color(0xFF111C2D),
+                      ),
+                ),
+                Text(
+                  _beforePhotoUrl != null ? '1/1 Photo' : '0/1 Photo',
+                  style: const TextStyle(fontSize: 12, color: Color(0xFF3E4947)),
+                ),
+              ],
+            ),
+            const SizedBox(height: 12),
+            _PhotoUploadField(
+              label: 'Upload a picture before any actions are taken',
+              fileUrl: _beforePhotoUrl,
+              errorText: _beforePhotoError,
+              isUploading: _isUploadingPhoto,
+              onUpload: _pickAndUploadBeforePhoto,
+              onRemove: () {
+                setState(() => _beforePhotoUrl = null);
+              },
+            ),
+            const SizedBox(height: 28),
+
+            // SECTION 3: GEOLOCATION AND MAPPING
+            if (!isTestMode) ...[
+              Text(
+                'Location Details',
+                style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                      fontWeight: FontWeight.bold,
+                      color: const Color(0xFF111C2D),
+                    ),
+              ),
+              const SizedBox(height: 12),
+              // Map Action Button
+              FilledButton.icon(
+                onPressed: _isSaving ? null : _openMapPicker,
+                icon: const Icon(Icons.map, size: 20),
+                label: const Text('Select Location on Map', style: TextStyle(fontWeight: FontWeight.w600)),
+                style: FilledButton.styleFrom(
+                  backgroundColor: const Color(0xFFBDECE2),
+                  foregroundColor: const Color(0xFF416C65),
+                  padding: const EdgeInsets.symmetric(vertical: 14),
+                  elevation: 0,
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(12),
                   ),
                 ),
               ),
               const SizedBox(height: 12),
             ],
+
+            // Latitude and Longitude Metadata Chips
             LayoutBuilder(
               builder: (context, constraints) {
                 final isWide = constraints.maxWidth >= 560;
                 final latitudeField = TextFormField(
                   controller: _latitudeController,
                   readOnly: true,
-                  decoration: InputDecoration(
-                    labelText: context.l10n.commonLatitude,
-                    prefixIcon: const Icon(Icons.my_location_outlined),
+                  decoration: const InputDecoration(
+                    labelText: 'Latitude',
+                    prefixIcon: Icon(Icons.my_location, color: Color(0xFF005C55)),
+                    border: OutlineInputBorder(
+                      borderRadius: BorderRadius.all(Radius.circular(12)),
+                    ),
                   ),
                 );
                 final longitudeField = TextFormField(
                   controller: _longitudeController,
                   readOnly: true,
-                  decoration: InputDecoration(
-                    labelText: context.l10n.commonLongitude,
-                    prefixIcon: const Icon(Icons.explore_outlined),
+                  decoration: const InputDecoration(
+                    labelText: 'Longitude',
+                    prefixIcon: Icon(Icons.explore, color: Color(0xFF005C55)),
+                    border: OutlineInputBorder(
+                      borderRadius: BorderRadius.all(Radius.circular(12)),
+                    ),
                   ),
                 );
 
@@ -322,58 +423,133 @@ class _CitizenReportFormState extends State<CitizenReportForm> {
                     ? Row(
                         children: [
                           Expanded(child: latitudeField),
-                          const SizedBox(width: 12),
+                          const SizedBox(width: 16),
                           Expanded(child: longitudeField),
                         ],
                       )
                     : Column(
                         children: [
                           latitudeField,
-                          const SizedBox(height: 12),
+                          const SizedBox(height: 16),
                           longitudeField,
                         ],
                       );
               },
             ),
-            const SizedBox(height: 12),
+            const SizedBox(height: 16),
+
+            // Street Address Input
             TextFormField(
               controller: _addressController,
-              decoration: InputDecoration(
-                labelText: context.l10n.commonAddress,
-                prefixIcon: const Icon(Icons.place_outlined),
+              decoration: const InputDecoration(
+                labelText: 'Street Address',
+                prefixIcon: Icon(Icons.location_on),
+                border: OutlineInputBorder(
+                  borderRadius: BorderRadius.all(Radius.circular(12)),
+                ),
               ),
               textInputAction: TextInputAction.next,
             ),
-            const SizedBox(height: 12),
-            _PhotoUploadField(
-              label: context.l10n.commonBeforePhoto,
-              fileUrl: _beforePhotoUrl,
-              errorText: _beforePhotoError,
-              isUploading: _isUploadingPhoto,
-              onUpload: _pickAndUploadBeforePhoto,
+            const SizedBox(height: 28),
+
+            // SECTION 4: INCIDENT INFORMATION (TEXT FIELDS)
+            Text(
+              'Incident Details',
+              style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                    fontWeight: FontWeight.bold,
+                    color: const Color(0xFF111C2D),
+                  ),
             ),
-            if (widget.initialReport == null) ...[
-              const SizedBox(height: 8),
-              CheckboxListTile(
-                value: _anonymous,
-                onChanged: _isSaving
-                    ? null
-                    : (value) => setState(() => _anonymous = value ?? false),
-                title: Text(context.l10n.reportSubmitAnonymously),
-                controlAffinity: ListTileControlAffinity.leading,
-                contentPadding: EdgeInsets.zero,
+            const SizedBox(height: 12),
+
+            // Report Title Field
+            TextFormField(
+              controller: _titleController,
+              decoration: const InputDecoration(
+                labelText: 'Report Title',
+                prefixIcon: Icon(Icons.edit_note),
+                border: OutlineInputBorder(
+                  borderRadius: BorderRadius.all(Radius.circular(12)),
+                ),
               ),
+              textInputAction: TextInputAction.next,
+              validator: _required,
+            ),
+            const SizedBox(height: 16),
+
+            // Detailed Description Textarea
+            TextFormField(
+              controller: _descriptionController,
+              decoration: const InputDecoration(
+                labelText: 'Detailed Description',
+                alignLabelWithHint: true,
+                hintText: 'Please describe the issue in detail...',
+                border: OutlineInputBorder(
+                  borderRadius: BorderRadius.all(Radius.circular(12)),
+                ),
+              ),
+              minLines: 4,
+              maxLines: 6,
+              validator: _required,
+            ),
+            const SizedBox(height: 28),
+
+            // SECTION 5: PROFILE & ANONYMOUS SWITCH CARD
+            if (widget.initialReport == null) ...[
+              Container(
+                decoration: BoxDecoration(
+                  color: const Color(0xFFF0F3FF),
+                  borderRadius: BorderRadius.circular(12),
+                  border: Border.all(color: const Color(0xFFBDC9C6).withOpacity(0.4)),
+                ),
+                child: SwitchListTile(
+                  value: _anonymous,
+                  activeColor: const Color(0xFF005C55),
+                  onChanged: _isSaving
+                      ? null
+                      : (value) => setState(() => _anonymous = value),
+                  title: const Text(
+                    'Submit Anonymously',
+                    style: TextStyle(fontWeight: FontWeight.bold, color: Color(0xFF111C2D)),
+                  ),
+                  subtitle: const Text(
+                    'Your personal information will be hidden from the public timeline.',
+                    style: TextStyle(fontSize: 12, color: Color(0xFF3E4947)),
+                  ),
+                  contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
+                ),
+              ),
+              const SizedBox(height: 32),
             ],
-            const SizedBox(height: 20),
+
+            // SECTION 6: ACTION FOOTER SUBMIT BUTTON
             FilledButton.icon(
               onPressed: _isSaving || _isUploadingPhoto ? null : _submit,
               icon: _isSaving
                   ? const SizedBox.square(
                       dimension: 18,
-                      child: CircularProgressIndicator(strokeWidth: 2),
+                      child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white),
                     )
-                  : const Icon(Icons.save_outlined),
-              label: Text(widget.submitLabel),
+                  : const Icon(Icons.send),
+              style: FilledButton.styleFrom(
+                backgroundColor: const Color(0xFF0F766E),
+                foregroundColor: Colors.white,
+                padding: const EdgeInsets.symmetric(vertical: 16),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                elevation: 2,
+              ),
+              label: Text(
+                widget.submitLabel,
+                style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+              ),
+            ),
+            const SizedBox(height: 12),
+            const Text(
+              "By submitting, you agree to the City's terms of service.",
+              textAlign: TextAlign.center,
+              style: TextStyle(fontSize: 12, color: Color(0xFF3E4947)),
             ),
           ],
         ),
@@ -434,6 +610,7 @@ class _PhotoUploadField extends StatelessWidget {
     required this.errorText,
     required this.isUploading,
     required this.onUpload,
+    required this.onRemove,
   });
 
   final String label;
@@ -441,40 +618,94 @@ class _PhotoUploadField extends StatelessWidget {
   final String? errorText;
   final bool isUploading;
   final VoidCallback onUpload;
+  final VoidCallback onRemove;
 
   @override
   Widget build(BuildContext context) {
     final hasFile = (fileUrl ?? '').trim().isNotEmpty;
-    final colorScheme = Theme.of(context).colorScheme;
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text(label, style: Theme.of(context).textTheme.titleSmall),
-        const SizedBox(height: 8),
-        OutlinedButton.icon(
-          onPressed: isUploading ? null : onUpload,
-          icon: isUploading
-              ? const SizedBox.square(
-                  dimension: 18,
-                  child: CircularProgressIndicator(strokeWidth: 2),
-                )
-              : const Icon(Icons.upload_file),
-          label: Text(
-            hasFile ? context.l10n.photoReplace : context.l10n.photoUpload,
+        if (hasFile)
+          Container(
+            width: double.infinity,
+            height: 220,
+            decoration: BoxDecoration(
+              color: const Color(0xFFF9F9FF),
+              borderRadius: BorderRadius.circular(16),
+              border: Border.all(color: const Color(0xFFBDC9C6).withOpacity(0.5)),
+            ),
+            clipBehavior: Clip.antiAlias,
+            child: Stack(
+              fit: StackFit.expand,
+              children: [
+                Image.network(
+                  fileUrl!,
+                  fit: BoxFit.cover,
+                  errorBuilder: (context, error, stackTrace) {
+                    return const Center(
+                      child: Icon(Icons.broken_image, size: 48, color: Color(0xFFBA1A1A)),
+                    );
+                  },
+                ),
+                Positioned(
+                  top: 12,
+                  right: 12,
+                  child: GestureDetector(
+                    onTap: onRemove,
+                    child: Container(
+                      padding: const EdgeInsets.all(8),
+                      decoration: BoxDecoration(
+                        color: Colors.white.withOpacity(0.9),
+                        shape: BoxShape.circle,
+                        boxShadow: const [
+                          BoxShadow(color: Colors.black12, blurRadius: 4, offset: Offset(0, 2))
+                        ],
+                      ),
+                      child: const Icon(Icons.close, size: 20, color: Color(0xFFBA1A1A)),
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          )
+        else
+          InkWell(
+            onTap: isUploading ? null : onUpload,
+            borderRadius: BorderRadius.circular(12),
+            child: Container(
+              width: double.infinity,
+              padding: const EdgeInsets.symmetric(vertical: 32),
+              decoration: BoxDecoration(
+                color: const Color(0xFFF9F9FF),
+                borderRadius: BorderRadius.circular(12),
+                border: Border.all(
+                  color: const Color(0xFFBDC9C6),
+                  width: 2,
+                ),
+              ),
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  isUploading
+                      ? const SizedBox.square(
+                          dimension: 28,
+                          child: CircularProgressIndicator(strokeWidth: 2, color: Color(0xFF0F766E)),
+                        )
+                      : const Icon(Icons.add_a_photo, size: 36, color: Color(0xFF3E4947)),
+                  const SizedBox(height: 8),
+                  Text(
+                    isUploading ? 'Uploading proof image...' : 'Add Environmental Photo',
+                    style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w600, color: Color(0xFF111C2D)),
+                  ),
+                ],
+              ),
+            ),
           ),
-        ),
-        if (hasFile) ...[
-          const SizedBox(height: 8),
-          Text(
-            fileUrl!,
-            style: TextStyle(color: colorScheme.primary),
-            overflow: TextOverflow.ellipsis,
-          ),
-        ],
         if (errorText != null) ...[
           const SizedBox(height: 8),
-          Text(errorText!, style: TextStyle(color: colorScheme.error)),
+          Text(errorText!, style: const TextStyle(color: Color(0xFFBA1A1A), fontSize: 13, fontWeight: FontWeight.w500)),
         ],
       ],
     );

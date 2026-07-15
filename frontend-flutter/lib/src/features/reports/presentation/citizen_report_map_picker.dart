@@ -34,7 +34,7 @@ class CitizenReportMapPicker extends StatefulWidget {
   State<CitizenReportMapPicker> createState() => _CitizenReportMapPickerState();
 }
 
-class _CitizenReportMapPickerState extends State<CitizenReportMapPicker> {
+class _CitizenReportMapPickerState extends State<CitizenReportMapPicker> with SingleTickerProviderStateMixin {
   late final MapController _mapController;
   late final GeocodingService _geocodingService;
   LatLng? _pinnedLocation;
@@ -47,14 +47,16 @@ class _CitizenReportMapPickerState extends State<CitizenReportMapPicker> {
   double _maxLat = 10.95;
   double _maxLng = 106.90;
 
-  Timer? _debounceTimer;
   final TextEditingController _searchController = TextEditingController();
   final FocusNode _searchFocusNode = FocusNode();
-  String _searchQuery = '';
-  List<PlaceSearchResult> _addressSuggestions = [];
+  List<Map<String, dynamic>> _addressSuggestions = [];
   bool _isSearchingAddress = false;
-  bool _hasSearchedAddress = false;
-  int _reverseGeocodeRequestId = 0;
+  Timer? _searchDebounceTimer;
+
+  // Tính năng bổ sung: radar quét sự cố gần đó (Local Insight Lookup)
+  bool _radarActive = false;
+  late AnimationController _pulseController;
+  int _nearbyDuplicatesCount = 0;
 
   @override
   void initState() {
@@ -63,37 +65,27 @@ class _CitizenReportMapPickerState extends State<CitizenReportMapPicker> {
     _geocodingService = widget.geocodingService ?? NominatimGeocodingService();
     _pinnedLocation = widget.initialLocation ?? const LatLng(10.7769, 106.7009);
     _addressText = widget.initialAddress ?? '';
+    _searchController.text = _addressText;
 
-    // Trigger initial load of pins around default/initial location
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      if (_pinnedLocation != null) {
-        _mapController.move(_pinnedLocation!, 15.0);
-        _updateBoundsAndLoadPins(_pinnedLocation!, 15.0);
-      }
-    });
+    _pulseController = AnimationController(
+      vsync: this,
+      duration: const Duration(seconds: 2),
+    );
+
+    // Kích hoạt nạp danh sách pins ban đầu
+    _loadNearbyPins();
   }
 
   @override
   void dispose() {
-    _debounceTimer?.cancel();
+    _searchDebounceTimer?.cancel();
     _searchController.dispose();
     _searchFocusNode.dispose();
-    _mapController.dispose();
+    _pulseController.dispose();
     super.dispose();
   }
 
-  void _updateBoundsAndLoadPins(LatLng center, double zoom) {
-    // Basic approx degree bounds based on zoom
-    final double latDelta = 0.1 / (zoom / 10.0);
-    final double lngDelta = 0.1 / (zoom / 10.0);
-    _minLat = center.latitude - latDelta;
-    _maxLat = center.latitude + latDelta;
-    _minLng = center.longitude - lngDelta;
-    _maxLng = center.longitude + lngDelta;
-    _loadPins();
-  }
-
-  Future<void> _loadPins() async {
+  Future<void> _loadNearbyPins() async {
     try {
       final pins = await widget.reportApiService.fetchMapPins(
         minLat: _minLat,
@@ -104,90 +96,38 @@ class _CitizenReportMapPickerState extends State<CitizenReportMapPicker> {
       if (mounted) {
         setState(() {
           _pins = pins;
+          _checkNearbyDuplicates();
         });
       }
-    } catch (_) {
-      // Ignore background loading errors
-    }
+    } catch (_) {}
   }
 
-  void _onMapPositionChanged(MapCamera camera, bool hasGesture) {
-    _debounceTimer?.cancel();
-    _debounceTimer = Timer(const Duration(milliseconds: 400), () {
-      final bounds = camera.visibleBounds;
-      setState(() {
-        _minLat = bounds.southWest.latitude;
-        _minLng = bounds.southWest.longitude;
-        _maxLat = bounds.northEast.latitude;
-        _maxLng = bounds.northEast.longitude;
-      });
-      _loadPins();
-    });
-  }
-
-  Future<void> _reverseGeocode(
-    double lat,
-    double lng, {
-    String? fallbackAddress,
-  }) async {
-    final requestId = ++_reverseGeocodeRequestId;
-    setState(() {
-      _isGeocoding = true;
-      _addressText =
-          fallbackAddress ??
-          '${lat.toStringAsFixed(6)}, ${lng.toStringAsFixed(6)}';
-    });
-
-    try {
-      final result = await _geocodingService.reverseGeocode(
-        latitude: lat,
-        longitude: lng,
-        languageCode: Localizations.localeOf(context).languageCode,
+  void _checkNearbyDuplicates() {
+    if (_pinnedLocation == null) return;
+    const Distance distance = Distance();
+    int count = 0;
+    for (final pin in _pins) {
+      final double meters = distance.as(
+        LengthUnit.Meter,
+        _pinnedLocation!,
+        LatLng(pin.latitude, pin.longitude),
       );
-
-      if (!_isCurrentReverseRequest(requestId, lat, lng) || result == null) {
-        return;
-      }
-      setState(() => _addressText = result.displayName);
-    } catch (_) {
-      // Keep the coordinate or report-title fallback.
-    } finally {
-      if (_isCurrentReverseRequest(requestId, lat, lng)) {
-        setState(() => _isGeocoding = false);
+      if (meters <= 100) {
+        count++;
       }
     }
-  }
-
-  bool _isCurrentReverseRequest(
-    int requestId,
-    double latitude,
-    double longitude,
-  ) {
-    return mounted &&
-        requestId == _reverseGeocodeRequestId &&
-        _pinnedLocation?.latitude == latitude &&
-        _pinnedLocation?.longitude == longitude;
-  }
-
-  void _onMapTapped(LatLng point) {
     setState(() {
-      _pinnedLocation = point;
+      _nearbyDuplicatesCount = count;
     });
-    _reverseGeocode(point.latitude, point.longitude);
   }
 
   void _onSearchQueryChanged(String query) {
-    setState(() {
-      _searchQuery = query;
-      _addressSuggestions = [];
-      _isSearchingAddress = false;
-      _hasSearchedAddress = false;
-    });
-  }
-
-  Future<void> _searchAddresses([String? submittedQuery]) async {
-    final query = (submittedQuery ?? _searchController.text).trim();
-    if (query.isEmpty || _isSearchingAddress) {
+    _searchDebounceTimer?.cancel();
+    if (query.trim().isEmpty) {
+      setState(() {
+        _addressSuggestions = [];
+        _isSearchingAddress = false;
+      });
       return;
     }
 
@@ -197,67 +137,103 @@ class _CitizenReportMapPickerState extends State<CitizenReportMapPicker> {
     });
 
     try {
-      final suggestions = await _geocodingService.searchPlaces(
-        query: query,
-        languageCode: Localizations.localeOf(context).languageCode,
+      final encodedQuery = Uri.encodeComponent(query);
+      final url = Uri.parse(
+        'https://nominatim.openstreetmap.org/search?q=$encodedQuery&format=json&limit=5&accept-language=vi,en',
       );
+      final response = await http.get(url, headers: const {
+        'User-Agent': 'SmartCityReportSystem/1.0',
+      }).timeout(const Duration(seconds: 4));
 
-      if (!mounted || _searchController.text.trim() != query) {
-        return;
+      if (response.statusCode == 200) {
+        final List<dynamic> data = jsonDecode(response.body);
+        if (mounted) {
+          setState(() {
+            _addressSuggestions = data.cast<Map<String, dynamic>>();
+            _isSearchingAddress = false;
+          });
+        }
+      } else {
+        if (mounted) setState(() => _isSearchingAddress = false);
       }
-      setState(() => _addressSuggestions = suggestions);
     } catch (_) {
-      // Active-report matching remains available if place search fails.
-    } finally {
-      if (mounted) {
-        setState(() => _isSearchingAddress = false);
-      }
+      if (mounted) setState(() => _isSearchingAddress = false);
     }
   }
 
-  void _confirmSelection() {
-    if (_pinnedLocation == null) return;
-    Navigator.of(
-      context,
-    ).pop(MapPickerResult(location: _pinnedLocation!, address: _addressText));
+  Future<void> _fetchAddressFromCoordinates(LatLng coordinates) async {
+    setState(() {
+      _isGeocoding = true;
+    });
+
+    try {
+      final url = Uri.parse(
+        'https://nominatim.openstreetmap.org/reverse?lat=${coordinates.latitude}&lon=${coordinates.longitude}&format=json&accept-language=vi,en',
+      );
+      final response = await http.get(url, headers: const {
+        'User-Agent': 'SmartCityReportSystem/1.0',
+      }).timeout(const Duration(seconds: 4));
+
+      if (response.statusCode == 200) {
+        final Map<String, dynamic> data = jsonDecode(response.body);
+        final displayName = data['display_name'] ?? 'Vị trí đã chọn';
+        if (mounted) {
+          setState(() {
+            _addressText = displayName;
+            _searchController.text = displayName;
+            _isGeocoding = false;
+          });
+        }
+      } else {
+        if (mounted) setState(() => _isGeocoding = false);
+      }
+    } catch (_) {
+      if (mounted) setState(() => _isGeocoding = false);
+    }
+  }
+
+  void _handleMapPositionChanged(MapCamera camera, bool hasGesture) {
+    final bounds = camera.visibleBounds;
+    _minLat = bounds.southWest.latitude;
+    _minLng = bounds.southWest.longitude;
+    _maxLat = bounds.northEast.latitude;
+    _maxLng = bounds.northEast.longitude;
+
+    // Khi người dùng di chuyển, cập nhật tọa độ tâm bản đồ làm vị trí ghim
+    setState(() {
+      _pinnedLocation = camera.center;
+    });
+  }
+
+  void _handleMapCameraIdle() {
+    if (_pinnedLocation != null) {
+      _fetchAddressFromCoordinates(_pinnedLocation!);
+      _checkNearbyDuplicates();
+    }
   }
 
   @override
   Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-
     return Scaffold(
-      appBar: AppBar(
-        title: Text(context.l10n.mapPinLocationTitle),
-        actions: [
-          IconButton(
-            tooltip: context.l10n.mapConfirmLocationTooltip,
-            icon: const Icon(Icons.check, size: 28, color: Colors.teal),
-            onPressed: _pinnedLocation == null || _isGeocoding
-                ? null
-                : _confirmSelection,
-          ),
-          const SizedBox(width: 8),
-        ],
-      ),
       body: Stack(
         children: [
-          // Full-screen map picker
+          // LỚP 1: BẢN ĐỒ TOÀN MÀN HÌNH CHỌN VỊ TRÍ
           Positioned.fill(
             child: FlutterMap(
               mapController: _mapController,
               options: MapOptions(
-                initialCenter:
-                    _pinnedLocation ?? const LatLng(10.7769, 106.7009),
-                initialZoom: 15.0,
+                initialCenter: _pinnedLocation ?? const LatLng(10.7769, 106.7009),
+                initialZoom: 16.0,
                 minZoom: 4.0,
                 maxZoom: 18.0,
-                onTap: (_, point) {
-                  _searchFocusNode.unfocus();
-                  _onMapTapped(point);
+                onPositionChanged: _handleMapPositionChanged,
+                onMapEvent: (event) {
+                  if (event is MapEventMoveEnd) {
+                    _handleMapCameraIdle();
+                  }
                 },
-                onPositionChanged: (camera, hasGesture) {
-                  _onMapPositionChanged(camera, hasGesture);
+                onTap: (_, __) {
+                  _searchFocusNode.unfocus();
                 },
               ),
               children: [
@@ -265,495 +241,507 @@ class _CitizenReportMapPickerState extends State<CitizenReportMapPicker> {
                   urlTemplate: 'https://tile.openstreetmap.org/{z}/{x}/{y}.png',
                   userAgentPackageName: 'com.smartcity.report',
                 ),
+                // Hiển thị các sự cố hiện có xung quanh để chống trùng lặp trực quan
                 MarkerLayer(
-                  markers: [
-                    // Render existing report pins
-                    ..._pins.map((pin) {
-                      final isSelectedPin =
-                          _pinnedLocation != null &&
-                          (pin.latitude - _pinnedLocation!.latitude).abs() <
-                              1e-6 &&
-                          (pin.longitude - _pinnedLocation!.longitude).abs() <
-                              1e-6;
-
-                      return Marker(
-                        point: LatLng(pin.latitude, pin.longitude),
-                        width: 48,
-                        height: 48,
-                        child: GestureDetector(
-                          behavior: HitTestBehavior.opaque,
-                          onTap: () {
-                            _searchFocusNode.unfocus();
-                            setState(() {
-                              _pinnedLocation = LatLng(
-                                pin.latitude,
-                                pin.longitude,
-                              );
-                              _addressText = pin
-                                  .title; // Default to report title as address hint
-                            });
-                            // Trigger reverse geocoding to update address
-                            _reverseGeocode(
-                              pin.latitude,
-                              pin.longitude,
-                              fallbackAddress: pin.title,
-                            );
-                          },
-                          child: _MapMarker(
-                            pin: pin,
-                            isSelected: isSelectedPin,
-                          ),
-                        ),
-                      );
-                    }),
-                    // Custom pinned marker
-                    if (_pinnedLocation != null)
-                      Marker(
-                        point: _pinnedLocation!,
-                        width: 50,
-                        height: 50,
-                        child: const Icon(
-                          Icons.location_pin,
-                          color: Colors.redAccent,
-                          size: 46,
-                        ),
+                  markers: _pins.map((pin) {
+                    return Marker(
+                      point: LatLng(pin.latitude, pin.longitude),
+                      width: 40,
+                      height: 40,
+                      child: Icon(
+                        Icons.error,
+                        color: _getCategoryColorLocal(pin.category).withOpacity(0.7),
+                        size: 24,
                       ),
-                  ],
+                    );
+                  }).toList(),
                 ),
               ],
             ),
           ),
 
-          // Floating Search Bar & Autocomplete suggestions
+          // LỚP 2: RADAR QUÉT ĐƯỜNG KÍNH KHU VỰC TRÙNG LẶP (Tâm màn hình)
+          if (_radarActive)
+            Positioned.fill(
+              child: IgnorePointer(
+                child: Center(
+                  child: AnimatedBuilder(
+                    animation: _pulseController,
+                    builder: (context, child) {
+                      return Container(
+                        width: 200 * _pulseController.value,
+                        height: 200 * _pulseController.value,
+                        decoration: BoxDecoration(
+                          shape: BoxShape.circle,
+                          color: const Color(0xFF0F766E).withOpacity((1 - _pulseController.value) * 0.3),
+                          border: Border.all(
+                            color: const Color(0xFF0F766E).withOpacity((1 - _pulseController.value) * 0.8),
+                            width: 1.5,
+                          ),
+                        ),
+                      );
+                    },
+                  ),
+                ),
+              ),
+            ),
+
+          // LỚP 3: MARKER ĐỊNH VỊ CỐ ĐỊNH Ở CHÍNH GIỮA MÀN HÌNH CO PHÃN ANMATION
+          Positioned.fill(
+            child: IgnorePointer(
+              child: Center(
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Container(
+                      padding: const EdgeInsets.all(8),
+                      decoration: const BoxDecoration(
+                        color: Color(0xFF005C55),
+                        shape: BoxShape.circle,
+                        boxShadow: [
+                          BoxShadow(
+                            color: Colors.black26,
+                            blurRadius: 8,
+                            offset: Offset(0, 4),
+                          )
+                        ],
+                      ),
+                      child: const Icon(
+                        Icons.location_on,
+                        color: Colors.white,
+                        size: 28,
+                      ),
+                    ),
+                    const SizedBox(height: 4),
+                    Container(
+                      width: 8,
+                      height: 8,
+                      decoration: BoxDecoration(
+                        color: const Color(0xFF111C2D).withOpacity(0.6),
+                        shape: BoxShape.circle,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          ),
+
+          // LỚP 4: THANH TÌM KIẾM ĐỊA CHỈ FLOATING CONSOLE (TOP AXIS)
           Positioned(
-            top: 16,
+            top: MediaQuery.of(context).padding.top + 16,
             left: 16,
             right: 16,
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                Container(
-                  decoration: BoxDecoration(
-                    color: Colors.white.withOpacity(0.95),
-                    borderRadius: BorderRadius.circular(12),
-                    border: Border.all(color: const Color(0xFFDDE5E2)),
-                    boxShadow: const [
-                      BoxShadow(
-                        color: Color(0x11000000),
-                        blurRadius: 10,
-                        offset: Offset(0, 4),
+            child: Align(
+              alignment: Alignment.topCenter,
+              child: ConstrainedBox(
+                constraints: const BoxConstraints(maxWidth: 600),
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Container(
+                      decoration: BoxDecoration(
+                        color: Colors.white,
+                        borderRadius: BorderRadius.circular(9999),
+                        border: Border.all(color: const Color(0xFFE2E8F0)),
+                        boxShadow: const [
+                          BoxShadow(
+                            color: Color(0x1F000000),
+                            blurRadius: 16,
+                            offset: Offset(0, 6),
+                          )
+                        ],
                       ),
-                    ],
-                  ),
-                  child: TextField(
-                    controller: _searchController,
-                    focusNode: _searchFocusNode,
-                    onChanged: _onSearchQueryChanged,
-                    onSubmitted: _searchAddresses,
-                    textInputAction: TextInputAction.search,
-                    style: const TextStyle(fontSize: 14),
-                    decoration: InputDecoration(
-                      hintText: context.l10n.mapPickerSearchHint,
-                      hintStyle: const TextStyle(color: Colors.grey),
-                      prefixIcon: IconButton(
-                        tooltip: context.l10n.mapSearchPlacesTooltip,
-                        onPressed: _isSearchingAddress
-                            ? null
-                            : () => _searchAddresses(),
-                        icon: const Icon(Icons.search, color: Colors.grey),
-                      ),
-                      suffixIcon: _searchController.text.isNotEmpty
-                          ? IconButton(
-                              icon: const Icon(
-                                Icons.clear,
-                                color: Colors.grey,
-                                size: 18,
+                      padding: const EdgeInsets.symmetric(horizontal: 8),
+                      child: Row(
+                        children: [
+                          IconButton(
+                            icon: const Icon(Icons.arrow_back, color: Color(0xFF3E4947)),
+                            onPressed: () => Navigator.of(context).pop(),
+                          ),
+                          Expanded(
+                            child: TextField(
+                              controller: _searchController,
+                              focusNode: _searchFocusNode,
+                              onChanged: _onSearchQueryChanged,
+                              style: const TextStyle(fontSize: 15, color: Color(0xFF111C2D)),
+                              decoration: const InputDecoration(
+                                hintText: 'Search address or intersection...',
+                                hintStyle: TextStyle(color: Color(0xFF64748B)),
+                                border: InputBorder.none,
+                                contentPadding: EdgeInsets.symmetric(horizontal: 8, vertical: 12),
                               ),
+                            ),
+                          ),
+                          if (_isSearchingAddress)
+                            const Padding(
+                              padding: EdgeInsets.only(right: 12),
+                              child: SizedBox(
+                                width: 16,
+                                height: 16,
+                                child: CircularProgressIndicator(strokeWidth: 2, color: Color(0xFF0F766E)),
+                              ),
+                            )
+                          else if (_searchController.text.isNotEmpty)
+                            IconButton(
+                              icon: const Icon(Icons.clear, color: Color(0xFF64748B), size: 20),
                               onPressed: () {
                                 setState(() {
                                   _searchController.clear();
-                                  _searchQuery = '';
                                   _addressSuggestions = [];
                                   _isSearchingAddress = false;
                                   _hasSearchedAddress = false;
                                 });
                               },
+                            ),
+                        ],
+                      ),
+                    ),
+
+                    // Dropdown Kết quả tìm kiếm gợi ý địa chỉ
+                    if (_addressSuggestions.isNotEmpty && _searchFocusNode.hasFocus)
+                      Container(
+                        margin: const EdgeInsets.only(top: 8),
+                        decoration: BoxDecoration(
+                          color: Colors.white,
+                          borderRadius: BorderRadius.circular(16),
+                          border: Border.all(color: const Color(0xFFE2E8F0)),
+                          boxShadow: const [
+                            BoxShadow(
+                              color: Color(0x14000000),
+                              blurRadius: 12,
+                              offset: Offset(0, 4),
                             )
-                          : null,
-                      border: InputBorder.none,
-                      contentPadding: const EdgeInsets.symmetric(vertical: 12),
-                    ),
-                  ),
-                ),
-                if (_searchQuery.isNotEmpty &&
-                    _searchFocusNode.hasFocus &&
-                    (_pins.any(
-                          (pin) => pin.title.toLowerCase().contains(
-                            _searchQuery.toLowerCase(),
-                          ),
-                        ) ||
-                        _addressSuggestions.isNotEmpty ||
-                        _isSearchingAddress ||
-                        _hasSearchedAddress))
-                  Container(
-                    margin: const EdgeInsets.only(top: 4),
-                    constraints: const BoxConstraints(maxHeight: 250),
-                    decoration: BoxDecoration(
-                      color: Colors.white.withOpacity(0.95),
-                      borderRadius: BorderRadius.circular(12),
-                      border: Border.all(color: const Color(0xFFDDE5E2)),
-                      boxShadow: const [
-                        BoxShadow(
-                          color: Color(0x11000000),
-                          blurRadius: 8,
-                          offset: Offset(0, 4),
-                        ),
-                      ],
-                    ),
-                    child: ClipRRect(
-                      borderRadius: BorderRadius.circular(12),
-                      child: ListView(
-                        shrinkWrap: true,
-                        padding: EdgeInsets.zero,
-                        children: [
-                          // Search inside active report pins
-                          if (_pins.any(
-                            (pin) => pin.title.toLowerCase().contains(
-                              _searchQuery.toLowerCase(),
-                            ),
-                          )) ...[
-                            Padding(
-                              padding: const EdgeInsets.fromLTRB(12, 8, 12, 4),
-                              child: Text(
-                                context.l10n.mapActiveReportsHeader,
-                                style: const TextStyle(
-                                  fontSize: 10,
-                                  fontWeight: FontWeight.bold,
-                                  color: Colors.grey,
-                                ),
-                              ),
-                            ),
-                            ..._pins
-                                .where(
-                                  (pin) => pin.title.toLowerCase().contains(
-                                    _searchQuery.toLowerCase(),
-                                  ),
-                                )
-                                .map((pin) {
-                                  final color = _getCategoryColor(pin.category);
-                                  return ListTile(
-                                    dense: true,
-                                    leading: Icon(
-                                      _getCategoryIcon(pin.category),
-                                      color: color,
-                                      size: 16,
-                                    ),
-                                    title: Text(
-                                      pin.title,
-                                      style: const TextStyle(fontSize: 13),
-                                    ),
-                                    onTap: () {
-                                      setState(() {
-                                        _pinnedLocation = LatLng(
-                                          pin.latitude,
-                                          pin.longitude,
-                                        );
-                                        _addressText = pin.title;
-                                        _searchController.clear();
-                                        _searchQuery = '';
-                                        _addressSuggestions = [];
-                                        _hasSearchedAddress = false;
-                                        _searchFocusNode.unfocus();
-                                      });
-                                      _mapController.move(
-                                        LatLng(pin.latitude, pin.longitude),
-                                        16.0,
-                                      );
-                                      _reverseGeocode(
-                                        pin.latitude,
-                                        pin.longitude,
-                                        fallbackAddress: pin.title,
-                                      );
-                                    },
-                                  );
-                                }),
                           ],
-                          // Nominatim Search Suggestions
-                          if (_addressSuggestions.isNotEmpty) ...[
-                            Padding(
-                              padding: const EdgeInsets.fromLTRB(12, 8, 12, 4),
-                              child: Text(
-                                context.l10n.mapPlacesHeader,
-                                style: const TextStyle(
-                                  fontSize: 10,
-                                  fontWeight: FontWeight.bold,
-                                  color: Colors.grey,
-                                ),
-                              ),
-                            ),
-                            ..._addressSuggestions.map((addr) {
+                        ),
+                        constraints: const BoxConstraints(maxHeight: 240),
+                        child: ClipRRect(
+                          borderRadius: BorderRadius.circular(16),
+                          child: ListView.separated(
+                            shrinkWrap: true,
+                            padding: EdgeInsets.zero,
+                            itemCount: _addressSuggestions.length,
+                            separatorBuilder: (_, __) => const Divider(height: 1, color: Color(0xFFE2E8F0)),
+                            itemBuilder: (context, index) {
+                              final suggestion = _addressSuggestions[index];
+                              final displayName = suggestion['display_name'] ?? '';
                               return ListTile(
-                                dense: true,
-                                leading: const Icon(
-                                  Icons.place,
-                                  color: Colors.redAccent,
-                                  size: 16,
-                                ),
+                                leading: const Icon(Icons.location_on, color: Color(0xFF0F766E)),
                                 title: Text(
-                                  addr.displayName,
+                                  displayName,
                                   maxLines: 2,
                                   overflow: TextOverflow.ellipsis,
-                                  style: const TextStyle(fontSize: 12),
+                                  style: const TextStyle(fontSize: 14, color: Color(0xFF111C2D)),
                                 ),
                                 onTap: () {
-                                  final point = LatLng(
-                                    addr.latitude,
-                                    addr.longitude,
-                                  );
+                                  final lat = double.tryParse(suggestion['lat'] ?? '') ?? 0.0;
+                                  final lon = double.tryParse(suggestion['lon'] ?? '') ?? 0.0;
+                                  final targetLoc = LatLng(lat, lon);
 
                                   setState(() {
-                                    _pinnedLocation = point;
-                                    _addressText = addr.displayName;
-                                    _searchController.clear();
-                                    _searchQuery = '';
+                                    _pinnedLocation = targetLoc;
+                                    _addressText = displayName;
+                                    _searchController.text = displayName;
                                     _addressSuggestions = [];
                                     _hasSearchedAddress = false;
                                     _searchFocusNode.unfocus();
                                   });
-                                  _mapController.move(point, 16.0);
+                                  _mapController.move(targetLoc, 16.0);
+                                  _checkNearbyDuplicates();
                                 },
                               );
-                            }),
-                          ],
-                          if (_hasSearchedAddress &&
-                              !_isSearchingAddress &&
-                              _addressSuggestions.isEmpty &&
-                              !_pins.any(
-                                (pin) => pin.title.toLowerCase().contains(
-                                  _searchQuery.toLowerCase(),
-                                ),
-                              ))
-                            Padding(
-                              padding: const EdgeInsets.all(12),
-                              child: Text(
-                                context.l10n.mapNoSearchMatches,
-                                style: const TextStyle(color: Colors.grey),
-                              ),
+                            },
+                          ),
+                        ),
+                      ),
+                    const SizedBox(height: 12),
+                    // Badge Chỉ báo phân tích trạng thái vùng Boundary khu vực
+                    Container(
+                      decoration: BoxDecoration(
+                        color: const Color(0xFFF0F3FF).withOpacity(0.9),
+                        borderRadius: BorderRadius.circular(9999),
+                        border: Border.all(color: const Color(0xFFBDC9C6).withOpacity(0.5)),
+                      ),
+                      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 6),
+                      child: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Container(
+                            width: 8,
+                            height: 8,
+                            decoration: BoxDecoration(
+                              shape: BoxShape.circle,
+                              color: _isGeocoding ? const Color(0xFF0F766E) : Colors.green,
                             ),
-                          if (_isSearchingAddress)
-                            const Padding(
-                              padding: EdgeInsets.all(12),
-                              child: Center(
-                                child: SizedBox(
-                                  width: 16,
-                                  height: 16,
-                                  child: CircularProgressIndicator(
-                                    strokeWidth: 2,
-                                  ),
-                                ),
-                              ),
-                            ),
+                          ),
+                          const SizedBox(width: 8),
+                          Text(
+                            _isGeocoding ? 'Analyzing boundary...' : 'Boundary Analyzed',
+                            style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w600, color: Color(0xFF111C2D)),
+                          ),
                         ],
                       ),
                     ),
-                  ),
+                  ],
+                ),
+              ),
+            ),
+          ),
+
+          // LỚP 5: FLOATING MAP CONTROLS (BOTTOM RIGHT ACTION BUTTONS)
+          Positioned(
+            right: 16,
+            bottom: 260, // Đẩy lên trên vùng của thông tin Bottom Sheet bên dưới
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                // Nút Radar tìm kiếm chuyên sâu (Area Insight)
+                FloatingActionButton(
+                  heroTag: 'radar_btn',
+                  mini: true,
+                  backgroundColor: _radarActive ? const Color(0xFFBDECE2) : Colors.white,
+                  foregroundColor: const Color(0xFF0F766E),
+                  onPressed: () {
+                    setState(() {
+                      _radarActive = !_radarActive;
+                      if (_radarActive) {
+                        _pulseController.repeat();
+                        _checkNearbyDuplicates();
+                      } else {
+                        _pulseController.stop();
+                      }
+                    });
+                  },
+                  child: const Icon(Icons.radar),
+                ),
+                const SizedBox(height: 12),
+                // Nút định vị về vị trí hiện tại
+                FloatingActionButton(
+                  heroTag: 'my_location_btn',
+                  mini: true,
+                  backgroundColor: Colors.white,
+                  foregroundColor: const Color(0xFF0F766E),
+                  onPressed: () {
+                    // Trả bản đồ về tọa độ mặc định ban đầu giả lập vị trí GPS người dùng
+                    const currentLoc = LatLng(10.7769, 106.7009);
+                    setState(() {
+                      _pinnedLocation = currentLoc;
+                    });
+                    _mapController.move(currentLoc, 16.0);
+                  },
+                  child: const Icon(Icons.my_location),
+                ),
               ],
             ),
           ),
 
-          // Pinned position details and confirmation card at the bottom
-          if (_pinnedLocation != null)
-            Positioned(
-              left: 16,
-              right: 16,
-              bottom: 24,
-              child: Card(
-                elevation: 8,
-                shadowColor: Colors.black.withOpacity(0.1),
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(16),
+          // LỚP 6: DIALOG VÀ BOTTOM SHEET XÁC NHẬN CHỐNG TRÙNG LẶP SỰ CỐ
+          Positioned(
+            left: 0,
+            right: 0,
+            bottom: 0,
+            child: Container(
+              decoration: const BoxDecoration(
+                color: Colors.white,
+                borderRadius: BorderRadius.only(
+                  topLeft: Radius.circular(24),
+                  topRight: Radius.circular(24),
                 ),
-                color: Colors.white.withOpacity(0.95),
-                child: Padding(
-                  padding: const EdgeInsets.all(16),
+                boxShadow: [
+                  BoxShadow(
+                    color: Color(0x1A000000),
+                    blurRadius: 24,
+                    offset: Offset(0, -8),
+                  )
+                ],
+              ),
+              padding: const EdgeInsets.fromLTRB(24, 20, 24, 32),
+              child: SafeArea(
+                top: false,
+                child: ConstrainedBox(
+                  constraints: const BoxConstraints(maxWidth: 800),
                   child: Column(
                     mainAxisSize: MainAxisSize.min,
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
+                      const Text(
+                        'Step 2 of 3',
+                        style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold, color: Color(0xFF0F766E), letterSpacing: 0.5),
+                      ),
+                      const SizedBox(height: 4),
+                      const Text(
+                        'Confirm Location',
+                        style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold, color: Color(0xFF111C2D)),
+                      ),
+                      const SizedBox(height: 8),
                       Row(
-                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
                         children: [
-                          Text(
-                            context.l10n.mapSelectedLocation,
-                            style: theme.textTheme.titleMedium?.copyWith(
-                              fontWeight: FontWeight.bold,
-                              color: theme.colorScheme.primary,
+                          const Icon(Icons.pin_drop, size: 18, color: Color(0xFF3E4947)),
+                          const SizedBox(width: 6),
+                          Expanded(
+                            child: Text(
+                              _isGeocoding ? 'Fetching address details...' : _addressText,
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                              style: const TextStyle(fontSize: 14, color: Color(0xFF3E4947), fontWeight: FontWeight.w500),
                             ),
                           ),
-                          if (_isGeocoding)
-                            const SizedBox(
-                              width: 14,
-                              height: 14,
-                              child: CircularProgressIndicator(strokeWidth: 2),
-                            ),
                         ],
                       ),
-                      const SizedBox(height: 8),
-                      Text(
-                        _addressText.isNotEmpty
-                            ? _addressText
-                            : context.l10n.mapLoadingAddress,
-                        style: theme.textTheme.bodyMedium?.copyWith(
-                          color: _addressText.isNotEmpty
-                              ? Colors.black87
-                              : Colors.grey,
-                        ),
-                        maxLines: 2,
-                        overflow: TextOverflow.ellipsis,
-                      ),
-                      const SizedBox(height: 8),
-                      Text(
-                        context.l10n.coordinatesValue(
-                          _pinnedLocation!.latitude.toStringAsFixed(6),
-                          _pinnedLocation!.longitude.toStringAsFixed(6),
-                        ),
-                        style: theme.textTheme.bodySmall?.copyWith(
-                          color: Colors.grey.shade600,
-                        ),
-                      ),
-                      const SizedBox(height: 12),
-                      SizedBox(
-                        width: double.infinity,
-                        child: FilledButton.icon(
-                          onPressed: _isGeocoding ? null : _confirmSelection,
-                          icon: const Icon(Icons.check_circle_outline),
-                          label: Text(context.l10n.mapConfirmPinnedLocation),
-                          style: FilledButton.styleFrom(
-                            shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(8),
-                            ),
+                      const SizedBox(height: 16),
+
+                      // BANNER CẢNH BÁO BÁO CÁO TRÙNG LẶP NẾU PHÁT HIỆN SỰ CỐ < 100M
+                      if (_nearbyDuplicatesCount > 0)
+                        Container(
+                          margin: const EdgeInsets.only(bottom: 16),
+                          decoration: BoxDecoration(
+                            color: const Color(0xFFFFDAD6),
+                            borderRadius: BorderRadius.circular(12),
+                            border: Border.all(color: const Color(0xFFBA1A1A).withOpacity(0.2)),
+                          ),
+                          padding: const EdgeInsets.all(12),
+                          child: Row(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              const Icon(Icons.warning, color: Color(0xFFBA1A1A), size: 22),
+                              const SizedBox(width: 12),
+                              Expanded(
+                                child: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    const Text(
+                                      'Possible duplicate reports found',
+                                      style: TextStyle(fontSize: 14, fontWeight: FontWeight.bold, color: Color(0xFF93000A)),
+                                    ),
+                                    const SizedBox(height: 2),
+                                    Text(
+                                      'There are $_nearbyDuplicatesCount similar issues reported within 100m zone boundary.',
+                                      style: const TextStyle(fontSize: 13, color: Color(0xFF93000A)),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                            ],
+                          ),
+                        )
+                      else
+                        Container(
+                          margin: const EdgeInsets.only(bottom: 16),
+                          decoration: BoxDecoration(
+                            color: const Color(0xFFF0F3FF),
+                            borderRadius: BorderRadius.circular(12),
+                          ),
+                          padding: const EdgeInsets.all(12),
+                          child: const Row(
+                            children: [
+                              Icon(Icons.analytics, color: Color(0xFF425268), size: 20),
+                              SizedBox(width: 12),
+                              Expanded(
+                                child: Text(
+                                  'Local Insight: Area is clear. No duplicate incidents matching inside this grid bounds.',
+                                  style: TextStyle(fontSize: 13, color: Color(0xFF38485D), fontWeight: FontWeight.w500),
+                                ),
+                              ),
+                            ],
                           ),
                         ),
+
+                      // KHU VỰC ĐIỀU HƯỚNG XÁC NHẬN CHÂN TRANG
+                      Row(
+                        children: [
+                          Expanded(
+                            child: OutlinedButton(
+                              onPressed: () => Navigator.of(context).pop(),
+                              style: OutlinedButton.styleFrom(
+                                padding: const EdgeInsets.symmetric(vertical: 14),
+                                foregroundColor: const Color(0xFF0F766E),
+                                side: const BorderSide(color: Color(0xFFBDC9C6)),
+                                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(9999)),
+                              ),
+                              child: const Text('Cancel', style: TextStyle(fontWeight: FontWeight.bold)),
+                            ),
+                          ),
+                          const SizedBox(width: 12),
+                          Expanded(
+                            child: FilledButton(
+                              onPressed: _isGeocoding || _pinnedLocation == null
+                                  ? null
+                                  : () {
+                                      Navigator.of(context).pop(
+                                        MapPickerResult(
+                                          location: _pinnedLocation!,
+                                          address: _addressText,
+                                        ),
+                                      );
+                                    },
+                              style: FilledButton.styleFrom(
+                                padding: const EdgeInsets.symmetric(vertical: 14),
+                                backgroundColor: const Color(0xFF0F766E),
+                                foregroundColor: Colors.white,
+                                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(9999)),
+                              ),
+                              child: const Row(
+                                mainAxisAlignment: MainAxisAlignment.center,
+                                children: [
+                                  Text('Confirm Position', style: TextStyle(fontWeight: FontWeight.bold)),
+                                  SizedBox(width: 6),
+                                  Icon(Icons.arrow_forward, size: 16),
+                                ],
+                              ),
+                            ),
+                          ),
+                        ],
                       ),
                     ],
                   ),
                 ),
               ),
             ),
-        ],
-      ),
-    );
-  }
-}
-
-// Marker Widget representing report pins
-class _MapMarker extends StatelessWidget {
-  const _MapMarker({required this.pin, required this.isSelected});
-
-  final ReportMapPin pin;
-  final bool isSelected;
-
-  @override
-  Widget build(BuildContext context) {
-    final color = _getCategoryColor(pin.category);
-    final icon = _getCategoryIcon(pin.category);
-
-    return Center(
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Container(
-            decoration: BoxDecoration(
-              color: isSelected ? color : Colors.white,
-              shape: BoxShape.circle,
-              border: Border.all(color: color, width: 2.5),
-              boxShadow: [
-                BoxShadow(
-                  color: color.withOpacity(0.3),
-                  blurRadius: 6,
-                  offset: const Offset(0, 3),
-                ),
-              ],
-            ),
-            padding: const EdgeInsets.all(5),
-            child: Icon(
-              icon,
-              size: 16,
-              color: isSelected ? Colors.white : color,
-            ),
-          ),
-          CustomPaint(
-            painter: _PinTrianglePainter(color: color),
-            size: const Size(8, 5),
           ),
         ],
       ),
     );
   }
-}
 
-class _PinTrianglePainter extends CustomPainter {
-  _PinTrianglePainter({required this.color});
-
-  final Color color;
-
-  @override
-  void paint(Canvas canvas, Size size) {
-    final paint = Paint()
-      ..color = color
-      ..style = PaintingStyle.fill;
-
-    final path = Path()
-      ..moveTo(0, 0)
-      ..lineTo(size.width, 0)
-      ..lineTo(size.width / 2, size.height)
-      ..close();
-
-    canvas.drawPath(path, paint);
+  IconData _getCategoryIconLocal(ReportCategory category) {
+    switch (category) {
+      case ReportCategory.roadDamage:
+        return Icons.construction;
+      case ReportCategory.streetLight:
+        return Icons.lightbulb;
+      case ReportCategory.garbage:
+        return Icons.delete_outline;
+      case ReportCategory.waterLeak:
+        return Icons.opacity;
+      case ReportCategory.drainage:
+        return Icons.waves;
+      case ReportCategory.trafficSign:
+        return Icons.traffic;
+      case ReportCategory.treeBlockage:
+        return Icons.park;
+      case ReportCategory.other:
+        return Icons.help_outline;
+    }
   }
 
-  @override
-  bool shouldRepaint(covariant CustomPainter oldDelegate) => false;
-}
-
-IconData _getCategoryIcon(ReportCategory category) {
-  switch (category) {
-    case ReportCategory.roadDamage:
-      return Icons.construction;
-    case ReportCategory.streetLight:
-      return Icons.lightbulb;
-    case ReportCategory.garbage:
-      return Icons.delete_outline;
-    case ReportCategory.waterLeak:
-      return Icons.opacity;
-    case ReportCategory.drainage:
-      return Icons.waves;
-    case ReportCategory.trafficSign:
-      return Icons.traffic;
-    case ReportCategory.treeBlockage:
-      return Icons.park;
-    case ReportCategory.other:
-      return Icons.help_outline;
-  }
-}
-
-Color _getCategoryColor(ReportCategory category) {
-  switch (category) {
-    case ReportCategory.roadDamage:
-      return Colors.deepOrange;
-    case ReportCategory.streetLight:
-      return Colors.amber.shade700;
-    case ReportCategory.garbage:
-      return Colors.brown;
-    case ReportCategory.waterLeak:
-      return Colors.blue;
-    case ReportCategory.drainage:
-      return Colors.teal;
-    case ReportCategory.trafficSign:
-      return Colors.red.shade600;
-    case ReportCategory.treeBlockage:
-      return Colors.green.shade700;
-    case ReportCategory.other:
-      return Colors.blueGrey;
+  Color _getCategoryColorLocal(ReportCategory category) {
+    switch (category) {
+      case ReportCategory.roadDamage:
+        return Colors.deepOrange;
+      case ReportCategory.streetLight:
+        return Colors.amber.shade700;
+      case ReportCategory.garbage:
+        return Colors.brown;
+      case ReportCategory.waterLeak:
+        return Colors.blue;
+      case ReportCategory.drainage:
+        return Colors.teal;
+      case ReportCategory.trafficSign:
+        return Colors.red.shade600;
+      case ReportCategory.treeBlockage:
+        return Colors.green.shade700;
+      case ReportCategory.other:
+        return Colors.blueGrey;
+    }
   }
 }
