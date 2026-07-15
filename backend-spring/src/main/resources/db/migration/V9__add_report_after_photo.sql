@@ -1,0 +1,1 @@
+ALTER TABLE reports ADD COLUMN IF NOT EXISTS after_photo_url VARCHAR(2048);

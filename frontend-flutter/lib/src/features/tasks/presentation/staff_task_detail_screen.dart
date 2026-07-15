@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 
-import '../../../core/files/uploaded_photo_view.dart';
 import '../../../core/localization/app_localizations_extension.dart';
 import '../../../core/localization/domain_localizations.dart';
 import '../../../core/routing/app_routes.dart';
@@ -99,18 +98,45 @@ class _StaffTaskDetailScreenState extends State<StaffTaskDetailScreen> {
 
   Future<void> _openCompleteTask() async {
     final taskId = _taskId;
-    if (taskId == null) {
+    if (taskId == null || _isUpdating) {
       return;
     }
 
-    final changed = await Navigator.of(
-      context,
-    ).pushNamed(AppRoutes.staffCompleteTask, arguments: taskId);
-    if (!mounted) {
-      return;
-    }
-    if (changed == true) {
-      setState(_loadTask);
+    setState(() => _isUpdating = true);
+    try {
+      final detail = await _fetchDetail(taskId);
+      final missingPhoto = detail.reports.any(
+        (report) => (report.afterPhotoUrl ?? '').trim().isEmpty,
+      );
+      if (missingPhoto) {
+        _showError(context.l10n.staffAfterPhotoRequired);
+        return;
+      }
+
+      if (!mounted) {
+        return;
+      }
+      final changed = await Navigator.of(
+        context,
+      ).pushNamed(AppRoutes.staffCompleteTask, arguments: taskId);
+      if (!mounted) {
+        return;
+      }
+      if (changed == true) {
+        setState(_loadTask);
+      }
+    } on TaskApiException catch (error) {
+      _showError(error.message);
+    } on ReportApiException catch (error) {
+      _showError(error.message);
+    } catch (_) {
+      if (mounted) {
+        _showError(context.l10n.taskLoadFailed);
+      }
+    } finally {
+      if (mounted) {
+        setState(() => _isUpdating = false);
+      }
     }
   }
 
@@ -229,21 +255,6 @@ class _StaffTaskDetailScreenState extends State<StaffTaskDetailScreen> {
             title: context.l10n.commonLocation,
             child: Text(task.locationLabel),
           ),
-          _Section(
-            title: context.l10n.commonCoordinates,
-            child: Text(
-              '${task.latitude.toStringAsFixed(6)}, ${task.longitude.toStringAsFixed(6)}',
-            ),
-          ),
-          _Section(
-            title: context.l10n.commonBeforePhoto,
-            child: UploadedPhotoView(fileUrl: task.beforePhotoUrl),
-          ),
-          if ((task.afterPhotoUrl ?? '').trim().isNotEmpty)
-            _Section(
-              title: context.l10n.commonAfterPhoto,
-              child: UploadedPhotoView(fileUrl: task.afterPhotoUrl),
-            ),
           if ((task.staffNote ?? '').trim().isNotEmpty)
             _Section(
               title: context.l10n.taskStaffNote,
@@ -441,8 +452,13 @@ class _TaskActions extends StatelessWidget {
           ),
           const SizedBox(height: 8),
           FilledButton.icon(
-            onPressed: onComplete,
-            icon: const Icon(Icons.task_alt),
+            onPressed: isUpdating ? null : onComplete,
+            icon: isUpdating
+                ? const SizedBox.square(
+                    dimension: 18,
+                    child: CircularProgressIndicator(strokeWidth: 2),
+                  )
+                : const Icon(Icons.task_alt),
             label: Text(context.l10n.staffCompleteTask),
           ),
         ],

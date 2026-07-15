@@ -247,17 +247,14 @@ class TaskDraft {
 }
 
 class TaskCompletionDraft {
-  const TaskCompletionDraft({
-    required this.afterPhotoUrl,
-    required this.staffNote,
-  });
+  const TaskCompletionDraft({this.afterPhotoUrl, required this.staffNote});
 
   final String? afterPhotoUrl;
   final String? staffNote;
 
   Map<String, Object?> toJson() {
     return <String, Object?>{
-      'afterPhotoUrl': afterPhotoUrl,
+      if (afterPhotoUrl != null) 'afterPhotoUrl': afterPhotoUrl,
       'staffNote': staffNote,
     };
   }

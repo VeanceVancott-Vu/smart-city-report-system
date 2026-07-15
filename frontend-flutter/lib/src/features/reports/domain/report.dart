@@ -57,6 +57,7 @@ class Report {
     required this.longitude,
     required this.addressText,
     required this.beforePhotoUrl,
+    this.afterPhotoUrl,
     required this.anonymous,
     required this.upvoteCount,
     required this.priorityScore,
@@ -74,6 +75,7 @@ class Report {
   final double longitude;
   final String? addressText;
   final String? beforePhotoUrl;
+  final String? afterPhotoUrl;
   final bool anonymous;
   final int upvoteCount;
   final int priorityScore;
@@ -97,6 +99,7 @@ class Report {
       longitude: (json['longitude'] as num).toDouble(),
       addressText: json['addressText'] as String?,
       beforePhotoUrl: json['beforePhotoUrl'] as String?,
+      afterPhotoUrl: json['afterPhotoUrl'] as String?,
       anonymous: json['anonymous'] as bool? ?? false,
       upvoteCount: json['upvoteCount'] as int? ?? 0,
       priorityScore: json['priorityScore'] as int? ?? 0,
@@ -120,6 +123,7 @@ class Report {
     double? longitude,
     String? addressText,
     String? beforePhotoUrl,
+    String? afterPhotoUrl,
     bool? anonymous,
     int? upvoteCount,
     int? priorityScore,
@@ -137,6 +141,7 @@ class Report {
       longitude: longitude ?? this.longitude,
       addressText: addressText ?? this.addressText,
       beforePhotoUrl: beforePhotoUrl ?? this.beforePhotoUrl,
+      afterPhotoUrl: afterPhotoUrl ?? this.afterPhotoUrl,
       anonymous: anonymous ?? this.anonymous,
       upvoteCount: upvoteCount ?? this.upvoteCount,
       priorityScore: priorityScore ?? this.priorityScore,

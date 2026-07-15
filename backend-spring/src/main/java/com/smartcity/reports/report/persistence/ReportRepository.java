@@ -15,6 +15,10 @@ public interface ReportRepository extends JpaRepository<Report, UUID>, JpaSpecif
 
     boolean existsByBeforePhotoUrlAndIdNot(String beforePhotoUrl, UUID id);
 
+    boolean existsByAfterPhotoUrl(String afterPhotoUrl);
+
+    boolean existsByAfterPhotoUrlAndIdNot(String afterPhotoUrl, UUID id);
+
     @Query(value = """
             SELECT *
             FROM reports

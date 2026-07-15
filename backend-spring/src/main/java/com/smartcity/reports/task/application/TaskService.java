@@ -1,7 +1,10 @@
 package com.smartcity.reports.task.application;
 
+import com.smartcity.reports.common.ResourceNotFoundException;
 import com.smartcity.reports.files.application.FileReferenceCleanupService;
-
+import com.smartcity.reports.report.domain.Report;
+import com.smartcity.reports.report.domain.ReportStatus;
+import com.smartcity.reports.report.persistence.ReportRepository;
 import com.smartcity.reports.task.api.AssignTaskRequest;
 import com.smartcity.reports.task.api.CompleteTaskRequest;
 import com.smartcity.reports.task.api.CreateTaskRequest;
@@ -11,14 +14,9 @@ import com.smartcity.reports.task.api.UpdateTaskRequest;
 import com.smartcity.reports.task.domain.Task;
 import com.smartcity.reports.task.domain.TaskStatus;
 import com.smartcity.reports.task.persistence.TaskRepository;
-
-import com.smartcity.reports.common.ResourceNotFoundException;
-import com.smartcity.reports.report.domain.Report;
-import com.smartcity.reports.report.persistence.ReportRepository;
-import com.smartcity.reports.report.domain.ReportStatus;
 import com.smartcity.reports.user.domain.User;
-import com.smartcity.reports.user.persistence.UserRepository;
 import com.smartcity.reports.user.domain.UserRole;
+import com.smartcity.reports.user.persistence.UserRepository;
 import org.springframework.data.domain.Sort;
 import org.springframework.security.access.AccessDeniedException;
 import org.springframework.stereotype.Service;
@@ -169,8 +167,13 @@ public class TaskService {
             throw new IllegalArgumentException("Only in-progress tasks can be completed");
         }
 
-        String afterPhotoUrl = requireAfterPhotoUrl(request);
-        task.complete(Instant.now(clock), afterPhotoUrl, request.staffNote());
+        if (task.getReports().isEmpty()) {
+            String afterPhotoUrl = requireAfterPhotoUrl(request);
+            task.complete(Instant.now(clock), afterPhotoUrl, request.staffNote());
+        } else {
+            ensureAllReportsHaveAfterPhotos(task);
+            task.complete(Instant.now(clock), task.getAfterPhotoUrl(), request == null ? null : request.staffNote());
+        }
         return taskMapper.toResponse(task);
     }
 
@@ -258,6 +261,16 @@ public class TaskService {
         }
         if (linkedTaskId == null && report.getStatus() != ReportStatus.SUBMITTED) {
             throw new IllegalArgumentException("Only submitted reports can be linked to a task: " + report.getId());
+        }
+    }
+
+    private void ensureAllReportsHaveAfterPhotos(Task task) {
+        boolean missingAfterPhoto = task.getReports().stream()
+                .anyMatch(report -> report.getAfterPhotoUrl() == null || report.getAfterPhotoUrl().isBlank());
+        if (missingAfterPhoto) {
+            throw new IllegalArgumentException(
+                    "Every linked report must have an after photo before completing the task"
+            );
         }
     }
 

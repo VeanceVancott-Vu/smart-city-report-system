@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:latlong2/latlong.dart' hide Path;
 
 import '../../../core/files/upload_file_picker.dart';
+import '../../../core/files/uploaded_photo_view.dart';
 import '../../../core/localization/app_localizations_extension.dart';
 import '../../../core/localization/domain_localizations.dart';
 import '../../../core/ui/app_feedback.dart';
@@ -679,18 +680,16 @@ class _PhotoUploadField extends StatelessWidget {
             child: Stack(
               fit: StackFit.expand,
               children: [
-                Image.network(
-                  fileUrl!,
+                UploadedPhotoImage(
+                  fileUrl: fileUrl!,
                   fit: BoxFit.cover,
-                  errorBuilder: (context, error, stackTrace) {
-                    return const Center(
-                      child: Icon(
-                        Icons.broken_image,
-                        size: 48,
-                        color: Color(0xFFBA1A1A),
-                      ),
-                    );
-                  },
+                  errorWidget: const Center(
+                    child: Icon(
+                      Icons.broken_image,
+                      size: 48,
+                      color: Color(0xFFBA1A1A),
+                    ),
+                  ),
                 ),
                 Positioned(
                   top: 12,

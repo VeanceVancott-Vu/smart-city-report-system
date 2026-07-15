@@ -13,6 +13,12 @@ abstract class ReportApiService {
     required List<int> bytes,
   });
 
+  Future<Report> uploadAfterPhoto({
+    required String reportId,
+    required String filename,
+    required List<int> bytes,
+  });
+
   Future<List<Report>> fetchCitizenReports();
 
   Future<List<Report>> fetchReports();
@@ -66,6 +72,33 @@ class BackendReportApiService extends ApiService implements ReportApiService {
       return fileUrl;
     }
     throw const ReportApiException('Upload response did not include fileUrl.');
+  }
+
+  @override
+  Future<Report> uploadAfterPhoto({
+    required String reportId,
+    required String filename,
+    required List<int> bytes,
+  }) async {
+    final uploadResponse = await _uploadFile(
+      path: '/api/files/report-after',
+      filename: filename,
+      bytes: bytes,
+    );
+    final fileUrl = _decodeMap(uploadResponse.body)['fileUrl'];
+    if (fileUrl is! String || fileUrl.isEmpty) {
+      throw const ReportApiException(
+        'Upload response did not include fileUrl.',
+      );
+    }
+
+    final response = await _client.patch(
+      _uri('/api/reports/$reportId/after-photo'),
+      headers: await _headers(),
+      body: jsonEncode(<String, String>{'afterPhotoUrl': fileUrl}),
+    );
+    _ensureSuccess(response);
+    return Report.fromJson(_decodeMap(response.body));
   }
 
   @override
@@ -301,6 +334,28 @@ class MockReportApiService extends ApiService implements ReportApiService {
   }
 
   @override
+  Future<Report> uploadAfterPhoto({
+    required String reportId,
+    required String filename,
+    required List<int> bytes,
+  }) async {
+    await Future<void>.delayed(const Duration(milliseconds: 100));
+    if (bytes.isEmpty) {
+      throw const ReportApiException('Selected image is empty.');
+    }
+    final index = _reports.indexWhere((report) => report.id == reportId);
+    if (index == -1) {
+      throw const ReportApiException('Report not found.');
+    }
+    final updated = _reports[index].copyWith(
+      afterPhotoUrl: '/uploads/report-after/$filename',
+      updatedAt: DateTime.now(),
+    );
+    _reports[index] = updated;
+    return updated;
+  }
+
+  @override
   Future<List<Report>> fetchCitizenReports() async {
     await Future<void>.delayed(const Duration(milliseconds: 100));
     return List.unmodifiable(_reports);
@@ -521,6 +576,7 @@ class MockReportApiService extends ApiService implements ReportApiService {
         longitude: 106.6994,
         addressText: 'Bus stop near Le Loi',
         beforePhotoUrl: '/uploads/report-before/pothole-before.jpg',
+        afterPhotoUrl: '/uploads/report-after/pothole-after.jpg',
         anonymous: false,
         upvoteCount: 5,
         priorityScore: 5,
@@ -539,6 +595,7 @@ class MockReportApiService extends ApiService implements ReportApiService {
         longitude: 106.6991,
         addressText: 'Le Loi pedestrian crossing',
         beforePhotoUrl: '/uploads/report-before/curb-before.jpg',
+        afterPhotoUrl: '/uploads/report-after/curb-after.jpg',
         anonymous: false,
         upvoteCount: 2,
         priorityScore: 2,

@@ -391,10 +391,10 @@ class _ReportTile extends StatelessWidget {
                 ),
                 clipBehavior: Clip.antiAlias,
                 child: photoUrl != null
-                    ? Image.network(
-                        photoUrl,
+                    ? UploadedPhotoImage(
+                        fileUrl: photoUrl,
                         fit: BoxFit.cover,
-                        errorBuilder: (_, __, ___) => const Icon(
+                        errorWidget: const Icon(
                           Icons.broken_image_outlined,
                           size: 28,
                           color: Color(0xFF64748B),

@@ -32,9 +32,12 @@ public class FileReferenceCleanupService {
             return;
         }
 
-        boolean usedByReport = excludedReportId == null
+        boolean usedByReportBefore = excludedReportId == null
                 ? reportRepository.existsByBeforePhotoUrl(fileUrl)
                 : reportRepository.existsByBeforePhotoUrlAndIdNot(fileUrl, excludedReportId);
+        boolean usedByReportAfter = excludedReportId == null
+                ? reportRepository.existsByAfterPhotoUrl(fileUrl)
+                : reportRepository.existsByAfterPhotoUrlAndIdNot(fileUrl, excludedReportId);
         boolean usedByTaskBefore = excludedTaskId == null
                 ? taskRepository.existsByBeforePhotoUrl(fileUrl)
                 : taskRepository.existsByBeforePhotoUrlAndIdNot(fileUrl, excludedTaskId);
@@ -42,7 +45,7 @@ public class FileReferenceCleanupService {
                 ? taskRepository.existsByAfterPhotoUrl(fileUrl)
                 : taskRepository.existsByAfterPhotoUrlAndIdNot(fileUrl, excludedTaskId);
 
-        if (!usedByReport && !usedByTaskBefore && !usedByTaskAfter) {
+        if (!usedByReportBefore && !usedByReportAfter && !usedByTaskBefore && !usedByTaskAfter) {
             fileStorageService.delete(fileUrl);
         }
     }

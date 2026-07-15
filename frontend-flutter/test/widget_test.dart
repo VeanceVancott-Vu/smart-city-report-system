@@ -487,13 +487,10 @@ void main() {
       findsOneWidget,
     );
 
-    await tester.tap(find.text('Upload photo'));
-    await tester.pumpAndSettle();
     await tester.enterText(find.byType(EditableText).first, 'Done');
     await tester.tap(find.text('Complete task').last);
     await tester.pumpAndSettle();
 
-    expect(find.text('/uploads/task-after/picked.png'), findsOneWidget);
     expect(find.text('Done'), findsWidgets);
   });
 

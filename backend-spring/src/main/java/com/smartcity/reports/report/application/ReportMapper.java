@@ -23,6 +23,7 @@ public class ReportMapper {
                 report.getLongitude(),
                 report.getAddressText(),
                 report.getBeforePhotoUrl(),
+                report.getAfterPhotoUrl(),
                 report.isAnonymous(),
                 report.getUpvoteCount(),
                 report.getPriorityScore(),

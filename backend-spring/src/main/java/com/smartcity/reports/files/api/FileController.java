@@ -1,7 +1,6 @@
 package com.smartcity.reports.files.api;
 
 import com.smartcity.reports.files.application.FileStorageService;
-
 import com.smartcity.reports.user.domain.User;
 import org.springframework.http.MediaType;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
@@ -27,6 +26,14 @@ public class FileController {
             @AuthenticationPrincipal User currentUser
     ) {
         return fileStorageService.uploadReportBefore(file, currentUser);
+    }
+
+    @PostMapping(value = "/report-after", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
+    public FileUploadResponse uploadReportAfter(
+            @RequestParam("file") MultipartFile file,
+            @AuthenticationPrincipal User currentUser
+    ) {
+        return fileStorageService.uploadReportAfter(file, currentUser);
     }
 
     @PostMapping(value = "/task-after", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)

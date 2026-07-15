@@ -83,9 +83,7 @@ class _CitizenReportDetailScreenState extends State<CitizenReportDetailScreen> {
 
   Future<void> _openFullPhoto(String url) async {
     await Navigator.of(context).push(
-      MaterialPageRoute(
-        builder: (context) => UploadedPhotoView(fileUrl: url),
-      ),
+      MaterialPageRoute(builder: (context) => UploadedPhotoView(fileUrl: url)),
     );
   }
 
@@ -96,7 +94,10 @@ class _CitizenReportDetailScreenState extends State<CitizenReportDetailScreen> {
       appBar: AppBar(
         title: const Text(
           'Report Details',
-          style: TextStyle(fontWeight: FontWeight.bold, color: Color(0xFF111C2D)),
+          style: TextStyle(
+            fontWeight: FontWeight.bold,
+            color: Color(0xFF111C2D),
+          ),
         ),
         backgroundColor: Colors.white,
         elevation: 0,
@@ -180,9 +181,9 @@ class _CitizenReportDetailScreenState extends State<CitizenReportDetailScreen> {
                               _buildDescriptionCard(report),
                             ],
                           ),
-                    ),
                   ),
-                );
+                ),
+              );
             },
           );
         },
@@ -237,7 +238,9 @@ class _CitizenReportDetailScreenState extends State<CitizenReportDetailScreen> {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Icon(
-                      staff == null ? Icons.person_off_outlined : Icons.person_outline,
+                      staff == null
+                          ? Icons.person_off_outlined
+                          : Icons.person_outline,
                       size: 20,
                       color: const Color(0xFF64748B),
                     ),
@@ -253,7 +256,10 @@ class _CitizenReportDetailScreenState extends State<CitizenReportDetailScreen> {
                               children: [
                                 const Text(
                                   'Assigned staff',
-                                  style: TextStyle(fontSize: 12, color: Color(0xFF64748B)),
+                                  style: TextStyle(
+                                    fontSize: 12,
+                                    color: Color(0xFF64748B),
+                                  ),
                                 ),
                                 const SizedBox(height: 3),
                                 Text(
@@ -265,7 +271,10 @@ class _CitizenReportDetailScreenState extends State<CitizenReportDetailScreen> {
                                 ),
                                 Text(
                                   staff.role,
-                                  style: const TextStyle(fontSize: 12, color: Color(0xFF64748B)),
+                                  style: const TextStyle(
+                                    fontSize: 12,
+                                    color: Color(0xFF64748B),
+                                  ),
                                 ),
                               ],
                             ),
@@ -302,7 +311,10 @@ class _CitizenReportDetailScreenState extends State<CitizenReportDetailScreen> {
                     color: const Color(0xFFF0F3FF),
                     borderRadius: BorderRadius.circular(6),
                   ),
-                  padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 10,
+                    vertical: 4,
+                  ),
                   child: Text(
                     '#RPT-${report.id.substring(0, report.id.length > 8 ? 8 : report.id.length).toUpperCase()}',
                     style: const TextStyle(
@@ -331,9 +343,18 @@ class _CitizenReportDetailScreenState extends State<CitizenReportDetailScreen> {
               spacing: 8,
               runSpacing: 8,
               children: [
-                _InfoChip(icon: Icons.category_outlined, label: report.category.label),
-                _InfoChip(icon: Icons.flash_on_outlined, label: 'Priority: ${report.priorityScore}'),
-                _InfoChip(icon: Icons.thumb_up_outlined, label: '${report.upvoteCount} Confirmations'),
+                _InfoChip(
+                  icon: Icons.category_outlined,
+                  label: report.category.label,
+                ),
+                _InfoChip(
+                  icon: Icons.flash_on_outlined,
+                  label: 'Priority: ${report.priorityScore}',
+                ),
+                _InfoChip(
+                  icon: Icons.thumb_up_outlined,
+                  label: '${report.upvoteCount} Confirmations',
+                ),
               ],
             ),
           ],
@@ -364,9 +385,9 @@ class _CitizenReportDetailScreenState extends State<CitizenReportDetailScreen> {
             Text(
               'Visual Proof Evidence',
               style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                    fontWeight: FontWeight.bold,
-                    color: const Color(0xFF111C2D),
-                  ),
+                fontWeight: FontWeight.bold,
+                color: const Color(0xFF111C2D),
+              ),
             ),
             const SizedBox(height: 14),
             Row(
@@ -376,10 +397,19 @@ class _CitizenReportDetailScreenState extends State<CitizenReportDetailScreen> {
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      const Text('BEFORE', style: TextStyle(fontSize: 11, fontWeight: FontWeight.bold, color: Color(0xFF64748B))),
+                      const Text(
+                        'BEFORE',
+                        style: TextStyle(
+                          fontSize: 11,
+                          fontWeight: FontWeight.bold,
+                          color: Color(0xFF64748B),
+                        ),
+                      ),
                       const SizedBox(height: 6),
                       GestureDetector(
-                        onTap: report.beforePhotoUrl != null ? () => _openFullPhoto(report.beforePhotoUrl!) : null,
+                        onTap: report.beforePhotoUrl != null
+                            ? () => _openFullPhoto(report.beforePhotoUrl!)
+                            : null,
                         child: Container(
                           height: 180,
                           decoration: BoxDecoration(
@@ -389,8 +419,16 @@ class _CitizenReportDetailScreenState extends State<CitizenReportDetailScreen> {
                           ),
                           clipBehavior: Clip.antiAlias,
                           child: report.beforePhotoUrl != null
-                              ? Image.network(report.beforePhotoUrl!, fit: BoxFit.cover)
-                              : const Center(child: Icon(Icons.image_not_supported_outlined, color: Color(0xFF64748B))),
+                              ? UploadedPhotoImage(
+                                  fileUrl: report.beforePhotoUrl!,
+                                  fit: BoxFit.cover,
+                                )
+                              : const Center(
+                                  child: Icon(
+                                    Icons.image_not_supported_outlined,
+                                    color: Color(0xFF64748B),
+                                  ),
+                                ),
                         ),
                       ),
                     ],
@@ -403,7 +441,14 @@ class _CitizenReportDetailScreenState extends State<CitizenReportDetailScreen> {
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        const Text('AFTER RESOLVED', style: TextStyle(fontSize: 11, fontWeight: FontWeight.bold, color: Color(0xFF0F766E))),
+                        const Text(
+                          'AFTER RESOLVED',
+                          style: TextStyle(
+                            fontSize: 11,
+                            fontWeight: FontWeight.bold,
+                            color: Color(0xFF0F766E),
+                          ),
+                        ),
                         const SizedBox(height: 6),
                         GestureDetector(
                           onTap: () => _openFullPhoto(afterPhotoUrl!),
@@ -412,10 +457,15 @@ class _CitizenReportDetailScreenState extends State<CitizenReportDetailScreen> {
                             decoration: BoxDecoration(
                               color: const Color(0xFFCCFBF1),
                               borderRadius: BorderRadius.circular(12),
-                              border: Border.all(color: const Color(0xFF0F766E).withOpacity(0.3)),
+                              border: Border.all(
+                                color: const Color(0xFF0F766E).withOpacity(0.3),
+                              ),
                             ),
                             clipBehavior: Clip.antiAlias,
-                            child: Image.network(afterPhotoUrl, fit: BoxFit.cover),
+                            child: UploadedPhotoImage(
+                              fileUrl: afterPhotoUrl,
+                              fit: BoxFit.cover,
+                            ),
                           ),
                         ),
                       ],
@@ -449,9 +499,9 @@ class _CitizenReportDetailScreenState extends State<CitizenReportDetailScreen> {
             Text(
               'Incident Location',
               style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                    fontWeight: FontWeight.bold,
-                    color: const Color(0xFF111C2D),
-                  ),
+                fontWeight: FontWeight.bold,
+                color: const Color(0xFF111C2D),
+              ),
             ),
             const SizedBox(height: 14),
             // Bản đồ Mini tích hợp (Mini Map Canvas Box)
@@ -483,7 +533,8 @@ class _CitizenReportDetailScreenState extends State<CitizenReportDetailScreen> {
                 ),
                 children: [
                   TileLayer(
-                    urlTemplate: 'https://tile.openstreetmap.org/{z}/{x}/{y}.png',
+                    urlTemplate:
+                        'https://tile.openstreetmap.org/{z}/{x}/{y}.png',
                     userAgentPackageName: 'com.smartcity.report',
                   ),
                   MarkerLayer(
@@ -492,7 +543,11 @@ class _CitizenReportDetailScreenState extends State<CitizenReportDetailScreen> {
                         point: reportLatLng,
                         width: 40,
                         height: 40,
-                        child: const Icon(Icons.location_on, color: Color(0xFFEF4444), size: 32),
+                        child: const Icon(
+                          Icons.location_on,
+                          color: Color(0xFFEF4444),
+                          size: 32,
+                        ),
                       ),
                     ],
                   ),
@@ -503,20 +558,32 @@ class _CitizenReportDetailScreenState extends State<CitizenReportDetailScreen> {
             Row(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                const Icon(Icons.place_outlined, color: Color(0xFF64748B), size: 20),
+                const Icon(
+                  Icons.place_outlined,
+                  color: Color(0xFF64748B),
+                  size: 20,
+                ),
                 const SizedBox(width: 8),
                 Expanded(
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Text(
-                        report.addressText ?? 'GPS Geocoded Workplace Address Position',
-                        style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w500, color: Color(0xFF1E293B)),
+                        report.addressText ??
+                            'GPS Geocoded Workplace Address Position',
+                        style: const TextStyle(
+                          fontSize: 14,
+                          fontWeight: FontWeight.w500,
+                          color: Color(0xFF1E293B),
+                        ),
                       ),
                       const SizedBox(height: 4),
                       Text(
                         'Coordinates: ${report.latitude.toStringAsFixed(4)}° N, ${report.longitude.toStringAsFixed(4)}° E',
-                        style: const TextStyle(fontSize: 12, color: Color(0xFF64748B)),
+                        style: const TextStyle(
+                          fontSize: 12,
+                          color: Color(0xFF64748B),
+                        ),
                       ),
                     ],
                   ),
@@ -546,13 +613,15 @@ class _CitizenReportDetailScreenState extends State<CitizenReportDetailScreen> {
             Text(
               'Incident Description Context',
               style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                    fontWeight: FontWeight.bold,
-                    color: const Color(0xFF111C2D),
-                  ),
+                fontWeight: FontWeight.bold,
+                color: const Color(0xFF111C2D),
+              ),
             ),
             const SizedBox(height: 12),
             Text(
-              report.description.isEmpty ? 'No supplementary detailed description texts provided.' : report.description,
+              report.description.isEmpty
+                  ? 'No supplementary detailed description texts provided.'
+                  : report.description,
               style: const TextStyle(
                 fontSize: 15,
                 height: 1.5,
@@ -564,11 +633,21 @@ class _CitizenReportDetailScreenState extends State<CitizenReportDetailScreen> {
             const SizedBox(height: 12),
             Row(
               children: [
-                const Icon(Icons.account_circle_outlined, size: 18, color: Color(0xFF64748B)),
+                const Icon(
+                  Icons.account_circle_outlined,
+                  size: 18,
+                  color: Color(0xFF64748B),
+                ),
                 const SizedBox(width: 8),
                 Text(
-                  report.anonymous ? 'Submitted Anonymously (Ẩn danh)' : 'Public Profile Transmission',
-                  style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w500, color: Color(0xFF64748B)),
+                  report.anonymous
+                      ? 'Submitted Anonymously (Ẩn danh)'
+                      : 'Public Profile Transmission',
+                  style: const TextStyle(
+                    fontSize: 12,
+                    fontWeight: FontWeight.w500,
+                    color: Color(0xFF64748B),
+                  ),
                 ),
               ],
             ),
@@ -616,7 +695,11 @@ class _StatusBadge extends StatelessWidget {
       padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
       child: Text(
         status.label,
-        style: TextStyle(color: foregroundColor, fontSize: 11, fontWeight: FontWeight.bold),
+        style: TextStyle(
+          color: foregroundColor,
+          fontSize: 11,
+          fontWeight: FontWeight.bold,
+        ),
       ),
     );
   }
@@ -644,7 +727,11 @@ class _InfoChip extends StatelessWidget {
           const SizedBox(width: 6),
           Text(
             label,
-            style: const TextStyle(fontSize: 12, color: Color(0xFF1E293B), fontWeight: FontWeight.w500),
+            style: const TextStyle(
+              fontSize: 12,
+              color: Color(0xFF1E293B),
+              fontWeight: FontWeight.w500,
+            ),
           ),
         ],
       ),
@@ -666,7 +753,11 @@ class _ErrorState extends StatelessWidget {
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            Text(message, textAlign: TextAlign.center, style: const TextStyle(color: Color(0xFF64748B))),
+            Text(
+              message,
+              textAlign: TextAlign.center,
+              style: const TextStyle(color: Color(0xFF64748B)),
+            ),
             const SizedBox(height: 12),
             OutlinedButton.icon(
               onPressed: onSecondary,

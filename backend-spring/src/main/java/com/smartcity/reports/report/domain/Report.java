@@ -54,6 +54,9 @@ public class Report {
     @Column(name = "before_photo_url", length = 2048)
     private String beforePhotoUrl;
 
+    @Column(name = "after_photo_url", length = 2048)
+    private String afterPhotoUrl;
+
     @Column(name = "is_anonymous", nullable = false)
     private boolean anonymous;
 
@@ -149,6 +152,10 @@ public class Report {
         this.beforePhotoUrl = beforePhotoUrl;
     }
 
+    public void updateAfterPhoto(String afterPhotoUrl) {
+        this.afterPhotoUrl = afterPhotoUrl;
+    }
+
     public void cancel() {
         status = ReportStatus.CANCELLED;
     }
@@ -225,6 +232,10 @@ public class Report {
 
     public String getBeforePhotoUrl() {
         return beforePhotoUrl;
+    }
+
+    public String getAfterPhotoUrl() {
+        return afterPhotoUrl;
     }
 
     public boolean isAnonymous() {

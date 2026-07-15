@@ -1,13 +1,11 @@
 package com.smartcity.reports.task.api;
 
-import com.smartcity.reports.task.domain.TaskStatus;
-
-import com.smartcity.reports.task.application.TaskService;
-
 import com.smartcity.reports.common.ApiExceptionHandler;
 import com.smartcity.reports.issue.IssueCategory;
-import com.smartcity.reports.user.api.UserSummaryResponse;
 import com.smartcity.reports.security.JwtAuthenticationFilter;
+import com.smartcity.reports.task.application.TaskService;
+import com.smartcity.reports.task.domain.TaskStatus;
+import com.smartcity.reports.user.api.UserSummaryResponse;
 import com.smartcity.reports.user.domain.User;
 import com.smartcity.reports.user.domain.UserRole;
 import org.junit.jupiter.api.Test;
@@ -195,9 +193,13 @@ class TaskControllerTest {
     }
 
     @Test
-    void completeTaskValidatesAfterPhotoUrlRequired() throws Exception {
+    void completeTaskAllowsOptionalTaskPhoto() throws Exception {
         UUID taskId = UUID.randomUUID();
+        UUID staffId = UUID.randomUUID();
         User staff = user(UserRole.STAFF);
+
+        when(taskService.completeTask(eq(taskId), nullable(CompleteTaskRequest.class), nullable(User.class)))
+                .thenReturn(response(taskId, TaskStatus.DONE, staffId, List.of(UUID.randomUUID())));
 
         mockMvc.perform(patch("/api/tasks/{id}/complete", taskId)
                         .with(authentication(authenticationToken(staff)))
@@ -207,9 +209,8 @@ class TaskControllerTest {
                                   "staffNote": "Done"
                                 }
                                 """))
-                .andExpect(status().isBadRequest())
-                .andExpect(jsonPath("$.message").value("Validation failed"))
-                .andExpect(jsonPath("$.errors.afterPhotoUrl").value("After photo is required"));
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.status").value("DONE"));
     }
 
     @Test
@@ -257,6 +258,7 @@ class TaskControllerTest {
 
         verify(taskService).deleteTask(eq(taskId), nullable(User.class));
     }
+
     @Test
     void closeTaskReturnsClosedTask() throws Exception {
         UUID taskId = UUID.randomUUID();

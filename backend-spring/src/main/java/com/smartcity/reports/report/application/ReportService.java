@@ -1,19 +1,21 @@
 package com.smartcity.reports.report.application;
 
-import com.smartcity.reports.files.application.FileReferenceCleanupService;
-
 import com.smartcity.reports.common.ResourceNotFoundException;
+import com.smartcity.reports.files.application.FileReferenceCleanupService;
 import com.smartcity.reports.issue.IssueCategory;
 import com.smartcity.reports.report.api.CreateReportRequest;
 import com.smartcity.reports.report.api.ReportListResponse;
 import com.smartcity.reports.report.api.ReportMapPinResponse;
 import com.smartcity.reports.report.api.ReportResponse;
 import com.smartcity.reports.report.api.ReportUpvoteResponse;
+import com.smartcity.reports.report.api.UpdateReportAfterPhotoRequest;
 import com.smartcity.reports.report.api.UpdateReportRequest;
 import com.smartcity.reports.report.domain.Report;
 import com.smartcity.reports.report.domain.ReportStatus;
 import com.smartcity.reports.report.persistence.ReportRepository;
 import com.smartcity.reports.report.persistence.ReportUpvoteRepository;
+import com.smartcity.reports.task.domain.Task;
+import com.smartcity.reports.task.persistence.TaskRepository;
 import com.smartcity.reports.user.domain.User;
 import com.smartcity.reports.user.domain.UserRole;
 import jakarta.persistence.criteria.Predicate;
@@ -35,6 +37,7 @@ public class ReportService {
     private final ReportUpvoteRepository reportUpvoteRepository;
     private final ReportMapper reportMapper;
     private final FileReferenceCleanupService fileReferenceCleanupService;
+    private final TaskRepository taskRepository;
 
     public ReportService(
             ReportRepository reportRepository,
@@ -42,10 +45,27 @@ public class ReportService {
             ReportMapper reportMapper,
             FileReferenceCleanupService fileReferenceCleanupService
     ) {
+        this(
+                reportRepository,
+                reportUpvoteRepository,
+                reportMapper,
+                fileReferenceCleanupService,
+                null
+        );
+    }
+
+    public ReportService(
+            ReportRepository reportRepository,
+            ReportUpvoteRepository reportUpvoteRepository,
+            ReportMapper reportMapper,
+            FileReferenceCleanupService fileReferenceCleanupService,
+            TaskRepository taskRepository
+    ) {
         this.reportRepository = reportRepository;
         this.reportUpvoteRepository = reportUpvoteRepository;
         this.reportMapper = reportMapper;
         this.fileReferenceCleanupService = fileReferenceCleanupService;
+        this.taskRepository = taskRepository;
     }
 
     @Transactional
@@ -120,14 +140,36 @@ public class ReportService {
     }
 
     @Transactional
+    public ReportResponse updateAfterPhoto(
+            UUID id,
+            UpdateReportAfterPhotoRequest request,
+            User currentUser
+    ) {
+        requireAuthenticated(currentUser);
+        requireStaff(currentUser);
+
+        Report report = getReportEntity(id);
+        ensureStaffOwnsLinkedTask(report, currentUser);
+        String previousAfterPhotoUrl = report.getAfterPhotoUrl();
+        report.updateAfterPhoto(request.afterPhotoUrl().trim());
+        if (!Objects.equals(previousAfterPhotoUrl, report.getAfterPhotoUrl())) {
+            reportRepository.flush();
+            fileReferenceCleanupService.deleteIfUnused(previousAfterPhotoUrl, report.getId(), null);
+        }
+        return reportMapper.toResponse(report);
+    }
+
+    @Transactional
     public ReportResponse cancelReport(UUID id, User currentUser) {
         requireAuthenticated(currentUser);
         Report report = getReportEntity(id);
         ensureCanCancel(report, currentUser);
         String beforePhotoUrl = report.getBeforePhotoUrl();
+        String afterPhotoUrl = report.getAfterPhotoUrl();
         reportRepository.delete(report);
         reportRepository.flush();
         fileReferenceCleanupService.deleteIfUnused(beforePhotoUrl, report.getId(), null);
+        fileReferenceCleanupService.deleteIfUnused(afterPhotoUrl, report.getId(), null);
         return reportMapper.toResponse(report);
     }
 
@@ -262,6 +304,20 @@ public class ReportService {
         }
     }
 
+    private void ensureStaffOwnsLinkedTask(Report report, User currentUser) {
+        UUID linkedTaskId = report.getLinkedTaskId();
+        if (linkedTaskId == null || taskRepository == null) {
+            throw new AccessDeniedException("Only staff assigned to the linked task can upload report after photos");
+        }
+
+        Task task = taskRepository.findById(linkedTaskId)
+                .orElseThrow(() -> new ResourceNotFoundException("Linked task not found: " + linkedTaskId));
+        if (task.getAssignedStaff() == null
+                || !task.getAssignedStaff().getId().equals(currentUser.getId())) {
+            throw new AccessDeniedException("Only staff assigned to the linked task can upload report after photos");
+        }
+    }
+
     private void ensureCanCancel(Report report, User currentUser) {
         if (currentUser.getRole() == UserRole.OVERSEER) {
             return;
@@ -281,6 +337,12 @@ public class ReportService {
     private void requireAuthenticated(User currentUser) {
         if (currentUser == null) {
             throw new AccessDeniedException("Authentication required");
+        }
+    }
+
+    private void requireStaff(User currentUser) {
+        if (currentUser.getRole() != UserRole.STAFF) {
+            throw new AccessDeniedException("Only staff can upload report after photos");
         }
     }
 

@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 
+import '../../../core/files/upload_file_picker.dart';
 import '../../../core/files/uploaded_photo_view.dart';
 import '../../../core/localization/app_localizations_extension.dart';
 import '../../../core/localization/domain_localizations.dart';
@@ -20,6 +21,8 @@ class _StaffReportDetailScreenState extends State<StaffReportDetailScreen> {
   late Future<Report> _reportFuture;
   String? _reportId;
   bool _didReadArgs = false;
+  bool _isUploadingAfterPhoto = false;
+  String? _afterPhotoError;
 
   @override
   void didChangeDependencies() {
@@ -44,6 +47,60 @@ class _StaffReportDetailScreenState extends State<StaffReportDetailScreen> {
   Future<void> _refresh() async {
     setState(_loadReport);
     await _reportFuture;
+  }
+
+  Future<void> _pickAndUploadAfterPhoto(Report report) async {
+    if (_isUploadingAfterPhoto) {
+      return;
+    }
+
+    setState(() {
+      _isUploadingAfterPhoto = true;
+      _afterPhotoError = null;
+    });
+
+    try {
+      final pickedFile = await pickImageUploadFile();
+      if (pickedFile == null) {
+        return;
+      }
+
+      final updated = await widget.reportApiService.uploadAfterPhoto(
+        reportId: report.id,
+        filename: pickedFile.filename,
+        bytes: pickedFile.bytes,
+      );
+      if (!mounted) {
+        return;
+      }
+      setState(() => _reportFuture = Future<Report>.value(updated));
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(context.l10n.staffAfterPhotoUploaded)),
+      );
+    } on FilePickerException catch (error) {
+      _setAfterPhotoError(error.message);
+    } on ReportApiException catch (error) {
+      _setAfterPhotoError(error.message);
+    } catch (_) {
+      if (!mounted) {
+        return;
+      }
+      _setAfterPhotoError(context.l10n.staffAfterPhotoUploadFailed);
+    } finally {
+      if (mounted) {
+        setState(() => _isUploadingAfterPhoto = false);
+      }
+    }
+  }
+
+  void _setAfterPhotoError(String message) {
+    if (!mounted) {
+      return;
+    }
+    setState(() => _afterPhotoError = message);
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(content: Text(message), backgroundColor: Colors.red.shade700),
+    );
   }
 
   @override
@@ -131,6 +188,15 @@ class _StaffReportDetailScreenState extends State<StaffReportDetailScreen> {
                     child: UploadedPhotoView(fileUrl: report.beforePhotoUrl),
                   ),
                   _Section(
+                    title: context.l10n.commonAfterPhoto,
+                    child: _AfterPhotoSection(
+                      report: report,
+                      isUploading: _isUploadingAfterPhoto,
+                      errorText: _afterPhotoError,
+                      onUpload: () => _pickAndUploadAfterPhoto(report),
+                    ),
+                  ),
+                  _Section(
                     title: context.l10n.reportReporter,
                     child: Text(
                       report.anonymous
@@ -160,6 +226,57 @@ class _StaffReportDetailScreenState extends State<StaffReportDetailScreen> {
     return context.l10n.coordinatesValue(
       report.latitude.toStringAsFixed(4),
       report.longitude.toStringAsFixed(4),
+    );
+  }
+}
+
+class _AfterPhotoSection extends StatelessWidget {
+  const _AfterPhotoSection({
+    required this.report,
+    required this.isUploading,
+    required this.errorText,
+    required this.onUpload,
+  });
+
+  final Report report;
+  final bool isUploading;
+  final String? errorText;
+  final VoidCallback onUpload;
+
+  @override
+  Widget build(BuildContext context) {
+    final hasPhoto = (report.afterPhotoUrl ?? '').trim().isNotEmpty;
+    final colorScheme = Theme.of(context).colorScheme;
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        UploadedPhotoView(fileUrl: report.afterPhotoUrl),
+        const SizedBox(height: 10),
+        OutlinedButton.icon(
+          onPressed: isUploading ? null : onUpload,
+          icon: isUploading
+              ? const SizedBox.square(
+                  dimension: 18,
+                  child: CircularProgressIndicator(strokeWidth: 2),
+                )
+              : Icon(hasPhoto ? Icons.swap_horiz : Icons.upload_file),
+          label: Text(
+            hasPhoto ? context.l10n.photoReplace : context.l10n.photoUpload,
+          ),
+        ),
+        if (hasPhoto)
+          Text(
+            report.afterPhotoUrl!,
+            style: TextStyle(color: colorScheme.primary),
+            overflow: TextOverflow.ellipsis,
+          ),
+        if (errorText != null)
+          Padding(
+            padding: const EdgeInsets.only(top: 8),
+            child: Text(errorText!, style: TextStyle(color: colorScheme.error)),
+          ),
+      ],
     );
   }
 }

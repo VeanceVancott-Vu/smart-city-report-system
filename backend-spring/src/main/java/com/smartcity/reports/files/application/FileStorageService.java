@@ -27,8 +27,10 @@ import java.util.UUID;
 public class FileStorageService {
 
     private static final String REPORT_BEFORE_DIR = "report-before";
+    private static final String REPORT_AFTER_DIR = "report-after";
     private static final String TASK_AFTER_DIR = "task-after";
-    private static final Set<String> ALLOWED_DIRECTORIES = Set.of(REPORT_BEFORE_DIR, TASK_AFTER_DIR);
+    private static final Set<String> ALLOWED_DIRECTORIES =
+            Set.of(REPORT_BEFORE_DIR, REPORT_AFTER_DIR, TASK_AFTER_DIR);
 
     private final Path uploadRoot;
     private final long maxUploadBytes;
@@ -46,6 +48,11 @@ public class FileStorageService {
     public FileUploadResponse uploadReportBefore(MultipartFile file, User currentUser) {
         requireRole(currentUser, UserRole.CITIZEN, "Only citizens can upload report before photos");
         return store(file, REPORT_BEFORE_DIR, currentUser);
+    }
+
+    public FileUploadResponse uploadReportAfter(MultipartFile file, User currentUser) {
+        requireRole(currentUser, UserRole.STAFF, "Only staff can upload report after photos");
+        return store(file, REPORT_AFTER_DIR, currentUser);
     }
 
     public FileUploadResponse uploadTaskAfter(MultipartFile file, User currentUser) {
