@@ -25,7 +25,8 @@ class CitizenReportForm extends StatefulWidget {
   final Future<String> Function({
     required String filename,
     required List<int> bytes,
-  }) onUploadBeforePhoto;
+  })
+  onUploadBeforePhoto;
   final ReportApiService reportApiService;
 
   @override
@@ -241,6 +242,7 @@ class _CitizenReportFormState extends State<CitizenReportForm> {
           return false;
         },
         child: ListView(
+          key: const Key('report_form_list'),
           controller: _scrollController,
           cacheExtent: 1000,
           padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 24),
@@ -249,9 +251,9 @@ class _CitizenReportFormState extends State<CitizenReportForm> {
             Text(
               'Incident Category',
               style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                    fontWeight: FontWeight.bold,
-                    color: const Color(0xFF111C2D),
-                  ),
+                fontWeight: FontWeight.bold,
+                color: const Color(0xFF111C2D),
+              ),
             ),
             const SizedBox(height: 12),
             GridView.builder(
@@ -277,10 +279,14 @@ class _CitizenReportFormState extends State<CitizenReportForm> {
                   borderRadius: BorderRadius.circular(12),
                   child: Container(
                     decoration: BoxDecoration(
-                      color: isSelected ? const Color(0xFFBDECE2) : const Color(0xFFF9F9FF),
+                      color: isSelected
+                          ? const Color(0xFFBDECE2)
+                          : const Color(0xFFF9F9FF),
                       borderRadius: BorderRadius.circular(12),
                       border: Border.all(
-                        color: isSelected ? const Color(0xFF0F766E) : const Color(0xFFBDC9C6).withOpacity(0.5),
+                        color: isSelected
+                            ? const Color(0xFF0F766E)
+                            : const Color(0xFFBDC9C6).withOpacity(0.5),
                         width: isSelected ? 2.0 : 1.0,
                       ),
                     ),
@@ -293,7 +299,9 @@ class _CitizenReportFormState extends State<CitizenReportForm> {
                               Icon(
                                 _getCategoryIconLocal(currentCat),
                                 size: 36,
-                                color: isSelected ? const Color(0xFF0F766E) : const Color(0xFF3E4947),
+                                color: isSelected
+                                    ? const Color(0xFF0F766E)
+                                    : const Color(0xFF3E4947),
                               ),
                               const SizedBox(height: 6),
                               Text(
@@ -301,8 +309,12 @@ class _CitizenReportFormState extends State<CitizenReportForm> {
                                 textAlign: TextAlign.center,
                                 style: TextStyle(
                                   fontSize: 14,
-                                  fontWeight: isSelected ? FontWeight.bold : FontWeight.w500,
-                                  color: isSelected ? const Color(0xFF0F766E) : const Color(0xFF111C2D),
+                                  fontWeight: isSelected
+                                      ? FontWeight.bold
+                                      : FontWeight.w500,
+                                  color: isSelected
+                                      ? const Color(0xFF0F766E)
+                                      : const Color(0xFF111C2D),
                                 ),
                               ),
                             ],
@@ -341,13 +353,16 @@ class _CitizenReportFormState extends State<CitizenReportForm> {
                 Text(
                   'Visual Proof',
                   style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                        fontWeight: FontWeight.bold,
-                        color: const Color(0xFF111C2D),
-                      ),
+                    fontWeight: FontWeight.bold,
+                    color: const Color(0xFF111C2D),
+                  ),
                 ),
                 Text(
                   _beforePhotoUrl != null ? '1/1 Photo' : '0/1 Photo',
-                  style: const TextStyle(fontSize: 12, color: Color(0xFF3E4947)),
+                  style: const TextStyle(
+                    fontSize: 12,
+                    color: Color(0xFF3E4947),
+                  ),
                 ),
               ],
             ),
@@ -369,16 +384,19 @@ class _CitizenReportFormState extends State<CitizenReportForm> {
               Text(
                 'Location Details',
                 style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                      fontWeight: FontWeight.bold,
-                      color: const Color(0xFF111C2D),
-                    ),
+                  fontWeight: FontWeight.bold,
+                  color: const Color(0xFF111C2D),
+                ),
               ),
               const SizedBox(height: 12),
               // Map Action Button
               FilledButton.icon(
                 onPressed: _isSaving ? null : _openMapPicker,
                 icon: const Icon(Icons.map, size: 20),
-                label: const Text('Select Location on Map', style: TextStyle(fontWeight: FontWeight.w600)),
+                label: const Text(
+                  'Select Location on Map',
+                  style: TextStyle(fontWeight: FontWeight.w600),
+                ),
                 style: FilledButton.styleFrom(
                   backgroundColor: const Color(0xFFBDECE2),
                   foregroundColor: const Color(0xFF416C65),
@@ -401,7 +419,10 @@ class _CitizenReportFormState extends State<CitizenReportForm> {
                   readOnly: true,
                   decoration: const InputDecoration(
                     labelText: 'Latitude',
-                    prefixIcon: Icon(Icons.my_location, color: Color(0xFF005C55)),
+                    prefixIcon: Icon(
+                      Icons.my_location,
+                      color: Color(0xFF005C55),
+                    ),
                     border: OutlineInputBorder(
                       borderRadius: BorderRadius.all(Radius.circular(12)),
                     ),
@@ -456,14 +477,15 @@ class _CitizenReportFormState extends State<CitizenReportForm> {
             Text(
               'Incident Details',
               style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                    fontWeight: FontWeight.bold,
-                    color: const Color(0xFF111C2D),
-                  ),
+                fontWeight: FontWeight.bold,
+                color: const Color(0xFF111C2D),
+              ),
             ),
             const SizedBox(height: 12),
 
             // Report Title Field
             TextFormField(
+              key: const Key('report_title_field'),
               controller: _titleController,
               decoration: const InputDecoration(
                 labelText: 'Report Title',
@@ -479,6 +501,7 @@ class _CitizenReportFormState extends State<CitizenReportForm> {
 
             // Detailed Description Textarea
             TextFormField(
+              key: const Key('report_description_field'),
               controller: _descriptionController,
               decoration: const InputDecoration(
                 labelText: 'Detailed Description',
@@ -500,7 +523,9 @@ class _CitizenReportFormState extends State<CitizenReportForm> {
                 decoration: BoxDecoration(
                   color: const Color(0xFFF0F3FF),
                   borderRadius: BorderRadius.circular(12),
-                  border: Border.all(color: const Color(0xFFBDC9C6).withOpacity(0.4)),
+                  border: Border.all(
+                    color: const Color(0xFFBDC9C6).withOpacity(0.4),
+                  ),
                 ),
                 child: SwitchListTile(
                   value: _anonymous,
@@ -510,13 +535,19 @@ class _CitizenReportFormState extends State<CitizenReportForm> {
                       : (value) => setState(() => _anonymous = value),
                   title: const Text(
                     'Submit Anonymously',
-                    style: TextStyle(fontWeight: FontWeight.bold, color: Color(0xFF111C2D)),
+                    style: TextStyle(
+                      fontWeight: FontWeight.bold,
+                      color: Color(0xFF111C2D),
+                    ),
                   ),
                   subtitle: const Text(
                     'Your personal information will be hidden from the public timeline.',
                     style: TextStyle(fontSize: 12, color: Color(0xFF3E4947)),
                   ),
-                  contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
+                  contentPadding: const EdgeInsets.symmetric(
+                    horizontal: 16,
+                    vertical: 6,
+                  ),
                 ),
               ),
               const SizedBox(height: 32),
@@ -528,7 +559,10 @@ class _CitizenReportFormState extends State<CitizenReportForm> {
               icon: _isSaving
                   ? const SizedBox.square(
                       dimension: 18,
-                      child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white),
+                      child: CircularProgressIndicator(
+                        strokeWidth: 2,
+                        color: Colors.white,
+                      ),
                     )
                   : const Icon(Icons.send),
               style: FilledButton.styleFrom(
@@ -542,7 +576,10 @@ class _CitizenReportFormState extends State<CitizenReportForm> {
               ),
               label: Text(
                 widget.submitLabel,
-                style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+                style: const TextStyle(
+                  fontSize: 16,
+                  fontWeight: FontWeight.bold,
+                ),
               ),
             ),
             const SizedBox(height: 12),
@@ -634,7 +671,9 @@ class _PhotoUploadField extends StatelessWidget {
             decoration: BoxDecoration(
               color: const Color(0xFFF9F9FF),
               borderRadius: BorderRadius.circular(16),
-              border: Border.all(color: const Color(0xFFBDC9C6).withOpacity(0.5)),
+              border: Border.all(
+                color: const Color(0xFFBDC9C6).withOpacity(0.5),
+              ),
             ),
             clipBehavior: Clip.antiAlias,
             child: Stack(
@@ -645,7 +684,11 @@ class _PhotoUploadField extends StatelessWidget {
                   fit: BoxFit.cover,
                   errorBuilder: (context, error, stackTrace) {
                     return const Center(
-                      child: Icon(Icons.broken_image, size: 48, color: Color(0xFFBA1A1A)),
+                      child: Icon(
+                        Icons.broken_image,
+                        size: 48,
+                        color: Color(0xFFBA1A1A),
+                      ),
                     );
                   },
                 ),
@@ -660,10 +703,18 @@ class _PhotoUploadField extends StatelessWidget {
                         color: Colors.white.withOpacity(0.9),
                         shape: BoxShape.circle,
                         boxShadow: const [
-                          BoxShadow(color: Colors.black12, blurRadius: 4, offset: Offset(0, 2))
+                          BoxShadow(
+                            color: Colors.black12,
+                            blurRadius: 4,
+                            offset: Offset(0, 2),
+                          ),
                         ],
                       ),
-                      child: const Icon(Icons.close, size: 20, color: Color(0xFFBA1A1A)),
+                      child: const Icon(
+                        Icons.close,
+                        size: 20,
+                        color: Color(0xFFBA1A1A),
+                      ),
                     ),
                   ),
                 ),
@@ -672,6 +723,7 @@ class _PhotoUploadField extends StatelessWidget {
           )
         else
           InkWell(
+            key: const Key('report_photo_upload'),
             onTap: isUploading ? null : onUpload,
             borderRadius: BorderRadius.circular(12),
             child: Container(
@@ -680,10 +732,7 @@ class _PhotoUploadField extends StatelessWidget {
               decoration: BoxDecoration(
                 color: const Color(0xFFF9F9FF),
                 borderRadius: BorderRadius.circular(12),
-                border: Border.all(
-                  color: const Color(0xFFBDC9C6),
-                  width: 2,
-                ),
+                border: Border.all(color: const Color(0xFFBDC9C6), width: 2),
               ),
               child: Column(
                 mainAxisAlignment: MainAxisAlignment.center,
@@ -691,13 +740,26 @@ class _PhotoUploadField extends StatelessWidget {
                   isUploading
                       ? const SizedBox.square(
                           dimension: 28,
-                          child: CircularProgressIndicator(strokeWidth: 2, color: Color(0xFF0F766E)),
+                          child: CircularProgressIndicator(
+                            strokeWidth: 2,
+                            color: Color(0xFF0F766E),
+                          ),
                         )
-                      : const Icon(Icons.add_a_photo, size: 36, color: Color(0xFF3E4947)),
+                      : const Icon(
+                          Icons.add_a_photo,
+                          size: 36,
+                          color: Color(0xFF3E4947),
+                        ),
                   const SizedBox(height: 8),
                   Text(
-                    isUploading ? 'Uploading proof image...' : 'Add Environmental Photo',
-                    style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w600, color: Color(0xFF111C2D)),
+                    isUploading
+                        ? 'Uploading proof image...'
+                        : 'Add Environmental Photo',
+                    style: const TextStyle(
+                      fontSize: 14,
+                      fontWeight: FontWeight.w600,
+                      color: Color(0xFF111C2D),
+                    ),
                   ),
                 ],
               ),
@@ -705,7 +767,14 @@ class _PhotoUploadField extends StatelessWidget {
           ),
         if (errorText != null) ...[
           const SizedBox(height: 8),
-          Text(errorText!, style: const TextStyle(color: Color(0xFFBA1A1A), fontSize: 13, fontWeight: FontWeight.w500)),
+          Text(
+            errorText!,
+            style: const TextStyle(
+              color: Color(0xFFBA1A1A),
+              fontSize: 13,
+              fontWeight: FontWeight.w500,
+            ),
+          ),
         ],
       ],
     );

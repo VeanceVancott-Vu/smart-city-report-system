@@ -1,6 +1,7 @@
 import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter/material.dart';
 
+import '../../../core/files/uploaded_photo_view.dart';
 import '../../../core/localization/app_localizations_extension.dart';
 import '../../../core/localization/domain_localizations.dart';
 import '../../../core/routing/app_routes.dart';
@@ -77,7 +78,10 @@ class CitizenReportListScreenState extends State<CitizenReportListScreen> {
       appBar: AppBar(
         title: const Text(
           'My Reports',
-          style: TextStyle(fontWeight: FontWeight.bold, color: Color(0xFF111C2D)),
+          style: TextStyle(
+            fontWeight: FontWeight.bold,
+            color: Color(0xFF111C2D),
+          ),
         ),
         backgroundColor: Colors.white,
         elevation: 0,
@@ -90,11 +94,15 @@ class CitizenReportListScreenState extends State<CitizenReportListScreen> {
         ],
       ),
       floatingActionButton: FloatingActionButton.extended(
+        heroTag: 'citizen_report_list_create_report',
         onPressed: openCreateReport,
         backgroundColor: const Color(0xFF0F766E),
         foregroundColor: Colors.white,
         icon: const Icon(Icons.add),
-        label: const Text('New Report', style: TextStyle(fontWeight: FontWeight.bold)),
+        label: const Text(
+          'New Report',
+          style: TextStyle(fontWeight: FontWeight.bold),
+        ),
       ),
       body: LayoutBuilder(
         builder: (context, constraints) {
@@ -123,10 +131,18 @@ class CitizenReportListScreenState extends State<CitizenReportListScreen> {
                           },
                           decoration: InputDecoration(
                             hintText: 'Search my reports...',
-                            hintStyle: const TextStyle(color: Color(0xFF64748B), fontSize: 14),
-                            prefixIcon: const Icon(Icons.search, color: Color(0xFF64748B)),
+                            hintStyle: const TextStyle(
+                              color: Color(0xFF64748B),
+                              fontSize: 14,
+                            ),
+                            prefixIcon: const Icon(
+                              Icons.search,
+                              color: Color(0xFF64748B),
+                            ),
                             border: InputBorder.none,
-                            contentPadding: const EdgeInsets.symmetric(vertical: 12),
+                            contentPadding: const EdgeInsets.symmetric(
+                              vertical: 12,
+                            ),
                             suffixIcon: _searchQuery.isNotEmpty
                                 ? IconButton(
                                     icon: const Icon(Icons.clear, size: 18),
@@ -150,12 +166,25 @@ class CitizenReportListScreenState extends State<CitizenReportListScreen> {
                           _sortBy = item;
                         });
                       },
-                      icon: const Icon(Icons.sort_rounded, color: Color(0xFF0F766E)),
-                      itemBuilder: (BuildContext context) => <PopupMenuEntry<String>>[
-                        const PopupMenuItem<String>(value: 'Newest', child: Text('Sort by: Newest')),
-                        const PopupMenuItem<String>(value: 'Oldest', child: Text('Sort by: Oldest')),
-                        const PopupMenuItem<String>(value: 'Priority', child: Text('Sort by: Priority')),
-                      ],
+                      icon: const Icon(
+                        Icons.sort_rounded,
+                        color: Color(0xFF0F766E),
+                      ),
+                      itemBuilder: (BuildContext context) =>
+                          <PopupMenuEntry<String>>[
+                            const PopupMenuItem<String>(
+                              value: 'Newest',
+                              child: Text('Sort by: Newest'),
+                            ),
+                            const PopupMenuItem<String>(
+                              value: 'Oldest',
+                              child: Text('Sort by: Oldest'),
+                            ),
+                            const PopupMenuItem<String>(
+                              value: 'Priority',
+                              child: Text('Sort by: Priority'),
+                            ),
+                          ],
                     ),
                   ],
                 ),
@@ -172,10 +201,13 @@ class CitizenReportListScreenState extends State<CitizenReportListScreen> {
                       FilterChip(
                         label: const Text('All'),
                         selected: _selectedStatus == null,
-                        onSelected: (_) => setState(() => _selectedStatus = null),
+                        onSelected: (_) =>
+                            setState(() => _selectedStatus = null),
                         selectedColor: const Color(0xFFCCFBF1),
                         checkmarkColor: const Color(0xFF115E59),
-                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(9999)),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(9999),
+                        ),
                       ),
                       const SizedBox(width: 8),
                       ...ReportStatus.values.map((status) {
@@ -185,10 +217,13 @@ class CitizenReportListScreenState extends State<CitizenReportListScreen> {
                           child: FilterChip(
                             label: Text(status.label),
                             selected: isSelected,
-                            onSelected: (_) => setState(() => _selectedStatus = status),
+                            onSelected: (_) =>
+                                setState(() => _selectedStatus = status),
                             selectedColor: const Color(0xFFCCFBF1),
                             checkmarkColor: const Color(0xFF115E59),
-                            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(9999)),
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(9999),
+                            ),
                           ),
                         );
                       }),
@@ -204,7 +239,9 @@ class CitizenReportListScreenState extends State<CitizenReportListScreen> {
                   builder: (context, snapshot) {
                     if (snapshot.connectionState != ConnectionState.done) {
                       return const Center(
-                        child: CircularProgressIndicator(color: Color(0xFF0F766E)),
+                        child: CircularProgressIndicator(
+                          color: Color(0xFF0F766E),
+                        ),
                       );
                     }
 
@@ -219,19 +256,32 @@ class CitizenReportListScreenState extends State<CitizenReportListScreen> {
 
                     // Xử lý bộ lọc tại chỗ (Local Client Filtering)
                     final filteredReports = reports.where((r) {
-                      final matchesStatus = _selectedStatus == null || r.status == _selectedStatus;
-                      final matchesQuery = r.title.toLowerCase().contains(_searchQuery.toLowerCase()) ||
-                          r.category.label.toLowerCase().contains(_searchQuery.toLowerCase());
+                      final matchesStatus =
+                          _selectedStatus == null ||
+                          r.status == _selectedStatus;
+                      final matchesQuery =
+                          r.title.toLowerCase().contains(
+                            _searchQuery.toLowerCase(),
+                          ) ||
+                          r.category.label.toLowerCase().contains(
+                            _searchQuery.toLowerCase(),
+                          );
                       return matchesStatus && matchesQuery;
                     }).toList();
 
                     // Xử lý sắp xếp dữ liệu tại chỗ (Local Client Sorting)
                     if (_sortBy == 'Newest') {
-                      filteredReports.sort((a, b) => b.createdAt.compareTo(a.createdAt));
+                      filteredReports.sort(
+                        (a, b) => b.createdAt.compareTo(a.createdAt),
+                      );
                     } else if (_sortBy == 'Oldest') {
-                      filteredReports.sort((a, b) => a.createdAt.compareTo(b.createdAt));
+                      filteredReports.sort(
+                        (a, b) => a.createdAt.compareTo(b.createdAt),
+                      );
                     } else if (_sortBy == 'Priority') {
-                      filteredReports.sort((a, b) => b.priorityScore.compareTo(a.priorityScore));
+                      filteredReports.sort(
+                        (a, b) => b.priorityScore.compareTo(a.priorityScore),
+                      );
                     }
 
                     if (filteredReports.isEmpty) {
@@ -258,26 +308,40 @@ class CitizenReportListScreenState extends State<CitizenReportListScreen> {
                       color: const Color(0xFF0F766E),
                       child: isDesktop
                           ? GridView.builder(
-                              padding: const EdgeInsets.fromLTRB(24, 16, 24, 96),
-                              gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-                                crossAxisCount: 2,
-                                crossAxisSpacing: 16,
-                                mainAxisSpacing: 16,
-                                mainAxisExtent: 180,
+                              padding: const EdgeInsets.fromLTRB(
+                                24,
+                                16,
+                                24,
+                                96,
                               ),
+                              gridDelegate:
+                                  const SliverGridDelegateWithFixedCrossAxisCount(
+                                    crossAxisCount: 2,
+                                    crossAxisSpacing: 16,
+                                    mainAxisSpacing: 16,
+                                    mainAxisExtent: 180,
+                                  ),
                               itemCount: filteredReports.length,
                               itemBuilder: (context, index) => _ReportTile(
                                 report: filteredReports[index],
-                                onTap: () => _openDetails(filteredReports[index].id),
+                                onTap: () =>
+                                    _openDetails(filteredReports[index].id),
                               ),
                             )
                           : ListView.separated(
-                              padding: const EdgeInsets.fromLTRB(16, 12, 16, 96),
+                              padding: const EdgeInsets.fromLTRB(
+                                16,
+                                12,
+                                16,
+                                96,
+                              ),
                               itemCount: filteredReports.length,
-                              separatorBuilder: (_, __) => const SizedBox(height: 12),
+                              separatorBuilder: (_, __) =>
+                                  const SizedBox(height: 12),
                               itemBuilder: (context, index) => _ReportTile(
                                 report: filteredReports[index],
-                                onTap: () => _openDetails(filteredReports[index].id),
+                                onTap: () =>
+                                    _openDetails(filteredReports[index].id),
                               ),
                             ),
                     );
@@ -300,6 +364,7 @@ class _ReportTile extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final photoUrl = resolveUploadedPhotoUrl(report.beforePhotoUrl);
     return Card(
       color: Colors.white,
       elevation: 0,
@@ -325,9 +390,9 @@ class _ReportTile extends StatelessWidget {
                   border: Border.all(color: const Color(0xFFE2E8F0)),
                 ),
                 clipBehavior: Clip.antiAlias,
-                child: report.beforePhotoUrl != null
+                child: photoUrl != null
                     ? Image.network(
-                        report.beforePhotoUrl!,
+                        photoUrl,
                         fit: BoxFit.cover,
                         errorBuilder: (_, __, ___) => const Icon(
                           Icons.broken_image_outlined,
@@ -346,6 +411,7 @@ class _ReportTile extends StatelessWidget {
               // Cụm thông tin chi tiết phản ánh đô thị bên phải
               Expanded(
                 child: Column(
+                  mainAxisSize: MainAxisSize.min,
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Row(
@@ -379,27 +445,41 @@ class _ReportTile extends StatelessWidget {
                     const SizedBox(height: 6),
                     Row(
                       children: [
-                        const Icon(Icons.place_outlined, size: 14, color: Color(0xFF64748B)),
+                        const Icon(
+                          Icons.place_outlined,
+                          size: 14,
+                          color: Color(0xFF64748B),
+                        ),
                         const SizedBox(width: 4),
                         Expanded(
                           child: Text(
-                            report.addressText ?? 'GPS Coordinates Point Location',
+                            report.addressText ??
+                                'GPS Coordinates Point Location',
                             maxLines: 1,
                             overflow: TextOverflow.ellipsis,
-                            style: const TextStyle(fontSize: 12, color: Color(0xFF64748B)),
+                            style: const TextStyle(
+                              fontSize: 12,
+                              color: Color(0xFF64748B),
+                            ),
                           ),
                         ),
                       ],
                     ),
-                    const Spacer(),
-                    
+                    const SizedBox(height: 8),
+
                     // Footer chứa điểm ưu tiên và số người xác nhận sự cố
                     Wrap(
                       spacing: 6,
                       runSpacing: 4,
                       children: [
-                        _MetaChip(icon: Icons.flash_on, label: 'Priority ${report.priorityScore}'),
-                        _MetaChip(icon: Icons.thumb_up_outlined, label: '${report.upvoteCount} upvotes'),
+                        _MetaChip(
+                          icon: Icons.flash_on,
+                          label: 'Priority ${report.priorityScore}',
+                        ),
+                        _MetaChip(
+                          icon: Icons.thumb_up_outlined,
+                          label: '${report.upvoteCount} upvotes',
+                        ),
                       ],
                     ),
                   ],
@@ -450,7 +530,11 @@ class _StatusBadge extends StatelessWidget {
       padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
       child: Text(
         status.label,
-        style: TextStyle(color: foregroundColor, fontSize: 10, fontWeight: FontWeight.bold),
+        style: TextStyle(
+          color: foregroundColor,
+          fontSize: 10,
+          fontWeight: FontWeight.bold,
+        ),
       ),
     );
   }
@@ -478,7 +562,11 @@ class _MetaChip extends StatelessWidget {
           const SizedBox(width: 4),
           Text(
             label,
-            style: const TextStyle(fontSize: 10, fontWeight: FontWeight.w500, color: Color(0xFF3E4947)),
+            style: const TextStyle(
+              fontSize: 10,
+              fontWeight: FontWeight.w500,
+              color: Color(0xFF3E4947),
+            ),
           ),
         ],
       ),
@@ -500,7 +588,11 @@ class _ErrorState extends StatelessWidget {
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            Text(message, textAlign: TextAlign.center, style: const TextStyle(color: Color(0xFF64748B))),
+            Text(
+              message,
+              textAlign: TextAlign.center,
+              style: const TextStyle(color: Color(0xFF64748B)),
+            ),
             const SizedBox(height: 12),
             OutlinedButton.icon(
               onPressed: onRetry,

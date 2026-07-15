@@ -57,6 +57,7 @@ class _CitizenHomeScreenState extends State<CitizenHomeScreen> {
       ),
       floatingActionButton: _selectedIndex == 0
           ? FloatingActionButton.extended(
+              heroTag: 'citizen_home_create_report',
               onPressed: () =>
                   widget._reportListKey.currentState?.openCreateReport(),
               icon: const Icon(Icons.add),

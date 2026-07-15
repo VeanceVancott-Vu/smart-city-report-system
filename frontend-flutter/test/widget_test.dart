@@ -303,19 +303,39 @@ void main() {
 
     expect(find.text('Create report'), findsOneWidget);
 
-    await tester.enterText(find.byType(EditableText).at(0), 'Blocked drain');
-    await tester.enterText(
-      find.byType(EditableText).at(1),
-      'Water is pooling after rain.',
+    final titleField = find.byKey(const Key('report_title_field'));
+    final descriptionField = find.byKey(const Key('report_description_field'));
+    final formScrollable = find
+        .descendant(
+          of: find.byKey(const Key('report_form_list')),
+          matching: find.byType(Scrollable),
+        )
+        .first;
+    await tester.scrollUntilVisible(
+      titleField,
+      300,
+      scrollable: formScrollable,
     );
-    await tester.drag(find.byType(ListView), const Offset(0, -500));
-    await tester.pumpAndSettle();
-    await tester.tap(find.text('Upload photo'));
+    await tester.enterText(titleField, 'Blocked drain');
+    await tester.ensureVisible(descriptionField);
+    await tester.enterText(descriptionField, 'Water is pooling after rain.');
+    final uploadControl = find.byKey(const Key('report_photo_upload'));
+    await tester.scrollUntilVisible(
+      uploadControl,
+      -300,
+      scrollable: formScrollable,
+    );
+    await tester.tap(uploadControl);
     await tester.pumpAndSettle();
     await tester.pump(const Duration(seconds: 4));
     await tester.pumpAndSettle();
-    await tester.ensureVisible(find.text('Submit report'));
-    await tester.tap(find.text('Submit report'));
+    final submitButton = find.text('Submit report');
+    await tester.scrollUntilVisible(
+      submitButton,
+      300,
+      scrollable: formScrollable,
+    );
+    await tester.tap(submitButton);
     await tester.pumpAndSettle();
 
     expect(find.text('My reports'), findsOneWidget);

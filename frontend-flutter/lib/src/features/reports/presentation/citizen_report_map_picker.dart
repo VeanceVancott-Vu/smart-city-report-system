@@ -34,7 +34,8 @@ class CitizenReportMapPicker extends StatefulWidget {
   State<CitizenReportMapPicker> createState() => _CitizenReportMapPickerState();
 }
 
-class _CitizenReportMapPickerState extends State<CitizenReportMapPicker> with SingleTickerProviderStateMixin {
+class _CitizenReportMapPickerState extends State<CitizenReportMapPicker>
+    with SingleTickerProviderStateMixin {
   late final MapController _mapController;
   late final GeocodingService _geocodingService;
   LatLng? _pinnedLocation;
@@ -49,7 +50,7 @@ class _CitizenReportMapPickerState extends State<CitizenReportMapPicker> with Si
 
   final TextEditingController _searchController = TextEditingController();
   final FocusNode _searchFocusNode = FocusNode();
-  List<Map<String, dynamic>> _addressSuggestions = [];
+  List<PlaceSearchResult> _addressSuggestions = [];
   bool _isSearchingAddress = false;
   Timer? _searchDebounceTimer;
 
@@ -132,32 +133,36 @@ class _CitizenReportMapPickerState extends State<CitizenReportMapPicker> with Si
     }
 
     setState(() {
+      _addressSuggestions = [];
+    });
+
+    _searchDebounceTimer = Timer(
+      const Duration(milliseconds: 350),
+      () => _searchAddresses(query),
+    );
+  }
+
+  Future<void> _searchAddresses(String query) async {
+    final trimmedQuery = query.trim();
+    if (trimmedQuery.isEmpty) return;
+
+    setState(() {
       _isSearchingAddress = true;
-      _hasSearchedAddress = true;
     });
 
     try {
-      final encodedQuery = Uri.encodeComponent(query);
-      final url = Uri.parse(
-        'https://nominatim.openstreetmap.org/search?q=$encodedQuery&format=json&limit=5&accept-language=vi,en',
+      final suggestions = await _geocodingService.searchPlaces(
+        query: trimmedQuery,
+        languageCode: Localizations.localeOf(context).languageCode,
       );
-      final response = await http.get(url, headers: const {
-        'User-Agent': 'SmartCityReportSystem/1.0',
-      }).timeout(const Duration(seconds: 4));
-
-      if (response.statusCode == 200) {
-        final List<dynamic> data = jsonDecode(response.body);
-        if (mounted) {
-          setState(() {
-            _addressSuggestions = data.cast<Map<String, dynamic>>();
-            _isSearchingAddress = false;
-          });
-        }
-      } else {
-        if (mounted) setState(() => _isSearchingAddress = false);
-      }
+      if (!mounted || _searchController.text.trim() != trimmedQuery) return;
+      setState(() => _addressSuggestions = suggestions);
     } catch (_) {
-      if (mounted) setState(() => _isSearchingAddress = false);
+      // Keep the map picker usable when place search is unavailable.
+    } finally {
+      if (mounted && _searchController.text.trim() == trimmedQuery) {
+        setState(() => _isSearchingAddress = false);
+      }
     }
   }
 
@@ -167,27 +172,21 @@ class _CitizenReportMapPickerState extends State<CitizenReportMapPicker> with Si
     });
 
     try {
-      final url = Uri.parse(
-        'https://nominatim.openstreetmap.org/reverse?lat=${coordinates.latitude}&lon=${coordinates.longitude}&format=json&accept-language=vi,en',
+      final place = await _geocodingService.reverseGeocode(
+        latitude: coordinates.latitude,
+        longitude: coordinates.longitude,
+        languageCode: Localizations.localeOf(context).languageCode,
       );
-      final response = await http.get(url, headers: const {
-        'User-Agent': 'SmartCityReportSystem/1.0',
-      }).timeout(const Duration(seconds: 4));
-
-      if (response.statusCode == 200) {
-        final Map<String, dynamic> data = jsonDecode(response.body);
-        final displayName = data['display_name'] ?? 'Vị trí đã chọn';
-        if (mounted) {
-          setState(() {
-            _addressText = displayName;
-            _searchController.text = displayName;
-            _isGeocoding = false;
-          });
-        }
-      } else {
-        if (mounted) setState(() => _isGeocoding = false);
-      }
+      if (!mounted) return;
+      final displayName =
+          place?.displayName ?? context.l10n.mapSelectedLocation;
+      setState(() {
+        _addressText = displayName;
+        _searchController.text = displayName;
+      });
     } catch (_) {
+      // Preserve the previous address if reverse geocoding fails.
+    } finally {
       if (mounted) setState(() => _isGeocoding = false);
     }
   }
@@ -222,7 +221,8 @@ class _CitizenReportMapPickerState extends State<CitizenReportMapPicker> with Si
             child: FlutterMap(
               mapController: _mapController,
               options: MapOptions(
-                initialCenter: _pinnedLocation ?? const LatLng(10.7769, 106.7009),
+                initialCenter:
+                    _pinnedLocation ?? const LatLng(10.7769, 106.7009),
                 initialZoom: 16.0,
                 minZoom: 4.0,
                 maxZoom: 18.0,
@@ -250,7 +250,9 @@ class _CitizenReportMapPickerState extends State<CitizenReportMapPicker> with Si
                       height: 40,
                       child: Icon(
                         Icons.error,
-                        color: _getCategoryColorLocal(pin.category).withOpacity(0.7),
+                        color: _getCategoryColorLocal(
+                          pin.category,
+                        ).withOpacity(0.7),
                         size: 24,
                       ),
                     );
@@ -273,9 +275,13 @@ class _CitizenReportMapPickerState extends State<CitizenReportMapPicker> with Si
                         height: 200 * _pulseController.value,
                         decoration: BoxDecoration(
                           shape: BoxShape.circle,
-                          color: const Color(0xFF0F766E).withOpacity((1 - _pulseController.value) * 0.3),
+                          color: const Color(
+                            0xFF0F766E,
+                          ).withOpacity((1 - _pulseController.value) * 0.3),
                           border: Border.all(
-                            color: const Color(0xFF0F766E).withOpacity((1 - _pulseController.value) * 0.8),
+                            color: const Color(
+                              0xFF0F766E,
+                            ).withOpacity((1 - _pulseController.value) * 0.8),
                             width: 1.5,
                           ),
                         ),
@@ -303,7 +309,7 @@ class _CitizenReportMapPickerState extends State<CitizenReportMapPicker> with Si
                             color: Colors.black26,
                             blurRadius: 8,
                             offset: Offset(0, 4),
-                          )
+                          ),
                         ],
                       ),
                       child: const Icon(
@@ -349,14 +355,17 @@ class _CitizenReportMapPickerState extends State<CitizenReportMapPicker> with Si
                             color: Color(0x1F000000),
                             blurRadius: 16,
                             offset: Offset(0, 6),
-                          )
+                          ),
                         ],
                       ),
                       padding: const EdgeInsets.symmetric(horizontal: 8),
                       child: Row(
                         children: [
                           IconButton(
-                            icon: const Icon(Icons.arrow_back, color: Color(0xFF3E4947)),
+                            icon: const Icon(
+                              Icons.arrow_back,
+                              color: Color(0xFF3E4947),
+                            ),
                             onPressed: () => Navigator.of(context).pop(),
                           ),
                           Expanded(
@@ -364,12 +373,18 @@ class _CitizenReportMapPickerState extends State<CitizenReportMapPicker> with Si
                               controller: _searchController,
                               focusNode: _searchFocusNode,
                               onChanged: _onSearchQueryChanged,
-                              style: const TextStyle(fontSize: 15, color: Color(0xFF111C2D)),
+                              style: const TextStyle(
+                                fontSize: 15,
+                                color: Color(0xFF111C2D),
+                              ),
                               decoration: const InputDecoration(
                                 hintText: 'Search address or intersection...',
                                 hintStyle: TextStyle(color: Color(0xFF64748B)),
                                 border: InputBorder.none,
-                                contentPadding: EdgeInsets.symmetric(horizontal: 8, vertical: 12),
+                                contentPadding: EdgeInsets.symmetric(
+                                  horizontal: 8,
+                                  vertical: 12,
+                                ),
                               ),
                             ),
                           ),
@@ -379,18 +394,24 @@ class _CitizenReportMapPickerState extends State<CitizenReportMapPicker> with Si
                               child: SizedBox(
                                 width: 16,
                                 height: 16,
-                                child: CircularProgressIndicator(strokeWidth: 2, color: Color(0xFF0F766E)),
+                                child: CircularProgressIndicator(
+                                  strokeWidth: 2,
+                                  color: Color(0xFF0F766E),
+                                ),
                               ),
                             )
                           else if (_searchController.text.isNotEmpty)
                             IconButton(
-                              icon: const Icon(Icons.clear, color: Color(0xFF64748B), size: 20),
+                              icon: const Icon(
+                                Icons.clear,
+                                color: Color(0xFF64748B),
+                                size: 20,
+                              ),
                               onPressed: () {
                                 setState(() {
                                   _searchController.clear();
                                   _addressSuggestions = [];
                                   _isSearchingAddress = false;
-                                  _hasSearchedAddress = false;
                                 });
                               },
                             ),
@@ -399,7 +420,8 @@ class _CitizenReportMapPickerState extends State<CitizenReportMapPicker> with Si
                     ),
 
                     // Dropdown Kết quả tìm kiếm gợi ý địa chỉ
-                    if (_addressSuggestions.isNotEmpty && _searchFocusNode.hasFocus)
+                    if (_addressSuggestions.isNotEmpty &&
+                        _searchFocusNode.hasFocus)
                       Container(
                         margin: const EdgeInsets.only(top: 8),
                         decoration: BoxDecoration(
@@ -411,7 +433,7 @@ class _CitizenReportMapPickerState extends State<CitizenReportMapPicker> with Si
                               color: Color(0x14000000),
                               blurRadius: 12,
                               offset: Offset(0, 4),
-                            )
+                            ),
                           ],
                         ),
                         constraints: const BoxConstraints(maxHeight: 240),
@@ -421,29 +443,38 @@ class _CitizenReportMapPickerState extends State<CitizenReportMapPicker> with Si
                             shrinkWrap: true,
                             padding: EdgeInsets.zero,
                             itemCount: _addressSuggestions.length,
-                            separatorBuilder: (_, __) => const Divider(height: 1, color: Color(0xFFE2E8F0)),
+                            separatorBuilder: (_, __) => const Divider(
+                              height: 1,
+                              color: Color(0xFFE2E8F0),
+                            ),
                             itemBuilder: (context, index) {
                               final suggestion = _addressSuggestions[index];
-                              final displayName = suggestion['display_name'] ?? '';
+                              final displayName = suggestion.displayName;
                               return ListTile(
-                                leading: const Icon(Icons.location_on, color: Color(0xFF0F766E)),
+                                leading: const Icon(
+                                  Icons.location_on,
+                                  color: Color(0xFF0F766E),
+                                ),
                                 title: Text(
                                   displayName,
                                   maxLines: 2,
                                   overflow: TextOverflow.ellipsis,
-                                  style: const TextStyle(fontSize: 14, color: Color(0xFF111C2D)),
+                                  style: const TextStyle(
+                                    fontSize: 14,
+                                    color: Color(0xFF111C2D),
+                                  ),
                                 ),
                                 onTap: () {
-                                  final lat = double.tryParse(suggestion['lat'] ?? '') ?? 0.0;
-                                  final lon = double.tryParse(suggestion['lon'] ?? '') ?? 0.0;
-                                  final targetLoc = LatLng(lat, lon);
+                                  final targetLoc = LatLng(
+                                    suggestion.latitude,
+                                    suggestion.longitude,
+                                  );
 
                                   setState(() {
                                     _pinnedLocation = targetLoc;
                                     _addressText = displayName;
                                     _searchController.text = displayName;
                                     _addressSuggestions = [];
-                                    _hasSearchedAddress = false;
                                     _searchFocusNode.unfocus();
                                   });
                                   _mapController.move(targetLoc, 16.0);
@@ -460,9 +491,14 @@ class _CitizenReportMapPickerState extends State<CitizenReportMapPicker> with Si
                       decoration: BoxDecoration(
                         color: const Color(0xFFF0F3FF).withOpacity(0.9),
                         borderRadius: BorderRadius.circular(9999),
-                        border: Border.all(color: const Color(0xFFBDC9C6).withOpacity(0.5)),
+                        border: Border.all(
+                          color: const Color(0xFFBDC9C6).withOpacity(0.5),
+                        ),
                       ),
-                      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 6),
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 14,
+                        vertical: 6,
+                      ),
                       child: Row(
                         mainAxisSize: MainAxisSize.min,
                         children: [
@@ -471,13 +507,21 @@ class _CitizenReportMapPickerState extends State<CitizenReportMapPicker> with Si
                             height: 8,
                             decoration: BoxDecoration(
                               shape: BoxShape.circle,
-                              color: _isGeocoding ? const Color(0xFF0F766E) : Colors.green,
+                              color: _isGeocoding
+                                  ? const Color(0xFF0F766E)
+                                  : Colors.green,
                             ),
                           ),
                           const SizedBox(width: 8),
                           Text(
-                            _isGeocoding ? 'Analyzing boundary...' : 'Boundary Analyzed',
-                            style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w600, color: Color(0xFF111C2D)),
+                            _isGeocoding
+                                ? 'Analyzing boundary...'
+                                : 'Boundary Analyzed',
+                            style: const TextStyle(
+                              fontSize: 12,
+                              fontWeight: FontWeight.w600,
+                              color: Color(0xFF111C2D),
+                            ),
                           ),
                         ],
                       ),
@@ -491,7 +535,8 @@ class _CitizenReportMapPickerState extends State<CitizenReportMapPicker> with Si
           // LỚP 5: FLOATING MAP CONTROLS (BOTTOM RIGHT ACTION BUTTONS)
           Positioned(
             right: 16,
-            bottom: 260, // Đẩy lên trên vùng của thông tin Bottom Sheet bên dưới
+            bottom:
+                260, // Đẩy lên trên vùng của thông tin Bottom Sheet bên dưới
             child: Column(
               mainAxisSize: MainAxisSize.min,
               children: [
@@ -499,7 +544,9 @@ class _CitizenReportMapPickerState extends State<CitizenReportMapPicker> with Si
                 FloatingActionButton(
                   heroTag: 'radar_btn',
                   mini: true,
-                  backgroundColor: _radarActive ? const Color(0xFFBDECE2) : Colors.white,
+                  backgroundColor: _radarActive
+                      ? const Color(0xFFBDECE2)
+                      : Colors.white,
                   foregroundColor: const Color(0xFF0F766E),
                   onPressed: () {
                     setState(() {
@@ -552,7 +599,7 @@ class _CitizenReportMapPickerState extends State<CitizenReportMapPicker> with Si
                     color: Color(0x1A000000),
                     blurRadius: 24,
                     offset: Offset(0, -8),
-                  )
+                  ),
                 ],
               ),
               padding: const EdgeInsets.fromLTRB(24, 20, 24, 32),
@@ -566,24 +613,43 @@ class _CitizenReportMapPickerState extends State<CitizenReportMapPicker> with Si
                     children: [
                       const Text(
                         'Step 2 of 3',
-                        style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold, color: Color(0xFF0F766E), letterSpacing: 0.5),
+                        style: TextStyle(
+                          fontSize: 12,
+                          fontWeight: FontWeight.bold,
+                          color: Color(0xFF0F766E),
+                          letterSpacing: 0.5,
+                        ),
                       ),
                       const SizedBox(height: 4),
                       const Text(
                         'Confirm Location',
-                        style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold, color: Color(0xFF111C2D)),
+                        style: TextStyle(
+                          fontSize: 20,
+                          fontWeight: FontWeight.bold,
+                          color: Color(0xFF111C2D),
+                        ),
                       ),
                       const SizedBox(height: 8),
                       Row(
                         children: [
-                          const Icon(Icons.pin_drop, size: 18, color: Color(0xFF3E4947)),
+                          const Icon(
+                            Icons.pin_drop,
+                            size: 18,
+                            color: Color(0xFF3E4947),
+                          ),
                           const SizedBox(width: 6),
                           Expanded(
                             child: Text(
-                              _isGeocoding ? 'Fetching address details...' : _addressText,
+                              _isGeocoding
+                                  ? 'Fetching address details...'
+                                  : _addressText,
                               maxLines: 1,
                               overflow: TextOverflow.ellipsis,
-                              style: const TextStyle(fontSize: 14, color: Color(0xFF3E4947), fontWeight: FontWeight.w500),
+                              style: const TextStyle(
+                                fontSize: 14,
+                                color: Color(0xFF3E4947),
+                                fontWeight: FontWeight.w500,
+                              ),
                             ),
                           ),
                         ],
@@ -597,13 +663,19 @@ class _CitizenReportMapPickerState extends State<CitizenReportMapPicker> with Si
                           decoration: BoxDecoration(
                             color: const Color(0xFFFFDAD6),
                             borderRadius: BorderRadius.circular(12),
-                            border: Border.all(color: const Color(0xFFBA1A1A).withOpacity(0.2)),
+                            border: Border.all(
+                              color: const Color(0xFFBA1A1A).withOpacity(0.2),
+                            ),
                           ),
                           padding: const EdgeInsets.all(12),
                           child: Row(
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
-                              const Icon(Icons.warning, color: Color(0xFFBA1A1A), size: 22),
+                              const Icon(
+                                Icons.warning,
+                                color: Color(0xFFBA1A1A),
+                                size: 22,
+                              ),
                               const SizedBox(width: 12),
                               Expanded(
                                 child: Column(
@@ -611,12 +683,19 @@ class _CitizenReportMapPickerState extends State<CitizenReportMapPicker> with Si
                                   children: [
                                     const Text(
                                       'Possible duplicate reports found',
-                                      style: TextStyle(fontSize: 14, fontWeight: FontWeight.bold, color: Color(0xFF93000A)),
+                                      style: TextStyle(
+                                        fontSize: 14,
+                                        fontWeight: FontWeight.bold,
+                                        color: Color(0xFF93000A),
+                                      ),
                                     ),
                                     const SizedBox(height: 2),
                                     Text(
                                       'There are $_nearbyDuplicatesCount similar issues reported within 100m zone boundary.',
-                                      style: const TextStyle(fontSize: 13, color: Color(0xFF93000A)),
+                                      style: const TextStyle(
+                                        fontSize: 13,
+                                        color: Color(0xFF93000A),
+                                      ),
                                     ),
                                   ],
                                 ),
@@ -634,12 +713,20 @@ class _CitizenReportMapPickerState extends State<CitizenReportMapPicker> with Si
                           padding: const EdgeInsets.all(12),
                           child: const Row(
                             children: [
-                              Icon(Icons.analytics, color: Color(0xFF425268), size: 20),
+                              Icon(
+                                Icons.analytics,
+                                color: Color(0xFF425268),
+                                size: 20,
+                              ),
                               SizedBox(width: 12),
                               Expanded(
                                 child: Text(
                                   'Local Insight: Area is clear. No duplicate incidents matching inside this grid bounds.',
-                                  style: TextStyle(fontSize: 13, color: Color(0xFF38485D), fontWeight: FontWeight.w500),
+                                  style: TextStyle(
+                                    fontSize: 13,
+                                    color: Color(0xFF38485D),
+                                    fontWeight: FontWeight.w500,
+                                  ),
                                 ),
                               ),
                             ],
@@ -653,12 +740,21 @@ class _CitizenReportMapPickerState extends State<CitizenReportMapPicker> with Si
                             child: OutlinedButton(
                               onPressed: () => Navigator.of(context).pop(),
                               style: OutlinedButton.styleFrom(
-                                padding: const EdgeInsets.symmetric(vertical: 14),
+                                padding: const EdgeInsets.symmetric(
+                                  vertical: 14,
+                                ),
                                 foregroundColor: const Color(0xFF0F766E),
-                                side: const BorderSide(color: Color(0xFFBDC9C6)),
-                                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(9999)),
+                                side: const BorderSide(
+                                  color: Color(0xFFBDC9C6),
+                                ),
+                                shape: RoundedRectangleBorder(
+                                  borderRadius: BorderRadius.circular(9999),
+                                ),
                               ),
-                              child: const Text('Cancel', style: TextStyle(fontWeight: FontWeight.bold)),
+                              child: const Text(
+                                'Cancel',
+                                style: TextStyle(fontWeight: FontWeight.bold),
+                              ),
                             ),
                           ),
                           const SizedBox(width: 12),
@@ -675,15 +771,24 @@ class _CitizenReportMapPickerState extends State<CitizenReportMapPicker> with Si
                                       );
                                     },
                               style: FilledButton.styleFrom(
-                                padding: const EdgeInsets.symmetric(vertical: 14),
+                                padding: const EdgeInsets.symmetric(
+                                  vertical: 14,
+                                ),
                                 backgroundColor: const Color(0xFF0F766E),
                                 foregroundColor: Colors.white,
-                                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(9999)),
+                                shape: RoundedRectangleBorder(
+                                  borderRadius: BorderRadius.circular(9999),
+                                ),
                               ),
                               child: const Row(
                                 mainAxisAlignment: MainAxisAlignment.center,
                                 children: [
-                                  Text('Confirm Position', style: TextStyle(fontWeight: FontWeight.bold)),
+                                  Text(
+                                    'Confirm Position',
+                                    style: TextStyle(
+                                      fontWeight: FontWeight.bold,
+                                    ),
+                                  ),
                                   SizedBox(width: 6),
                                   Icon(Icons.arrow_forward, size: 16),
                                 ],

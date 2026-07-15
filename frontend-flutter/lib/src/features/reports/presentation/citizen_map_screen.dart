@@ -1,5 +1,4 @@
 import 'dart:async';
-import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:flutter_map/flutter_map.dart';
 import 'package:latlong2/latlong.dart' hide Path;
@@ -238,10 +237,13 @@ class _CitizenMapScreenState extends State<CitizenMapScreen> {
   Widget build(BuildContext context) {
     return LayoutBuilder(
       builder: (context, constraints) {
-        final bool isDesktop = constraints.maxWidth >= 1024; // Breakpoint cho cấu trúc Web PC
+        final bool isDesktop =
+            constraints.maxWidth >= 1024; // Breakpoint cho cấu trúc Web PC
 
         return Scaffold(
-          backgroundColor: const Color(0xFFF7F9F8), // Background màu xám xanh dịu nhẹ theo theme
+          backgroundColor: const Color(
+            0xFFF7F9F8,
+          ), // Background màu xám xanh dịu nhẹ theo theme
           body: Row(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
@@ -259,11 +261,16 @@ class _CitizenMapScreenState extends State<CitizenMapScreen> {
                         padding: const EdgeInsets.all(24.0),
                         child: Row(
                           children: [
-                            Icon(Icons.location_city, color: const Color(0xFF0F766E), size: 32),
+                            Icon(
+                              Icons.location_city,
+                              color: const Color(0xFF0F766E),
+                              size: 32,
+                            ),
                             const SizedBox(width: 12),
                             Text(
                               'Citizen Portal',
-                              style: Theme.of(context).textTheme.titleLarge?.copyWith(
+                              style: Theme.of(context).textTheme.titleLarge
+                                  ?.copyWith(
                                     fontWeight: FontWeight.bold,
                                     color: const Color(0xFF1E293B),
                                   ),
@@ -274,7 +281,10 @@ class _CitizenMapScreenState extends State<CitizenMapScreen> {
                       const Divider(height: 1),
                       Expanded(
                         child: ListView(
-                          padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 16),
+                          padding: const EdgeInsets.symmetric(
+                            vertical: 12,
+                            horizontal: 16,
+                          ),
                           children: [
                             ListTile(
                               selected: _isMapView,
@@ -282,9 +292,14 @@ class _CitizenMapScreenState extends State<CitizenMapScreen> {
                               selectedColor: const Color(0xFF115E59),
                               iconColor: const Color(0xFF64748B),
                               textColor: const Color(0xFF64748B),
-                              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(9999)),
+                              shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(9999),
+                              ),
                               leading: const Icon(Icons.map_outlined),
-                              title: const Text('Map View', style: TextStyle(fontWeight: FontWeight.w600)),
+                              title: const Text(
+                                'Map View',
+                                style: TextStyle(fontWeight: FontWeight.w600),
+                              ),
                               onTap: () => setState(() => _isMapView = true),
                             ),
                             const SizedBox(height: 8),
@@ -294,9 +309,14 @@ class _CitizenMapScreenState extends State<CitizenMapScreen> {
                               selectedColor: const Color(0xFF115E59),
                               iconColor: const Color(0xFF64748B),
                               textColor: const Color(0xFF64748B),
-                              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(9999)),
+                              shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(9999),
+                              ),
                               leading: const Icon(Icons.list_alt_outlined),
-                              title: const Text('List View', style: TextStyle(fontWeight: FontWeight.w600)),
+                              title: const Text(
+                                'List View',
+                                style: TextStyle(fontWeight: FontWeight.w600),
+                              ),
                               onTap: () => setState(() {
                                 _isMapView = false;
                                 _selectedPin = null;
@@ -321,17 +341,21 @@ class _CitizenMapScreenState extends State<CitizenMapScreen> {
                         children: [
                           Text(
                             _isMapView ? 'Map View' : 'Report List View',
-                            style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                              fontWeight: FontWeight.bold,
-                              color: const Color(0xFF1E293B),
-                            ),
+                            style: Theme.of(context).textTheme.titleMedium
+                                ?.copyWith(
+                                  fontWeight: FontWeight.bold,
+                                  color: const Color(0xFF1E293B),
+                                ),
                           ),
                           Row(
                             children: [
                               IconButton(
                                 mouseCursor: SystemMouseCursors.click,
                                 tooltip: 'Refresh visible area',
-                                icon: const Icon(Icons.refresh, color: Color(0xFF0F766E)),
+                                icon: const Icon(
+                                  Icons.refresh,
+                                  color: Color(0xFF0F766E),
+                                ),
                                 onPressed: refresh,
                               ),
                               const SizedBox(width: 8),
@@ -393,12 +417,15 @@ class _CitizenMapScreenState extends State<CitizenMapScreen> {
                                 checkmarkColor: const Color(0xFF115E59),
                                 shape: RoundedRectangleBorder(
                                   borderRadius: BorderRadius.circular(20),
-                                  side: const BorderSide(color: Color(0xFFE2E8F0)),
+                                  side: const BorderSide(
+                                    color: Color(0xFFE2E8F0),
+                                  ),
                                 ),
                               ),
                               const SizedBox(width: 8),
                               ...ReportCategory.values.map((category) {
-                                final isSelected = _selectedCategory == category;
+                                final isSelected =
+                                    _selectedCategory == category;
                                 return Padding(
                                   padding: const EdgeInsets.only(right: 8),
                                   child: FilterChip(
@@ -407,14 +434,18 @@ class _CitizenMapScreenState extends State<CitizenMapScreen> {
                                     selected: isSelected,
                                     onSelected: (selected) {
                                       setState(() {
-                                        _selectedCategory = selected ? category : null;
+                                        _selectedCategory = selected
+                                            ? category
+                                            : null;
                                       });
                                     },
                                     selectedColor: const Color(0xFFCCFBF1),
                                     checkmarkColor: const Color(0xFF115E59),
                                     shape: RoundedRectangleBorder(
                                       borderRadius: BorderRadius.circular(20),
-                                      side: const BorderSide(color: Color(0xFFE2E8F0)),
+                                      side: const BorderSide(
+                                        color: Color(0xFFE2E8F0),
+                                      ),
                                     ),
                                   ),
                                 );
@@ -423,9 +454,13 @@ class _CitizenMapScreenState extends State<CitizenMapScreen> {
                                 FilterChip(
                                   mouseCursor: SystemMouseCursors.click,
                                   avatar: Icon(
-                                    _hideOwnReports ? Icons.person_off : Icons.person_off_outlined,
+                                    _hideOwnReports
+                                        ? Icons.person_off
+                                        : Icons.person_off_outlined,
                                     size: 16,
-                                    color: _hideOwnReports ? const Color(0xFF115E59) : const Color(0xFF64748B),
+                                    color: _hideOwnReports
+                                        ? const Color(0xFF115E59)
+                                        : const Color(0xFF64748B),
                                   ),
                                   label: const Text('Hide My Reports'),
                                   selected: _hideOwnReports,
@@ -438,7 +473,9 @@ class _CitizenMapScreenState extends State<CitizenMapScreen> {
                                   checkmarkColor: const Color(0xFF115E59),
                                   shape: RoundedRectangleBorder(
                                     borderRadius: BorderRadius.circular(20),
-                                    side: const BorderSide(color: Color(0xFFE2E8F0)),
+                                    side: const BorderSide(
+                                      color: Color(0xFFE2E8F0),
+                                    ),
                                   ),
                                 ),
                             ],
@@ -455,7 +492,10 @@ class _CitizenMapScreenState extends State<CitizenMapScreen> {
                           alignment: Alignment.centerLeft,
                           child: Text(
                             _errorMessage!,
-                            style: const TextStyle(color: Color(0xFFEF4444), fontWeight: FontWeight.w500),
+                            style: const TextStyle(
+                              color: Color(0xFFEF4444),
+                              fontWeight: FontWeight.w500,
+                            ),
                           ),
                         ),
                       ),
@@ -465,8 +505,14 @@ class _CitizenMapScreenState extends State<CitizenMapScreen> {
                       child: FutureBuilder<List<ReportMapPin>>(
                         future: _pinsFuture,
                         builder: (context, snapshot) {
-                          if (snapshot.connectionState != ConnectionState.done && _pins.isEmpty) {
-                            return const Center(child: CircularProgressIndicator(color: Color(0xFF0F766E)));
+                          if (snapshot.connectionState !=
+                                  ConnectionState.done &&
+                              _pins.isEmpty) {
+                            return const Center(
+                              child: CircularProgressIndicator(
+                                color: Color(0xFF0F766E),
+                              ),
+                            );
                           }
 
                           if (snapshot.hasError && _pins.isEmpty) {
@@ -476,12 +522,17 @@ class _CitizenMapScreenState extends State<CitizenMapScreen> {
                             );
                           }
 
-                          final pins = _pins.isNotEmpty ? _pins : (snapshot.data ?? const <ReportMapPin>[]);
+                          final pins = _pins.isNotEmpty
+                              ? _pins
+                              : (snapshot.data ?? const <ReportMapPin>[]);
                           final filteredPins = pins.where((pin) {
-                            if (_selectedCategory != null && pin.category != _selectedCategory) {
+                            if (_selectedCategory != null &&
+                                pin.category != _selectedCategory) {
                               return false;
                             }
-                            if (_hideOwnReports && _currentUser != null && pin.creatorId == _currentUser!.id) {
+                            if (_hideOwnReports &&
+                                _currentUser != null &&
+                                pin.creatorId == _currentUser!.id) {
                               return false;
                             }
                             return true;
@@ -493,16 +544,23 @@ class _CitizenMapScreenState extends State<CitizenMapScreen> {
                               children: [
                                 Positioned.fill(
                                   child: Container(
-                                    margin: const EdgeInsets.fromLTRB(16, 0, 16, 16),
+                                    margin: const EdgeInsets.fromLTRB(
+                                      16,
+                                      0,
+                                      16,
+                                      16,
+                                    ),
                                     decoration: BoxDecoration(
-                                      border: Border.all(color: const Color(0xFFE2E8F0)),
+                                      border: Border.all(
+                                        color: const Color(0xFFE2E8F0),
+                                      ),
                                       borderRadius: BorderRadius.circular(16),
                                       boxShadow: const [
                                         BoxShadow(
                                           color: Color(0x0D000000),
                                           blurRadius: 6,
                                           offset: Offset(0, 4),
-                                        )
+                                        ),
                                       ],
                                     ),
                                     child: ClipRRect(
@@ -510,7 +568,10 @@ class _CitizenMapScreenState extends State<CitizenMapScreen> {
                                       child: FlutterMap(
                                         mapController: _mapController,
                                         options: MapOptions(
-                                          initialCenter: const LatLng(10.7769, 106.7009),
+                                          initialCenter: const LatLng(
+                                            10.7769,
+                                            106.7009,
+                                          ),
                                           initialZoom: 13.0,
                                           minZoom: 4.0,
                                           maxZoom: 18.0,
@@ -522,51 +583,71 @@ class _CitizenMapScreenState extends State<CitizenMapScreen> {
                                               _searchedPlaceName = null;
                                             });
                                           },
-                                          onPositionChanged: (camera, hasGesture) {
-                                            _onMapPositionChanged(camera, hasGesture);
-                                          },
+                                          onPositionChanged:
+                                              (camera, hasGesture) {
+                                                _onMapPositionChanged(
+                                                  camera,
+                                                  hasGesture,
+                                                );
+                                              },
                                         ),
                                         children: [
                                           TileLayer(
-                                            urlTemplate: 'https://tile.openstreetmap.org/{z}/{x}/{y}.png',
-                                            userAgentPackageName: 'com.smartcity.report',
+                                            urlTemplate:
+                                                'https://tile.openstreetmap.org/{z}/{x}/{y}.png',
+                                            userAgentPackageName:
+                                                'com.smartcity.report',
                                           ),
                                           MarkerLayer(
                                             markers: [
                                               ...filteredPins.map((pin) {
                                                 return Marker(
-                                                  point: LatLng(pin.latitude, pin.longitude),
+                                                  point: LatLng(
+                                                    pin.latitude,
+                                                    pin.longitude,
+                                                  ),
                                                   width: 80,
                                                   height: 80,
                                                   child: GestureDetector(
-                                                    behavior: HitTestBehavior.opaque,
+                                                    behavior:
+                                                        HitTestBehavior.opaque,
                                                     onTap: () {
-                                                      _searchFocusNode.unfocus();
+                                                      _searchFocusNode
+                                                          .unfocus();
                                                       setState(() {
                                                         _selectedPin = pin;
                                                       });
                                                     },
                                                     child: MouseRegion(
-                                                      cursor: SystemMouseCursors.click,
+                                                      cursor: SystemMouseCursors
+                                                          .click,
                                                       child: _MapMarker(
                                                         pin: pin,
-                                                        isSelected: _selectedPin?.id == pin.id,
+                                                        isSelected:
+                                                            _selectedPin?.id ==
+                                                            pin.id,
                                                       ),
                                                     ),
                                                   ),
                                                 );
                                               }),
-                                              if (_searchedPlaceLocation != null)
+                                              if (_searchedPlaceLocation !=
+                                                  null)
                                                 Marker(
-                                                  point: _searchedPlaceLocation!,
+                                                  point:
+                                                      _searchedPlaceLocation!,
                                                   width: 160,
                                                   height: 90,
                                                   child: _SearchedPlaceMarker(
-                                                    name: _searchedPlaceName ?? 'Searched location',
+                                                    name:
+                                                        _searchedPlaceName ??
+                                                        'Searched location',
                                                     onClear: () {
                                                       setState(() {
-                                                        _searchedPlaceLocation = null;
-                                                        _searchedPlaceName = null;
+                                                        _searchedPlaceLocation =
+                                                            null;
+                                                        _searchedPlaceName =
+                                                            null;
                                                       });
                                                     },
                                                   ),
@@ -587,7 +668,9 @@ class _CitizenMapScreenState extends State<CitizenMapScreen> {
                                   child: Align(
                                     alignment: Alignment.topCenter,
                                     child: ConstrainedBox(
-                                      constraints: const BoxConstraints(maxWidth: 600), // Giới hạn max-width 600px trên PC
+                                      constraints: const BoxConstraints(
+                                        maxWidth: 600,
+                                      ), // Giới hạn max-width 600px trên PC
                                       child: Column(
                                         mainAxisSize: MainAxisSize.min,
                                         children: [
@@ -595,6 +678,9 @@ class _CitizenMapScreenState extends State<CitizenMapScreen> {
                                             controller: _searchController,
                                             focusNode: _searchFocusNode,
                                             onChanged: _onSearchQueryChanged,
+                                            onSubmitted: _searchAddresses,
+                                            onSearch: _searchAddresses,
+                                            isSearching: _isSearchingAddress,
                                             onClear: () {
                                               setState(() {
                                                 _searchController.clear();
@@ -605,40 +691,54 @@ class _CitizenMapScreenState extends State<CitizenMapScreen> {
                                               });
                                             },
                                           ),
-                                          if (_searchQuery.isNotEmpty && _searchFocusNode.hasFocus)
+                                          if (_searchQuery.isNotEmpty &&
+                                              _searchFocusNode.hasFocus)
                                             _SearchSuggestions(
                                               pins: filteredPins,
                                               addresses: _addressSuggestions,
                                               query: _searchQuery,
-                                              isSearchingAddress: _isSearchingAddress,
+                                              isSearchingAddress:
+                                                  _isSearchingAddress,
+                                              hasSearchedAddress:
+                                                  _hasSearchedAddress,
                                               onSelectPin: (pin) {
                                                 setState(() {
                                                   _selectedPin = pin;
-                                                  _searchController.text = pin.title;
+                                                  _searchController.text =
+                                                      pin.title;
                                                   _searchQuery = '';
                                                   _addressSuggestions = [];
                                                   _searchFocusNode.unfocus();
                                                 });
                                                 _mapController.move(
-                                                  LatLng(pin.latitude, pin.longitude),
+                                                  LatLng(
+                                                    pin.latitude,
+                                                    pin.longitude,
+                                                  ),
                                                   15.0,
                                                 );
                                               },
                                               onSelectAddress: (addr) {
-                                                final displayName = addr['display_name'] ?? 'Searched place';
-                                                final lat = double.tryParse(addr['lat'] ?? '') ?? 0.0;
-                                                final lon = double.tryParse(addr['lon'] ?? '') ?? 0.0;
-                                                final point = LatLng(lat, lon);
+                                                final point = LatLng(
+                                                  addr.latitude,
+                                                  addr.longitude,
+                                                );
 
                                                 setState(() {
-                                                  _searchedPlaceLocation = point;
-                                                  _searchedPlaceName = displayName;
-                                                  _searchController.text = displayName;
+                                                  _searchedPlaceLocation =
+                                                      point;
+                                                  _searchedPlaceName =
+                                                      addr.displayName;
+                                                  _searchController.text =
+                                                      addr.displayName;
                                                   _searchQuery = '';
                                                   _addressSuggestions = [];
                                                   _searchFocusNode.unfocus();
                                                 });
-                                                _mapController.move(point, 15.0);
+                                                _mapController.move(
+                                                  point,
+                                                  15.0,
+                                                );
                                               },
                                             ),
                                         ],
@@ -656,18 +756,26 @@ class _CitizenMapScreenState extends State<CitizenMapScreen> {
                                     child: Align(
                                       alignment: Alignment.bottomCenter,
                                       child: ConstrainedBox(
-                                        constraints: const BoxConstraints(maxWidth: 500), // Giới hạn độ rộng của Bottom Card
+                                        constraints: const BoxConstraints(
+                                          maxWidth: 500,
+                                        ), // Giới hạn độ rộng của Bottom Card
                                         child: _SelectedPinCard(
                                           pin: _selectedPin!,
-                                          hasUpvoted: _upvotedReportIds.contains(_selectedPin!.id),
-                                          onUpvote: () => _toggleUpvote(_selectedPin!),
-                                          onViewDetails: () => _openDetails(_selectedPin!),
+                                          hasUpvoted: _upvotedReportIds
+                                              .contains(_selectedPin!.id),
+                                          onUpvote: () =>
+                                              _toggleUpvote(_selectedPin!),
+                                          onViewDetails: () =>
+                                              _openDetails(_selectedPin!),
                                           onClose: () {
                                             setState(() {
                                               _selectedPin = null;
                                             });
                                           },
-                                          showUpvote: _currentUser == null || _selectedPin!.creatorId != _currentUser!.id,
+                                          showUpvote:
+                                              _currentUser == null ||
+                                              _selectedPin!.creatorId !=
+                                                  _currentUser!.id,
                                         ),
                                       ),
                                     ),
@@ -686,7 +794,14 @@ class _CitizenMapScreenState extends State<CitizenMapScreen> {
                                 padding: const EdgeInsets.all(24),
                                 children: const [
                                   SizedBox(height: 96),
-                                  Center(child: Text('No open report pins in bounds', style: TextStyle(color: Color(0xFF64748B)))),
+                                  Center(
+                                    child: Text(
+                                      'No open report pins in bounds',
+                                      style: TextStyle(
+                                        color: Color(0xFF64748B),
+                                      ),
+                                    ),
+                                  ),
                                 ],
                               ),
                             );
@@ -698,32 +813,58 @@ class _CitizenMapScreenState extends State<CitizenMapScreen> {
                             color: const Color(0xFF0F766E),
                             child: isDesktop
                                 ? GridView.builder(
-                                    padding: const EdgeInsets.fromLTRB(24, 8, 24, 96),
-                                    gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-                                      crossAxisCount: 2,
-                                      crossAxisSpacing: 16,
-                                      mainAxisSpacing: 16,
-                                      mainAxisExtent: 190,
+                                    padding: const EdgeInsets.fromLTRB(
+                                      24,
+                                      8,
+                                      24,
+                                      96,
                                     ),
+                                    gridDelegate:
+                                        const SliverGridDelegateWithFixedCrossAxisCount(
+                                          crossAxisCount: 2,
+                                          crossAxisSpacing: 16,
+                                          mainAxisSpacing: 16,
+                                          mainAxisExtent: 190,
+                                        ),
                                     itemCount: filteredPins.length,
                                     itemBuilder: (context, index) => _PinTile(
                                       pin: filteredPins[index],
-                                      hasUpvoted: _upvotedReportIds.contains(filteredPins[index].id),
-                                      onUpvote: () => _toggleUpvote(filteredPins[index]),
-                                      onViewDetails: () => _openDetails(filteredPins[index]),
-                                      showUpvote: _currentUser == null || filteredPins[index].creatorId != _currentUser!.id,
+                                      hasUpvoted: _upvotedReportIds.contains(
+                                        filteredPins[index].id,
+                                      ),
+                                      onUpvote: () =>
+                                          _toggleUpvote(filteredPins[index]),
+                                      onViewDetails: () =>
+                                          _openDetails(filteredPins[index]),
+                                      showUpvote:
+                                          _currentUser == null ||
+                                          filteredPins[index].creatorId !=
+                                              _currentUser!.id,
                                     ),
                                   )
                                 : ListView.separated(
-                                    padding: const EdgeInsets.fromLTRB(16, 0, 16, 96),
+                                    padding: const EdgeInsets.fromLTRB(
+                                      16,
+                                      0,
+                                      16,
+                                      96,
+                                    ),
                                     itemCount: filteredPins.length,
-                                    separatorBuilder: (_, _) => const SizedBox(height: 12),
+                                    separatorBuilder: (_, _) =>
+                                        const SizedBox(height: 12),
                                     itemBuilder: (context, index) => _PinTile(
                                       pin: filteredPins[index],
-                                      hasUpvoted: _upvotedReportIds.contains(filteredPins[index].id),
-                                      onUpvote: () => _toggleUpvote(filteredPins[index]),
-                                      onViewDetails: () => _openDetails(filteredPins[index]),
-                                      showUpvote: _currentUser == null || filteredPins[index].creatorId != _currentUser!.id,
+                                      hasUpvoted: _upvotedReportIds.contains(
+                                        filteredPins[index].id,
+                                      ),
+                                      onUpvote: () =>
+                                          _toggleUpvote(filteredPins[index]),
+                                      onViewDetails: () =>
+                                          _openDetails(filteredPins[index]),
+                                      showUpvote:
+                                          _currentUser == null ||
+                                          filteredPins[index].creatorId !=
+                                              _currentUser!.id,
                                     ),
                                   ),
                           );
@@ -765,7 +906,9 @@ class _SearchBar extends StatelessWidget {
     return Container(
       decoration: BoxDecoration(
         color: Colors.white.withOpacity(0.98),
-        borderRadius: BorderRadius.circular(9999), // Bo góc full hình viên thuốc mềm mại
+        borderRadius: BorderRadius.circular(
+          9999,
+        ), // Bo góc full hình viên thuốc mềm mại
         border: Border.all(color: const Color(0xFFE2E8F0)),
         boxShadow: const [
           BoxShadow(
@@ -779,15 +922,29 @@ class _SearchBar extends StatelessWidget {
         controller: controller,
         focusNode: focusNode,
         onChanged: onChanged,
+        onSubmitted: onSubmitted,
         style: const TextStyle(fontSize: 14, color: Color(0xFF1E293B)),
         decoration: InputDecoration(
           hintText: 'Search reports or categories...',
           hintStyle: const TextStyle(color: Color(0xFF64748B)),
-          prefixIcon: const Icon(Icons.search, color: Color(0xFF64748B)),
+          prefixIcon: IconButton(
+            onPressed: isSearching ? null : onSearch,
+            icon: isSearching
+                ? const SizedBox(
+                    width: 18,
+                    height: 18,
+                    child: CircularProgressIndicator(strokeWidth: 2),
+                  )
+                : const Icon(Icons.search, color: Color(0xFF64748B)),
+          ),
           suffixIcon: controller.text.isNotEmpty
               ? IconButton(
                   mouseCursor: SystemMouseCursors.click,
-                  icon: const Icon(Icons.clear, color: Color(0xFF64748B), size: 18),
+                  icon: const Icon(
+                    Icons.clear,
+                    color: Color(0xFF64748B),
+                    size: 18,
+                  ),
                   onPressed: onClear,
                 )
               : null,
@@ -822,7 +979,9 @@ class _SearchSuggestions extends StatelessWidget {
   Widget build(BuildContext context) {
     final filteredPins = pins.where((pin) {
       final titleMatch = pin.title.toLowerCase().contains(query.toLowerCase());
-      final categoryMatch = pin.category.label.toLowerCase().contains(query.toLowerCase());
+      final categoryMatch = pin.category.label.toLowerCase().contains(
+        query.toLowerCase(),
+      );
       return titleMatch || categoryMatch;
     }).toList();
 
@@ -961,7 +1120,10 @@ class _SearchSuggestions extends StatelessWidget {
                   child: SizedBox(
                     width: 16,
                     height: 16,
-                    child: CircularProgressIndicator(strokeWidth: 2, color: Color(0xFF0F766E)),
+                    child: CircularProgressIndicator(
+                      strokeWidth: 2,
+                      color: Color(0xFF0F766E),
+                    ),
                   ),
                 ),
               ),
@@ -1013,7 +1175,8 @@ class _PinTile extends StatelessWidget {
                         pin.title,
                         maxLines: 1,
                         overflow: TextOverflow.ellipsis,
-                        style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                        style: Theme.of(context).textTheme.titleMedium
+                            ?.copyWith(
                               fontWeight: FontWeight.bold,
                               color: const Color(0xFF1E293B),
                             ),
@@ -1024,7 +1187,11 @@ class _PinTile extends StatelessWidget {
                       visualDensity: VisualDensity.compact,
                       label: Text(
                         pin.category.label,
-                        style: const TextStyle(color: Color(0xFF115E59), fontSize: 11, fontWeight: FontWeight.bold),
+                        style: const TextStyle(
+                          color: Color(0xFF115E59),
+                          fontSize: 11,
+                          fontWeight: FontWeight.bold,
+                        ),
                       ),
                       side: BorderSide.none,
                       backgroundColor: const Color(0xFFCCFBF1),
@@ -1038,7 +1205,8 @@ class _PinTile extends StatelessWidget {
                   children: [
                     _MetaChip(
                       icon: Icons.place_outlined,
-                      label: '${pin.latitude.toStringAsFixed(4)}, ${pin.longitude.toStringAsFixed(4)}',
+                      label:
+                          '${pin.latitude.toStringAsFixed(4)}, ${pin.longitude.toStringAsFixed(4)}',
                     ),
                     _MetaChip(
                       icon: Icons.thumb_up_alt_outlined,
@@ -1060,11 +1228,16 @@ class _PinTile extends StatelessWidget {
                   OutlinedButton.icon(
                     onPressed: onViewDetails,
                     icon: const Icon(Icons.info_outline, size: 16),
-                    label: const Text('View details', style: TextStyle(fontSize: 12)),
+                    label: const Text(
+                      'View details',
+                      style: TextStyle(fontSize: 12),
+                    ),
                     style: OutlinedButton.styleFrom(
                       foregroundColor: const Color(0xFF0F766E),
                       side: const BorderSide(color: Color(0xFFE2E8F0)),
-                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(8),
+                      ),
                     ),
                   ),
                   if (showUpvote) ...[
@@ -1072,7 +1245,9 @@ class _PinTile extends StatelessWidget {
                     OutlinedButton.icon(
                       onPressed: onUpvote,
                       icon: Icon(
-                        hasUpvoted ? Icons.thumb_down_alt_outlined : Icons.thumb_up_alt_outlined,
+                        hasUpvoted
+                            ? Icons.thumb_down_alt_outlined
+                            : Icons.thumb_up_alt_outlined,
                         size: 16,
                       ),
                       label: Text(
@@ -1080,9 +1255,17 @@ class _PinTile extends StatelessWidget {
                         style: const TextStyle(fontSize: 12),
                       ),
                       style: OutlinedButton.styleFrom(
-                        foregroundColor: hasUpvoted ? const Color(0xFFEF4444) : const Color(0xFF0F766E),
-                        side: BorderSide(color: hasUpvoted ? const Color(0xFFEF4444).withOpacity(0.4) : const Color(0xFFE2E8F0)),
-                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                        foregroundColor: hasUpvoted
+                            ? const Color(0xFFEF4444)
+                            : const Color(0xFF0F766E),
+                        side: BorderSide(
+                          color: hasUpvoted
+                              ? const Color(0xFFEF4444).withOpacity(0.4)
+                              : const Color(0xFFE2E8F0),
+                        ),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(8),
+                        ),
                       ),
                     ),
                   ],
@@ -1118,7 +1301,11 @@ class _MetaChip extends StatelessWidget {
           const SizedBox(width: 4),
           Text(
             label,
-            style: const TextStyle(fontSize: 11, color: Color(0xFF64748B), fontWeight: FontWeight.w500),
+            style: const TextStyle(
+              fontSize: 11,
+              color: Color(0xFF64748B),
+              fontWeight: FontWeight.w500,
+            ),
           ),
         ],
       ),
@@ -1140,13 +1327,19 @@ class _ErrorState extends StatelessWidget {
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            Text(message, textAlign: TextAlign.center, style: const TextStyle(color: Color(0xFF64748B))),
+            Text(
+              message,
+              textAlign: TextAlign.center,
+              style: const TextStyle(color: Color(0xFF64748B)),
+            ),
             const SizedBox(height: 12),
             OutlinedButton.icon(
               onPressed: onRetry,
               icon: const Icon(Icons.refresh),
               label: const Text('Retry'),
-              style: OutlinedButton.styleFrom(foregroundColor: const Color(0xFF0F766E)),
+              style: OutlinedButton.styleFrom(
+                foregroundColor: const Color(0xFF0F766E),
+              ),
             ),
           ],
         ),
@@ -1207,7 +1400,8 @@ class _MapMarker extends StatefulWidget {
   State<_MapMarker> createState() => _MapMarkerState();
 }
 
-class _MapMarkerState extends State<_MapMarker> with SingleTickerProviderStateMixin {
+class _MapMarkerState extends State<_MapMarker>
+    with SingleTickerProviderStateMixin {
   late AnimationController _controller;
 
   @override
@@ -1381,7 +1575,8 @@ class _SelectedPinCard extends StatelessWidget {
                         pin.title,
                         maxLines: 1,
                         overflow: TextOverflow.ellipsis,
-                        style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                        style: Theme.of(context).textTheme.titleMedium
+                            ?.copyWith(
                               fontWeight: FontWeight.bold,
                               color: const Color(0xFF1E293B),
                             ),
@@ -1392,8 +1587,8 @@ class _SelectedPinCard extends StatelessWidget {
                           pin.category.localizedLabel(context),
                         ),
                         style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                              color: const Color(0xFF64748B),
-                            ),
+                          color: const Color(0xFF64748B),
+                        ),
                       ),
                     ],
                   ),
@@ -1417,7 +1612,8 @@ class _SelectedPinCard extends StatelessWidget {
               children: [
                 _MiniTag(
                   icon: Icons.place_outlined,
-                  label: '${pin.latitude.toStringAsFixed(4)}, ${pin.longitude.toStringAsFixed(4)}',
+                  label:
+                      '${pin.latitude.toStringAsFixed(4)}, ${pin.longitude.toStringAsFixed(4)}',
                   color: color,
                 ),
                 _MiniTag(
@@ -1453,14 +1649,18 @@ class _SelectedPinCard extends StatelessWidget {
                   FilledButton.icon(
                     onPressed: onUpvote,
                     style: FilledButton.styleFrom(
-                      backgroundColor: hasUpvoted ? const Color(0xFFEF4444) : color,
+                      backgroundColor: hasUpvoted
+                          ? const Color(0xFFEF4444)
+                          : color,
                       foregroundColor: Colors.white,
                       shape: RoundedRectangleBorder(
                         borderRadius: BorderRadius.circular(8),
                       ),
                     ),
                     icon: Icon(
-                      hasUpvoted ? Icons.thumb_down_alt_outlined : Icons.thumb_up_alt_outlined,
+                      hasUpvoted
+                          ? Icons.thumb_down_alt_outlined
+                          : Icons.thumb_up_alt_outlined,
                       size: 16,
                     ),
                     label: Text(
