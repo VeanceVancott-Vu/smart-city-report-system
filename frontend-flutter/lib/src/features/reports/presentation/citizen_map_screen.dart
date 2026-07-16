@@ -235,649 +235,628 @@ class _CitizenMapScreenState extends State<CitizenMapScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final colorScheme = theme.colorScheme;
+
     return LayoutBuilder(
       builder: (context, constraints) {
-        final bool isDesktop =
-            constraints.maxWidth >= 1024; // Breakpoint cho cấu trúc Web PC
+        final isDesktop = constraints.maxWidth >= 1024;
 
         return Scaffold(
-          backgroundColor: const Color(
-            0xFFF7F9F8,
-          ), // Background màu xám xanh dịu nhẹ theo theme
-          body: Row(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              // Nếu là giao diện Web Desktop: Tự động thêm Navigation Rail bên trái để tối ưu không gian rộng
-              if (isDesktop)
-                Container(
-                  width: 280,
-                  decoration: const BoxDecoration(
-                    color: Colors.white,
-                    border: Border(right: BorderSide(color: Color(0xFFE2E8F0))),
-                  ),
-                  child: Column(
-                    children: [
-                      Padding(
-                        padding: const EdgeInsets.all(24.0),
-                        child: Row(
-                          children: [
-                            Icon(
-                              Icons.location_city,
-                              color: const Color(0xFF0F766E),
-                              size: 32,
-                            ),
-                            const SizedBox(width: 12),
-                            Text(
-                              'Citizen Portal',
-                              style: Theme.of(context).textTheme.titleLarge
-                                  ?.copyWith(
-                                    fontWeight: FontWeight.bold,
-                                    color: const Color(0xFF1E293B),
-                                  ),
-                            ),
-                          ],
-                        ),
-                      ),
-                      const Divider(height: 1),
-                      Expanded(
-                        child: ListView(
-                          padding: const EdgeInsets.symmetric(
-                            vertical: 12,
-                            horizontal: 16,
-                          ),
-                          children: [
-                            ListTile(
-                              selected: _isMapView,
-                              selectedTileColor: const Color(0xFFCCFBF1),
-                              selectedColor: const Color(0xFF115E59),
-                              iconColor: const Color(0xFF64748B),
-                              textColor: const Color(0xFF64748B),
-                              shape: RoundedRectangleBorder(
-                                borderRadius: BorderRadius.circular(9999),
-                              ),
-                              leading: const Icon(Icons.map_outlined),
-                              title: const Text(
-                                'Map View',
-                                style: TextStyle(fontWeight: FontWeight.w600),
-                              ),
-                              onTap: () => setState(() => _isMapView = true),
-                            ),
-                            const SizedBox(height: 8),
-                            ListTile(
-                              selected: !_isMapView,
-                              selectedTileColor: const Color(0xFFCCFBF1),
-                              selectedColor: const Color(0xFF115E59),
-                              iconColor: const Color(0xFF64748B),
-                              textColor: const Color(0xFF64748B),
-                              shape: RoundedRectangleBorder(
-                                borderRadius: BorderRadius.circular(9999),
-                              ),
-                              leading: const Icon(Icons.list_alt_outlined),
-                              title: const Text(
-                                'List View',
-                                style: TextStyle(fontWeight: FontWeight.w600),
-                              ),
-                              onTap: () => setState(() {
-                                _isMapView = false;
-                                _selectedPin = null;
-                              }),
-                            ),
-                          ],
-                        ),
-                      ),
-                    ],
-                  ),
+          backgroundColor: colorScheme.surfaceContainerLowest,
+          body: SafeArea(
+            child: Column(
+              children: [
+                _MapTopBar(
+                  isMapView: _isMapView,
+                  isDesktop: isDesktop,
+                  onRefresh: refresh,
+                  onViewChanged: (value) {
+                    setState(() {
+                      _isMapView = value;
+                      if (!_isMapView) {
+                        _selectedPin = null;
+                      }
+                    });
+                  },
                 ),
-
-              // Vùng nội dung chính bên phải
-              Expanded(
-                child: Column(
-                  children: [
-                    // Top App Header bar
-                    Padding(
-                      padding: const EdgeInsets.fromLTRB(16, 16, 16, 8),
-                      child: Row(
-                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                        children: [
-                          Text(
-                            _isMapView ? 'Map View' : 'Report List View',
-                            style: Theme.of(context).textTheme.titleMedium
-                                ?.copyWith(
-                                  fontWeight: FontWeight.bold,
-                                  color: const Color(0xFF1E293B),
-                                ),
-                          ),
-                          Row(
-                            children: [
-                              IconButton(
-                                mouseCursor: SystemMouseCursors.click,
-                                tooltip: 'Refresh visible area',
-                                icon: const Icon(
-                                  Icons.refresh,
-                                  color: Color(0xFF0F766E),
-                                ),
-                                onPressed: refresh,
-                              ),
-                              const SizedBox(width: 8),
-                              // Chỉ hiện SegmentedButton chuyển view trên Mobile/Tablet (khi không có Sidebar)
-                              if (!isDesktop)
-                                SegmentedButton<bool>(
-                                  segments: const [
-                                    ButtonSegment<bool>(
-                                      value: true,
-                                      icon: Icon(Icons.map_outlined),
-                                      label: Text('Map'),
-                                    ),
-                                    ButtonSegment<bool>(
-                                      value: false,
-                                      icon: Icon(Icons.list_alt_outlined),
-                                      label: Text('List'),
-                                    ),
-                                  ],
-                                  selected: {_isMapView},
-                                  onSelectionChanged: (value) {
-                                    setState(() {
-                                      _isMapView = value.first;
-                                      if (!_isMapView) {
-                                        _selectedPin = null;
-                                      }
-                                    });
-                                  },
-                                  showSelectedIcon: false,
-                                  style: OutlinedButton.styleFrom(
-                                    visualDensity: VisualDensity.compact,
-                                    foregroundColor: const Color(0xFF0F766E),
-                                  ),
-                                ),
-                            ],
-                          ),
-                        ],
-                      ),
+                _FilterBar(
+                  selectedCategory: _selectedCategory,
+                  hideOwnReports: _hideOwnReports,
+                  showHideOwnReports: _currentUser != null,
+                  onCategoryChanged: (category) {
+                    setState(() => _selectedCategory = category);
+                  },
+                  onHideOwnReportsChanged: (value) {
+                    setState(() => _hideOwnReports = value);
+                  },
+                ),
+                if (_errorMessage != null)
+                  Container(
+                    width: double.infinity,
+                    margin: const EdgeInsets.fromLTRB(16, 0, 16, 10),
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 14,
+                      vertical: 10,
                     ),
-
-                    // Bộ lọc Chips / Category Ribbon
-                    Padding(
-                      padding: const EdgeInsets.fromLTRB(16, 0, 16, 8),
-                      child: Align(
-                        alignment: Alignment.centerLeft,
-                        child: SingleChildScrollView(
-                          scrollDirection: Axis.horizontal,
-                          child: Row(
-                            children: [
-                              FilterChip(
-                                mouseCursor: SystemMouseCursors.click,
-                                label: const Text('All Types'),
-                                selected: _selectedCategory == null,
-                                onSelected: (selected) {
-                                  setState(() {
-                                    _selectedCategory = null;
-                                  });
-                                },
-                                selectedColor: const Color(0xFFCCFBF1),
-                                checkmarkColor: const Color(0xFF115E59),
-                                shape: RoundedRectangleBorder(
-                                  borderRadius: BorderRadius.circular(20),
-                                  side: const BorderSide(
-                                    color: Color(0xFFE2E8F0),
-                                  ),
-                                ),
-                              ),
-                              const SizedBox(width: 8),
-                              ...ReportCategory.values.map((category) {
-                                final isSelected =
-                                    _selectedCategory == category;
-                                return Padding(
-                                  padding: const EdgeInsets.only(right: 8),
-                                  child: FilterChip(
-                                    mouseCursor: SystemMouseCursors.click,
-                                    label: Text(category.label),
-                                    selected: isSelected,
-                                    onSelected: (selected) {
-                                      setState(() {
-                                        _selectedCategory = selected
-                                            ? category
-                                            : null;
-                                      });
-                                    },
-                                    selectedColor: const Color(0xFFCCFBF1),
-                                    checkmarkColor: const Color(0xFF115E59),
-                                    shape: RoundedRectangleBorder(
-                                      borderRadius: BorderRadius.circular(20),
-                                      side: const BorderSide(
-                                        color: Color(0xFFE2E8F0),
-                                      ),
-                                    ),
-                                  ),
-                                );
-                              }),
-                              if (_currentUser != null)
-                                FilterChip(
-                                  mouseCursor: SystemMouseCursors.click,
-                                  avatar: Icon(
-                                    _hideOwnReports
-                                        ? Icons.person_off
-                                        : Icons.person_off_outlined,
-                                    size: 16,
-                                    color: _hideOwnReports
-                                        ? const Color(0xFF115E59)
-                                        : const Color(0xFF64748B),
-                                  ),
-                                  label: const Text('Hide My Reports'),
-                                  selected: _hideOwnReports,
-                                  onSelected: (selected) {
-                                    setState(() {
-                                      _hideOwnReports = selected;
-                                    });
-                                  },
-                                  selectedColor: const Color(0xFFCCFBF1),
-                                  checkmarkColor: const Color(0xFF115E59),
-                                  shape: RoundedRectangleBorder(
-                                    borderRadius: BorderRadius.circular(20),
-                                    side: const BorderSide(
-                                      color: Color(0xFFE2E8F0),
-                                    ),
-                                  ),
-                                ),
-                            ],
-                          ),
+                    decoration: BoxDecoration(
+                      color: colorScheme.errorContainer,
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                    child: Row(
+                      children: [
+                        Icon(
+                          Icons.error_outline,
+                          size: 18,
+                          color: colorScheme.onErrorContainer,
                         ),
-                      ),
-                    ),
-
-                    // Hiển thị thông báo lỗi nếu có
-                    if (_errorMessage != null)
-                      Padding(
-                        padding: const EdgeInsets.fromLTRB(16, 0, 16, 8),
-                        child: Align(
-                          alignment: Alignment.centerLeft,
+                        const SizedBox(width: 8),
+                        Expanded(
                           child: Text(
                             _errorMessage!,
-                            style: const TextStyle(
-                              color: Color(0xFFEF4444),
-                              fontWeight: FontWeight.w500,
+                            style: theme.textTheme.bodySmall?.copyWith(
+                              color: colorScheme.onErrorContainer,
+                              fontWeight: FontWeight.w600,
                             ),
                           ),
                         ),
-                      ),
-
-                    // Phần thân quản lý Bản đồ hoặc Danh sách (Dùng chung FutureBuilder)
-                    Expanded(
-                      child: FutureBuilder<List<ReportMapPin>>(
-                        future: _pinsFuture,
-                        builder: (context, snapshot) {
-                          if (snapshot.connectionState !=
-                                  ConnectionState.done &&
-                              _pins.isEmpty) {
-                            return const Center(
-                              child: CircularProgressIndicator(
-                                color: Color(0xFF0F766E),
-                              ),
-                            );
-                          }
-
-                          if (snapshot.hasError && _pins.isEmpty) {
-                            return _ErrorState(
-                              message: 'Unable to load open report pins.',
-                              onRetry: refresh,
-                            );
-                          }
-
-                          final pins = _pins.isNotEmpty
-                              ? _pins
-                              : (snapshot.data ?? const <ReportMapPin>[]);
-                          final filteredPins = pins.where((pin) {
-                            if (_selectedCategory != null &&
-                                pin.category != _selectedCategory) {
-                              return false;
-                            }
-                            if (_hideOwnReports &&
-                                _currentUser != null &&
-                                pin.creatorId == _currentUser!.id) {
-                              return false;
-                            }
-                            return true;
-                          }).toList();
-
-                          // CHẾ ĐỘ 1: BẢN ĐỒ TOÀN MÀN HÌNH
-                          if (_isMapView) {
-                            return Stack(
-                              children: [
-                                Positioned.fill(
-                                  child: Container(
-                                    margin: const EdgeInsets.fromLTRB(
-                                      16,
-                                      0,
-                                      16,
-                                      16,
-                                    ),
-                                    decoration: BoxDecoration(
-                                      border: Border.all(
-                                        color: const Color(0xFFE2E8F0),
-                                      ),
-                                      borderRadius: BorderRadius.circular(16),
-                                      boxShadow: const [
-                                        BoxShadow(
-                                          color: Color(0x0D000000),
-                                          blurRadius: 6,
-                                          offset: Offset(0, 4),
-                                        ),
-                                      ],
-                                    ),
-                                    child: ClipRRect(
-                                      borderRadius: BorderRadius.circular(15),
-                                      child: FlutterMap(
-                                        mapController: _mapController,
-                                        options: MapOptions(
-                                          initialCenter: const LatLng(
-                                            10.7769,
-                                            106.7009,
-                                          ),
-                                          initialZoom: 13.0,
-                                          minZoom: 4.0,
-                                          maxZoom: 18.0,
-                                          onTap: (_, __) {
-                                            _searchFocusNode.unfocus();
-                                            setState(() {
-                                              _selectedPin = null;
-                                              _searchedPlaceLocation = null;
-                                              _searchedPlaceName = null;
-                                            });
-                                          },
-                                          onPositionChanged:
-                                              (camera, hasGesture) {
-                                                _onMapPositionChanged(
-                                                  camera,
-                                                  hasGesture,
-                                                );
-                                              },
-                                        ),
-                                        children: [
-                                          TileLayer(
-                                            urlTemplate:
-                                                'https://tile.openstreetmap.org/{z}/{x}/{y}.png',
-                                            userAgentPackageName:
-                                                'com.smartcity.report',
-                                          ),
-                                          MarkerLayer(
-                                            markers: [
-                                              ...filteredPins.map((pin) {
-                                                return Marker(
-                                                  point: LatLng(
-                                                    pin.latitude,
-                                                    pin.longitude,
-                                                  ),
-                                                  width: 80,
-                                                  height: 80,
-                                                  child: GestureDetector(
-                                                    behavior:
-                                                        HitTestBehavior.opaque,
-                                                    onTap: () {
-                                                      _searchFocusNode
-                                                          .unfocus();
-                                                      setState(() {
-                                                        _selectedPin = pin;
-                                                      });
-                                                    },
-                                                    child: MouseRegion(
-                                                      cursor: SystemMouseCursors
-                                                          .click,
-                                                      child: _MapMarker(
-                                                        pin: pin,
-                                                        isSelected:
-                                                            _selectedPin?.id ==
-                                                            pin.id,
-                                                      ),
-                                                    ),
-                                                  ),
-                                                );
-                                              }),
-                                              if (_searchedPlaceLocation !=
-                                                  null)
-                                                Marker(
-                                                  point:
-                                                      _searchedPlaceLocation!,
-                                                  width: 160,
-                                                  height: 90,
-                                                  child: _SearchedPlaceMarker(
-                                                    name:
-                                                        _searchedPlaceName ??
-                                                        'Searched location',
-                                                    onClear: () {
-                                                      setState(() {
-                                                        _searchedPlaceLocation =
-                                                            null;
-                                                        _searchedPlaceName =
-                                                            null;
-                                                      });
-                                                    },
-                                                  ),
-                                                ),
-                                            ],
-                                          ),
-                                        ],
-                                      ),
-                                    ),
-                                  ),
-                                ),
-
-                                // Thanh Tìm Kiếm Địa Điểm & Suggestions thả xuống
-                                Positioned(
-                                  top: 12,
-                                  left: 28,
-                                  right: 28,
-                                  child: Align(
-                                    alignment: Alignment.topCenter,
-                                    child: ConstrainedBox(
-                                      constraints: const BoxConstraints(
-                                        maxWidth: 600,
-                                      ), // Giới hạn max-width 600px trên PC
-                                      child: Column(
-                                        mainAxisSize: MainAxisSize.min,
-                                        children: [
-                                          _SearchBar(
-                                            controller: _searchController,
-                                            focusNode: _searchFocusNode,
-                                            onChanged: _onSearchQueryChanged,
-                                            onSubmitted: _searchAddresses,
-                                            onSearch: _searchAddresses,
-                                            isSearching: _isSearchingAddress,
-                                            onClear: () {
-                                              setState(() {
-                                                _searchController.clear();
-                                                _searchQuery = '';
-                                                _addressSuggestions = [];
-                                                _searchedPlaceLocation = null;
-                                                _searchedPlaceName = null;
-                                              });
-                                            },
-                                          ),
-                                          if (_searchQuery.isNotEmpty &&
-                                              _searchFocusNode.hasFocus)
-                                            _SearchSuggestions(
-                                              pins: filteredPins,
-                                              addresses: _addressSuggestions,
-                                              query: _searchQuery,
-                                              isSearchingAddress:
-                                                  _isSearchingAddress,
-                                              hasSearchedAddress:
-                                                  _hasSearchedAddress,
-                                              onSelectPin: (pin) {
-                                                setState(() {
-                                                  _selectedPin = pin;
-                                                  _searchController.text =
-                                                      pin.title;
-                                                  _searchQuery = '';
-                                                  _addressSuggestions = [];
-                                                  _searchFocusNode.unfocus();
-                                                });
-                                                _mapController.move(
-                                                  LatLng(
-                                                    pin.latitude,
-                                                    pin.longitude,
-                                                  ),
-                                                  15.0,
-                                                );
-                                              },
-                                              onSelectAddress: (addr) {
-                                                final point = LatLng(
-                                                  addr.latitude,
-                                                  addr.longitude,
-                                                );
-
-                                                setState(() {
-                                                  _searchedPlaceLocation =
-                                                      point;
-                                                  _searchedPlaceName =
-                                                      addr.displayName;
-                                                  _searchController.text =
-                                                      addr.displayName;
-                                                  _searchQuery = '';
-                                                  _addressSuggestions = [];
-                                                  _searchFocusNode.unfocus();
-                                                });
-                                                _mapController.move(
-                                                  point,
-                                                  15.0,
-                                                );
-                                              },
-                                            ),
-                                        ],
-                                      ),
-                                    ),
-                                  ),
-                                ),
-
-                                // Bottom Sheet/Card Xem Nhanh Sự Cố Khi Nhấp Vào Marker
-                                if (_selectedPin != null)
-                                  Positioned(
-                                    left: 28,
-                                    right: 28,
-                                    bottom: 28,
-                                    child: Align(
-                                      alignment: Alignment.bottomCenter,
-                                      child: ConstrainedBox(
-                                        constraints: const BoxConstraints(
-                                          maxWidth: 500,
-                                        ), // Giới hạn độ rộng của Bottom Card
-                                        child: _SelectedPinCard(
-                                          pin: _selectedPin!,
-                                          hasUpvoted: _upvotedReportIds
-                                              .contains(_selectedPin!.id),
-                                          onUpvote: () =>
-                                              _toggleUpvote(_selectedPin!),
-                                          onViewDetails: () =>
-                                              _openDetails(_selectedPin!),
-                                          onClose: () {
-                                            setState(() {
-                                              _selectedPin = null;
-                                            });
-                                          },
-                                          showUpvote:
-                                              _currentUser == null ||
-                                              _selectedPin!.creatorId !=
-                                                  _currentUser!.id,
-                                        ),
-                                      ),
-                                    ),
-                                  ),
-                              ],
-                            );
-                          }
-
-                          // CHẾ ĐỘ 2: DANH SÁCH BÁO CÁO DẠNG LƯỚI GRID (WEB) HOẶC DỌC (MOBILE)
-                          if (filteredPins.isEmpty) {
-                            return RefreshIndicator(
-                              onRefresh: refresh,
-                              color: const Color(0xFF0F766E),
-                              child: ListView(
-                                physics: const AlwaysScrollableScrollPhysics(),
-                                padding: const EdgeInsets.all(24),
-                                children: const [
-                                  SizedBox(height: 96),
-                                  Center(
-                                    child: Text(
-                                      'No open report pins in bounds',
-                                      style: TextStyle(
-                                        color: Color(0xFF64748B),
-                                      ),
-                                    ),
-                                  ),
-                                ],
-                              ),
-                            );
-                          }
-
-                          // Web hiển thị Grid 2 hoặc 3 cột, Mobile hiển thị dạng danh sách cuộn dọc đơn thuần
-                          return RefreshIndicator(
-                            onRefresh: refresh,
-                            color: const Color(0xFF0F766E),
-                            child: isDesktop
-                                ? GridView.builder(
-                                    padding: const EdgeInsets.fromLTRB(
-                                      24,
-                                      8,
-                                      24,
-                                      96,
-                                    ),
-                                    gridDelegate:
-                                        const SliverGridDelegateWithFixedCrossAxisCount(
-                                          crossAxisCount: 2,
-                                          crossAxisSpacing: 16,
-                                          mainAxisSpacing: 16,
-                                          mainAxisExtent: 190,
-                                        ),
-                                    itemCount: filteredPins.length,
-                                    itemBuilder: (context, index) => _PinTile(
-                                      pin: filteredPins[index],
-                                      hasUpvoted: _upvotedReportIds.contains(
-                                        filteredPins[index].id,
-                                      ),
-                                      onUpvote: () =>
-                                          _toggleUpvote(filteredPins[index]),
-                                      onViewDetails: () =>
-                                          _openDetails(filteredPins[index]),
-                                      showUpvote:
-                                          _currentUser == null ||
-                                          filteredPins[index].creatorId !=
-                                              _currentUser!.id,
-                                    ),
-                                  )
-                                : ListView.separated(
-                                    padding: const EdgeInsets.fromLTRB(
-                                      16,
-                                      0,
-                                      16,
-                                      96,
-                                    ),
-                                    itemCount: filteredPins.length,
-                                    separatorBuilder: (_, _) =>
-                                        const SizedBox(height: 12),
-                                    itemBuilder: (context, index) => _PinTile(
-                                      pin: filteredPins[index],
-                                      hasUpvoted: _upvotedReportIds.contains(
-                                        filteredPins[index].id,
-                                      ),
-                                      onUpvote: () =>
-                                          _toggleUpvote(filteredPins[index]),
-                                      onViewDetails: () =>
-                                          _openDetails(filteredPins[index]),
-                                      showUpvote:
-                                          _currentUser == null ||
-                                          filteredPins[index].creatorId !=
-                                              _currentUser!.id,
-                                    ),
-                                  ),
-                          );
-                        },
-                      ),
+                      ],
                     ),
-                  ],
+                  ),
+                Expanded(
+                  child: FutureBuilder<List<ReportMapPin>>(
+                    future: _pinsFuture,
+                    builder: (context, snapshot) {
+                      if (snapshot.connectionState != ConnectionState.done &&
+                          _pins.isEmpty) {
+                        return const _MapLoadingState();
+                      }
+
+                      if (snapshot.hasError && _pins.isEmpty) {
+                        return _ErrorState(
+                          message: 'Unable to load open report pins.',
+                          onRetry: refresh,
+                        );
+                      }
+
+                      final pins = _pins.isNotEmpty
+                          ? _pins
+                          : (snapshot.data ?? const <ReportMapPin>[]);
+                      final filteredPins = pins.where((pin) {
+                        if (_selectedCategory != null &&
+                            pin.category != _selectedCategory) {
+                          return false;
+                        }
+                        if (_hideOwnReports &&
+                            _currentUser != null &&
+                            pin.creatorId == _currentUser!.id) {
+                          return false;
+                        }
+                        return true;
+                      }).toList();
+
+                      if (_isMapView) {
+                        return _buildMapView(
+                          context,
+                          filteredPins,
+                          isDesktop,
+                        );
+                      }
+
+                      if (filteredPins.isEmpty) {
+                        return _EmptyMapListState(onRefresh: refresh);
+                      }
+
+                      return RefreshIndicator(
+                        onRefresh: refresh,
+                        child: isDesktop
+                            ? GridView.builder(
+                                padding: const EdgeInsets.fromLTRB(
+                                  24,
+                                  12,
+                                  24,
+                                  32,
+                                ),
+                                gridDelegate:
+                                    const SliverGridDelegateWithMaxCrossAxisExtent(
+                                  maxCrossAxisExtent: 520,
+                                  crossAxisSpacing: 16,
+                                  mainAxisSpacing: 16,
+                                  mainAxisExtent: 184,
+                                ),
+                                itemCount: filteredPins.length,
+                                itemBuilder: (context, index) => _PinTile(
+                                  pin: filteredPins[index],
+                                  hasUpvoted: _upvotedReportIds.contains(
+                                    filteredPins[index].id,
+                                  ),
+                                  onUpvote: () =>
+                                      _toggleUpvote(filteredPins[index]),
+                                  onViewDetails: () =>
+                                      _openDetails(filteredPins[index]),
+                                  showUpvote:
+                                      _currentUser == null ||
+                                      filteredPins[index].creatorId !=
+                                          _currentUser!.id,
+                                ),
+                              )
+                            : ListView.separated(
+                                padding: const EdgeInsets.fromLTRB(
+                                  16,
+                                  10,
+                                  16,
+                                  32,
+                                ),
+                                itemCount: filteredPins.length,
+                                separatorBuilder: (_, __) =>
+                                    const SizedBox(height: 12),
+                                itemBuilder: (context, index) => _PinTile(
+                                  pin: filteredPins[index],
+                                  hasUpvoted: _upvotedReportIds.contains(
+                                    filteredPins[index].id,
+                                  ),
+                                  onUpvote: () =>
+                                      _toggleUpvote(filteredPins[index]),
+                                  onViewDetails: () =>
+                                      _openDetails(filteredPins[index]),
+                                  showUpvote:
+                                      _currentUser == null ||
+                                      filteredPins[index].creatorId !=
+                                          _currentUser!.id,
+                                ),
+                              ),
+                      );
+                    },
+                  ),
                 ),
-              ),
-            ],
+              ],
+            ),
           ),
         );
       },
+    );
+  }
+
+  Widget _buildMapView(
+    BuildContext context,
+    List<ReportMapPin> filteredPins,
+    bool isDesktop,
+  ) {
+    final colorScheme = Theme.of(context).colorScheme;
+
+    return Padding(
+      padding: EdgeInsets.fromLTRB(
+        isDesktop ? 20 : 0,
+        0,
+        isDesktop ? 20 : 0,
+        isDesktop ? 20 : 0,
+      ),
+      child: ClipRRect(
+        borderRadius: BorderRadius.circular(isDesktop ? 24 : 0),
+        child: Stack(
+          children: [
+            Positioned.fill(
+              child: FlutterMap(
+                mapController: _mapController,
+                options: MapOptions(
+                  initialCenter: const LatLng(10.7769, 106.7009),
+                  initialZoom: 13.0,
+                  minZoom: 4.0,
+                  maxZoom: 18.0,
+                  onTap: (_, __) {
+                    _searchFocusNode.unfocus();
+                    setState(() {
+                      _selectedPin = null;
+                      _searchedPlaceLocation = null;
+                      _searchedPlaceName = null;
+                    });
+                  },
+                  onPositionChanged: (camera, hasGesture) {
+                    _onMapPositionChanged(camera, hasGesture);
+                  },
+                ),
+                children: [
+                  TileLayer(
+                    urlTemplate:
+                        'https://tile.openstreetmap.org/{z}/{x}/{y}.png',
+                    userAgentPackageName: 'com.smartcity.report',
+                  ),
+                  MarkerLayer(
+                    markers: [
+                      ...filteredPins.map((pin) {
+                        return Marker(
+                          point: LatLng(pin.latitude, pin.longitude),
+                          width: 72,
+                          height: 72,
+                          child: GestureDetector(
+                            behavior: HitTestBehavior.opaque,
+                            onTap: () {
+                              _searchFocusNode.unfocus();
+                              setState(() => _selectedPin = pin);
+                            },
+                            child: MouseRegion(
+                              cursor: SystemMouseCursors.click,
+                              child: _MapMarker(
+                                pin: pin,
+                                isSelected: _selectedPin?.id == pin.id,
+                              ),
+                            ),
+                          ),
+                        );
+                      }),
+                      if (_searchedPlaceLocation != null)
+                        Marker(
+                          point: _searchedPlaceLocation!,
+                          width: 160,
+                          height: 90,
+                          child: _SearchedPlaceMarker(
+                            name:
+                                _searchedPlaceName ?? 'Searched location',
+                            onClear: () {
+                              setState(() {
+                                _searchedPlaceLocation = null;
+                                _searchedPlaceName = null;
+                              });
+                            },
+                          ),
+                        ),
+                    ],
+                  ),
+                ],
+              ),
+            ),
+            Positioned(
+              top: 16,
+              left: 16,
+              right: 16,
+              child: Align(
+                alignment: Alignment.topCenter,
+                child: ConstrainedBox(
+                  constraints: const BoxConstraints(maxWidth: 640),
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      _SearchBar(
+                        controller: _searchController,
+                        focusNode: _searchFocusNode,
+                        onChanged: _onSearchQueryChanged,
+                        onSubmitted: _searchAddresses,
+                        onSearch: _searchAddresses,
+                        isSearching: _isSearchingAddress,
+                        onClear: () {
+                          setState(() {
+                            _searchController.clear();
+                            _searchQuery = '';
+                            _addressSuggestions = [];
+                            _searchedPlaceLocation = null;
+                            _searchedPlaceName = null;
+                          });
+                        },
+                      ),
+                      if (_searchQuery.isNotEmpty &&
+                          _searchFocusNode.hasFocus)
+                        _SearchSuggestions(
+                          pins: filteredPins,
+                          addresses: _addressSuggestions,
+                          query: _searchQuery,
+                          isSearchingAddress: _isSearchingAddress,
+                          hasSearchedAddress: _hasSearchedAddress,
+                          onSelectPin: (pin) {
+                            setState(() {
+                              _selectedPin = pin;
+                              _searchController.text = pin.title;
+                              _searchQuery = '';
+                              _addressSuggestions = [];
+                              _searchFocusNode.unfocus();
+                            });
+                            _mapController.move(
+                              LatLng(pin.latitude, pin.longitude),
+                              15.0,
+                            );
+                          },
+                          onSelectAddress: (addr) {
+                            final point = LatLng(
+                              addr.latitude,
+                              addr.longitude,
+                            );
+                            setState(() {
+                              _searchedPlaceLocation = point;
+                              _searchedPlaceName = addr.displayName;
+                              _searchController.text = addr.displayName;
+                              _searchQuery = '';
+                              _addressSuggestions = [];
+                              _searchFocusNode.unfocus();
+                            });
+                            _mapController.move(point, 15.0);
+                          },
+                        ),
+                    ],
+                  ),
+                ),
+              ),
+            ),
+            Positioned(
+              right: 16,
+              bottom: _selectedPin == null ? 18 : (isDesktop ? 190 : 230),
+              child: FloatingActionButton.small(
+                heroTag: 'citizen_map_refresh_visible',
+                tooltip: 'Refresh visible area',
+                onPressed: refresh,
+                backgroundColor: colorScheme.surface,
+                foregroundColor: colorScheme.primary,
+                child: const Icon(Icons.refresh),
+              ),
+            ),
+            if (_selectedPin != null)
+              Positioned(
+                left: 16,
+                right: 16,
+                bottom: 16,
+                child: Align(
+                  alignment: isDesktop
+                      ? Alignment.bottomRight
+                      : Alignment.bottomCenter,
+                  child: ConstrainedBox(
+                    constraints: const BoxConstraints(maxWidth: 460),
+                    child: _SelectedPinCard(
+                      pin: _selectedPin!,
+                      hasUpvoted:
+                          _upvotedReportIds.contains(_selectedPin!.id),
+                      onUpvote: () => _toggleUpvote(_selectedPin!),
+                      onViewDetails: () => _openDetails(_selectedPin!),
+                      onClose: () {
+                        setState(() => _selectedPin = null);
+                      },
+                      showUpvote:
+                          _currentUser == null ||
+                          _selectedPin!.creatorId != _currentUser!.id,
+                    ),
+                  ),
+                ),
+              ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _MapTopBar extends StatelessWidget {
+  const _MapTopBar({
+    required this.isMapView,
+    required this.isDesktop,
+    required this.onRefresh,
+    required this.onViewChanged,
+  });
+
+  final bool isMapView;
+  final bool isDesktop;
+  final Future<void> Function() onRefresh;
+  final ValueChanged<bool> onViewChanged;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final colorScheme = theme.colorScheme;
+
+    return Container(
+      padding: EdgeInsets.fromLTRB(
+        isDesktop ? 24 : 16,
+        14,
+        isDesktop ? 24 : 16,
+        10,
+      ),
+      color: colorScheme.surface,
+      child: Row(
+        children: [
+          Container(
+            width: 42,
+            height: 42,
+            decoration: BoxDecoration(
+              color: colorScheme.primaryContainer,
+              borderRadius: BorderRadius.circular(14),
+            ),
+            child: Icon(
+              Icons.location_city_outlined,
+              color: colorScheme.onPrimaryContainer,
+            ),
+          ),
+          const SizedBox(width: 12),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  isMapView ? 'Explore city issues' : 'Nearby reports',
+                  style: theme.textTheme.titleLarge?.copyWith(
+                    fontWeight: FontWeight.w800,
+                  ),
+                ),
+                Text(
+                  isMapView
+                      ? 'Browse and confirm issues reported around the city.'
+                      : 'Review reports currently visible in this area.',
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: theme.textTheme.bodySmall?.copyWith(
+                    color: colorScheme.onSurfaceVariant,
+                  ),
+                ),
+              ],
+            ),
+          ),
+          const SizedBox(width: 12),
+          SegmentedButton<bool>(
+            segments: [
+              ButtonSegment<bool>(
+                value: true,
+                icon: const Icon(Icons.map_outlined),
+                label: isDesktop ? const Text('Map') : null,
+              ),
+              ButtonSegment<bool>(
+                value: false,
+                icon: const Icon(Icons.view_list_outlined),
+                label: isDesktop ? const Text('List') : null,
+              ),
+            ],
+            selected: {isMapView},
+            onSelectionChanged: (value) => onViewChanged(value.first),
+            showSelectedIcon: false,
+          ),
+          if (isDesktop) ...[
+            const SizedBox(width: 8),
+            IconButton(
+              tooltip: 'Refresh visible area',
+              onPressed: onRefresh,
+              icon: const Icon(Icons.refresh),
+            ),
+          ],
+        ],
+      ),
+    );
+  }
+}
+
+class _FilterBar extends StatelessWidget {
+  const _FilterBar({
+    required this.selectedCategory,
+    required this.hideOwnReports,
+    required this.showHideOwnReports,
+    required this.onCategoryChanged,
+    required this.onHideOwnReportsChanged,
+  });
+
+  final ReportCategory? selectedCategory;
+  final bool hideOwnReports;
+  final bool showHideOwnReports;
+  final ValueChanged<ReportCategory?> onCategoryChanged;
+  final ValueChanged<bool> onHideOwnReportsChanged;
+
+  @override
+  Widget build(BuildContext context) {
+    final colorScheme = Theme.of(context).colorScheme;
+
+    return Container(
+      color: colorScheme.surface,
+      padding: const EdgeInsets.fromLTRB(16, 0, 16, 12),
+      child: Row(
+        children: [
+          Expanded(
+            child: SingleChildScrollView(
+              scrollDirection: Axis.horizontal,
+              child: Row(
+                children: [
+                  ChoiceChip(
+                    label: const Text('All'),
+                    selected: selectedCategory == null,
+                    onSelected: (_) => onCategoryChanged(null),
+                  ),
+                  const SizedBox(width: 8),
+                  ...ReportCategory.values.map((category) {
+                    return Padding(
+                      padding: const EdgeInsets.only(right: 8),
+                      child: ChoiceChip(
+                        avatar: Icon(
+                          _getCategoryIcon(category),
+                          size: 16,
+                        ),
+                        label: Text(category.localizedLabel(context)),
+                        selected: selectedCategory == category,
+                        onSelected: (_) => onCategoryChanged(category),
+                      ),
+                    );
+                  }),
+                ],
+              ),
+            ),
+          ),
+          if (showHideOwnReports) ...[
+            const SizedBox(width: 8),
+            Tooltip(
+              message: hideOwnReports
+                  ? 'Show my reports'
+                  : 'Hide my reports',
+              child: IconButton.filledTonal(
+                onPressed: () =>
+                    onHideOwnReportsChanged(!hideOwnReports),
+                icon: Icon(
+                  hideOwnReports
+                      ? Icons.person_off
+                      : Icons.person_outline,
+                ),
+              ),
+            ),
+          ],
+        ],
+      ),
+    );
+  }
+}
+
+class _MapLoadingState extends StatelessWidget {
+  const _MapLoadingState();
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    return Center(
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          const CircularProgressIndicator(),
+          const SizedBox(height: 16),
+          Text(
+            'Loading nearby reports',
+            style: theme.textTheme.titleMedium?.copyWith(
+              fontWeight: FontWeight.w700,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _EmptyMapListState extends StatelessWidget {
+  const _EmptyMapListState({required this.onRefresh});
+
+  final Future<void> Function() onRefresh;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final colorScheme = theme.colorScheme;
+
+    return RefreshIndicator(
+      onRefresh: onRefresh,
+      child: ListView(
+        physics: const AlwaysScrollableScrollPhysics(),
+        padding: const EdgeInsets.all(24),
+        children: [
+          const SizedBox(height: 72),
+          Icon(
+            Icons.location_searching_outlined,
+            size: 58,
+            color: colorScheme.primary,
+          ),
+          const SizedBox(height: 18),
+          Text(
+            'No reports in this area',
+            textAlign: TextAlign.center,
+            style: theme.textTheme.titleLarge?.copyWith(
+              fontWeight: FontWeight.w800,
+            ),
+          ),
+          const SizedBox(height: 8),
+          Text(
+            'Move the map or change the filters to explore other reports.',
+            textAlign: TextAlign.center,
+            style: theme.textTheme.bodyMedium?.copyWith(
+              color: colorScheme.onSurfaceVariant,
+            ),
+          ),
+        ],
+      ),
     );
   }
 }
@@ -903,53 +882,56 @@ class _SearchBar extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      decoration: BoxDecoration(
-        color: Colors.white.withOpacity(0.98),
-        borderRadius: BorderRadius.circular(
-          9999,
-        ), // Bo góc full hình viên thuốc mềm mại
-        border: Border.all(color: const Color(0xFFE2E8F0)),
-        boxShadow: const [
-          BoxShadow(
-            color: Color(0x0F000000),
-            blurRadius: 10,
-            offset: Offset(0, 4),
-          ),
-        ],
-      ),
+    final colorScheme = Theme.of(context).colorScheme;
+
+    return Material(
+      color: colorScheme.surface,
+      elevation: 5,
+      shadowColor: colorScheme.shadow.withOpacity(0.18),
+      borderRadius: BorderRadius.circular(18),
       child: TextField(
         controller: controller,
         focusNode: focusNode,
         onChanged: onChanged,
         onSubmitted: onSubmitted,
-        style: const TextStyle(fontSize: 14, color: Color(0xFF1E293B)),
         decoration: InputDecoration(
-          hintText: 'Search reports or categories...',
-          hintStyle: const TextStyle(color: Color(0xFF64748B)),
+          hintText: 'Search reports, categories or places',
           prefixIcon: IconButton(
+            tooltip: 'Search',
             onPressed: isSearching ? null : onSearch,
             icon: isSearching
-                ? const SizedBox(
-                    width: 18,
-                    height: 18,
+                ? const SizedBox.square(
+                    dimension: 18,
                     child: CircularProgressIndicator(strokeWidth: 2),
                   )
-                : const Icon(Icons.search, color: Color(0xFF64748B)),
+                : const Icon(Icons.search),
           ),
           suffixIcon: controller.text.isNotEmpty
               ? IconButton(
-                  mouseCursor: SystemMouseCursors.click,
-                  icon: const Icon(
-                    Icons.clear,
-                    color: Color(0xFF64748B),
-                    size: 18,
-                  ),
+                  tooltip: 'Clear search',
                   onPressed: onClear,
+                  icon: const Icon(Icons.close),
                 )
               : null,
-          border: InputBorder.none,
-          contentPadding: const EdgeInsets.symmetric(vertical: 14),
+          filled: true,
+          fillColor: colorScheme.surface,
+          border: OutlineInputBorder(
+            borderRadius: BorderRadius.circular(18),
+            borderSide: BorderSide.none,
+          ),
+          enabledBorder: OutlineInputBorder(
+            borderRadius: BorderRadius.circular(18),
+            borderSide: BorderSide(
+              color: colorScheme.outlineVariant.withOpacity(0.7),
+            ),
+          ),
+          focusedBorder: OutlineInputBorder(
+            borderRadius: BorderRadius.circular(18),
+            borderSide: BorderSide(
+              color: colorScheme.primary,
+              width: 1.5,
+            ),
+          ),
         ),
       ),
     );
@@ -1151,128 +1133,120 @@ class _PinTile extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Card(
-      color: Colors.white,
-      elevation: 0,
-      shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(12),
-        side: const BorderSide(color: Color(0xFFE2E8F0)),
-      ),
-      child: Padding(
-        padding: const EdgeInsets.all(14),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-          children: [
-            Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Row(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Expanded(
-                      child: Text(
-                        pin.title,
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
-                        style: Theme.of(context).textTheme.titleMedium
-                            ?.copyWith(
-                              fontWeight: FontWeight.bold,
-                              color: const Color(0xFF1E293B),
-                            ),
-                      ),
-                    ),
-                    const SizedBox(width: 8),
-                    Chip(
-                      visualDensity: VisualDensity.compact,
-                      label: Text(
-                        pin.category.label,
-                        style: const TextStyle(
-                          color: Color(0xFF115E59),
-                          fontSize: 11,
-                          fontWeight: FontWeight.bold,
-                        ),
-                      ),
-                      side: BorderSide.none,
-                      backgroundColor: const Color(0xFFCCFBF1),
-                    ),
-                  ],
-                ),
-                const SizedBox(height: 6),
-                Wrap(
-                  spacing: 6,
-                  runSpacing: 6,
-                  children: [
-                    _MetaChip(
-                      icon: Icons.place_outlined,
-                      label:
-                          '${pin.latitude.toStringAsFixed(4)}, ${pin.longitude.toStringAsFixed(4)}',
-                    ),
-                    _MetaChip(
-                      icon: Icons.thumb_up_alt_outlined,
-                      label: '${pin.upvoteCount} upvotes',
-                    ),
-                    _MetaChip(
-                      icon: Icons.trending_up,
-                      label: 'Priority ${pin.priorityScore}',
-                    ),
-                  ],
-                ),
-              ],
+    final theme = Theme.of(context);
+    final colorScheme = theme.colorScheme;
+    final categoryColor = _getCategoryColor(pin.category);
+
+    return Material(
+      color: colorScheme.surface,
+      borderRadius: BorderRadius.circular(18),
+      clipBehavior: Clip.antiAlias,
+      child: InkWell(
+        onTap: onViewDetails,
+        child: Container(
+          decoration: BoxDecoration(
+            border: Border.all(
+              color: colorScheme.outlineVariant.withOpacity(0.75),
             ),
-            Padding(
-              padding: const EdgeInsets.only(top: 8.0),
-              child: Row(
-                mainAxisAlignment: MainAxisAlignment.end,
+            borderRadius: BorderRadius.circular(18),
+          ),
+          padding: const EdgeInsets.all(16),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Row(
+                crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  OutlinedButton.icon(
-                    onPressed: onViewDetails,
-                    icon: const Icon(Icons.info_outline, size: 16),
-                    label: const Text(
-                      'View details',
-                      style: TextStyle(fontSize: 12),
+                  Container(
+                    width: 42,
+                    height: 42,
+                    decoration: BoxDecoration(
+                      color: categoryColor.withOpacity(0.12),
+                      borderRadius: BorderRadius.circular(13),
                     ),
-                    style: OutlinedButton.styleFrom(
-                      foregroundColor: const Color(0xFF0F766E),
-                      side: const BorderSide(color: Color(0xFFE2E8F0)),
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(8),
+                    child: Icon(
+                      _getCategoryIcon(pin.category),
+                      color: categoryColor,
+                      size: 22,
+                    ),
+                  ),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          pin.title,
+                          maxLines: 2,
+                          overflow: TextOverflow.ellipsis,
+                          style: theme.textTheme.titleMedium?.copyWith(
+                            fontWeight: FontWeight.w800,
+                            height: 1.25,
+                          ),
+                        ),
+                        const SizedBox(height: 4),
+                        Text(
+                          pin.category.localizedLabel(context),
+                          style: theme.textTheme.bodySmall?.copyWith(
+                            color: categoryColor,
+                            fontWeight: FontWeight.w700,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                  Icon(
+                    Icons.chevron_right,
+                    color: colorScheme.onSurfaceVariant,
+                  ),
+                ],
+              ),
+              const Spacer(),
+              Row(
+                children: [
+                  Expanded(
+                    child: Text(
+                      '${pin.latitude.toStringAsFixed(4)}, '
+                      '${pin.longitude.toStringAsFixed(4)}',
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: theme.textTheme.bodySmall?.copyWith(
+                        color: colorScheme.onSurfaceVariant,
                       ),
                     ),
                   ),
-                  if (showUpvote) ...[
-                    const SizedBox(width: 8),
-                    OutlinedButton.icon(
+                ],
+              ),
+              const SizedBox(height: 12),
+              Row(
+                children: [
+                  _MetaChip(
+                    icon: Icons.thumb_up_alt_outlined,
+                    label: '${pin.upvoteCount} upvotes',
+                  ),
+                  const SizedBox(width: 8),
+                  _MetaChip(
+                    icon: Icons.trending_up,
+                    label: 'Priority ${pin.priorityScore}',
+                  ),
+                  const Spacer(),
+                  if (showUpvote)
+                    TextButton.icon(
                       onPressed: onUpvote,
                       icon: Icon(
                         hasUpvoted
                             ? Icons.thumb_down_alt_outlined
                             : Icons.thumb_up_alt_outlined,
-                        size: 16,
+                        size: 17,
                       ),
                       label: Text(
-                        hasUpvoted ? 'Remove upvote' : 'I see this too',
-                        style: const TextStyle(fontSize: 12),
-                      ),
-                      style: OutlinedButton.styleFrom(
-                        foregroundColor: hasUpvoted
-                            ? const Color(0xFFEF4444)
-                            : const Color(0xFF0F766E),
-                        side: BorderSide(
-                          color: hasUpvoted
-                              ? const Color(0xFFEF4444).withOpacity(0.4)
-                              : const Color(0xFFE2E8F0),
-                        ),
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(8),
-                        ),
+                        hasUpvoted ? 'Remove' : 'I see this too',
                       ),
                     ),
-                  ],
                 ],
               ),
-            ),
-          ],
+            ],
+          ),
         ),
       ),
     );
@@ -1321,27 +1295,53 @@ class _ErrorState extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final colorScheme = theme.colorScheme;
+
     return Center(
       child: Padding(
         padding: const EdgeInsets.all(24),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Text(
-              message,
-              textAlign: TextAlign.center,
-              style: const TextStyle(color: Color(0xFF64748B)),
-            ),
-            const SizedBox(height: 12),
-            OutlinedButton.icon(
-              onPressed: onRetry,
-              icon: const Icon(Icons.refresh),
-              label: const Text('Retry'),
-              style: OutlinedButton.styleFrom(
-                foregroundColor: const Color(0xFF0F766E),
+        child: ConstrainedBox(
+          constraints: const BoxConstraints(maxWidth: 420),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Container(
+                width: 58,
+                height: 58,
+                decoration: BoxDecoration(
+                  color: colorScheme.errorContainer,
+                  borderRadius: BorderRadius.circular(18),
+                ),
+                child: Icon(
+                  Icons.map_outlined,
+                  color: colorScheme.onErrorContainer,
+                  size: 30,
+                ),
               ),
-            ),
-          ],
+              const SizedBox(height: 18),
+              Text(
+                'Map unavailable',
+                style: theme.textTheme.titleLarge?.copyWith(
+                  fontWeight: FontWeight.w800,
+                ),
+              ),
+              const SizedBox(height: 8),
+              Text(
+                message,
+                textAlign: TextAlign.center,
+                style: theme.textTheme.bodyMedium?.copyWith(
+                  color: colorScheme.onSurfaceVariant,
+                ),
+              ),
+              const SizedBox(height: 20),
+              FilledButton.icon(
+                onPressed: onRetry,
+                icon: const Icon(Icons.refresh),
+                label: const Text('Try again'),
+              ),
+            ],
+          ),
         ),
       ),
     );
@@ -1539,73 +1539,76 @@ class _SelectedPinCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final colorScheme = theme.colorScheme;
     final color = _getCategoryColor(pin.category);
 
-    return Card(
-      elevation: 6,
-      shadowColor: color.withOpacity(0.2),
-      shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(16),
-        side: BorderSide(color: color.withOpacity(0.2), width: 1.5),
-      ),
-      color: Colors.white.withOpacity(0.98),
-      surfaceTintColor: Colors.transparent,
+    return Material(
+      elevation: 8,
+      shadowColor: colorScheme.shadow.withOpacity(0.18),
+      color: colorScheme.surface,
+      borderRadius: BorderRadius.circular(22),
+      clipBehavior: Clip.antiAlias,
       child: Container(
+        padding: const EdgeInsets.all(18),
         decoration: BoxDecoration(
-          borderRadius: BorderRadius.circular(16),
-          gradient: LinearGradient(
-            begin: Alignment.topLeft,
-            end: Alignment.bottomRight,
-            colors: [Colors.white, color.withOpacity(0.04)],
+          border: Border.all(
+            color: colorScheme.outlineVariant.withOpacity(0.75),
           ),
+          borderRadius: BorderRadius.circular(22),
         ),
-        padding: const EdgeInsets.all(16),
         child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
           mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Row(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
+                Container(
+                  width: 44,
+                  height: 44,
+                  decoration: BoxDecoration(
+                    color: color.withOpacity(0.12),
+                    borderRadius: BorderRadius.circular(14),
+                  ),
+                  child: Icon(
+                    _getCategoryIcon(pin.category),
+                    color: color,
+                  ),
+                ),
+                const SizedBox(width: 12),
                 Expanded(
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Text(
                         pin.title,
-                        maxLines: 1,
+                        maxLines: 2,
                         overflow: TextOverflow.ellipsis,
-                        style: Theme.of(context).textTheme.titleMedium
-                            ?.copyWith(
-                              fontWeight: FontWeight.bold,
-                              color: const Color(0xFF1E293B),
-                            ),
+                        style: theme.textTheme.titleMedium?.copyWith(
+                          fontWeight: FontWeight.w800,
+                          height: 1.25,
+                        ),
                       ),
                       const SizedBox(height: 4),
                       Text(
-                        context.l10n.mapCategoryValue(
-                          pin.category.localizedLabel(context),
-                        ),
-                        style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                          color: const Color(0xFF64748B),
+                        pin.category.localizedLabel(context),
+                        style: theme.textTheme.bodySmall?.copyWith(
+                          color: color,
+                          fontWeight: FontWeight.w700,
                         ),
                       ),
                     ],
                   ),
                 ),
                 IconButton(
-                  mouseCursor: SystemMouseCursors.click,
-                  icon: const Icon(Icons.close, size: 18),
+                  tooltip: 'Close',
                   onPressed: onClose,
-                  visualDensity: VisualDensity.compact,
-                  padding: EdgeInsets.zero,
-                  constraints: const BoxConstraints(),
-                  splashRadius: 16,
-                  color: const Color(0xFF64748B),
+                  icon: const Icon(Icons.close),
                 ),
               ],
             ),
-            const Divider(height: 16, color: Color(0xFFE2E8F0)),
+            const SizedBox(height: 14),
             Wrap(
               spacing: 8,
               runSpacing: 8,
@@ -1630,41 +1633,27 @@ class _SelectedPinCard extends StatelessWidget {
             ),
             const SizedBox(height: 16),
             Row(
-              mainAxisAlignment: MainAxisAlignment.end,
               children: [
-                OutlinedButton.icon(
-                  onPressed: onViewDetails,
-                  icon: const Icon(Icons.info_outline, size: 16),
-                  label: const Text('View details'),
-                  style: OutlinedButton.styleFrom(
-                    foregroundColor: color,
-                    side: BorderSide(color: color.withOpacity(0.55)),
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(8),
-                    ),
+                Expanded(
+                  child: OutlinedButton(
+                    onPressed: onViewDetails,
+                    child: const Text('View details'),
                   ),
                 ),
                 if (showUpvote) ...[
-                  const SizedBox(width: 8),
-                  FilledButton.icon(
-                    onPressed: onUpvote,
-                    style: FilledButton.styleFrom(
-                      backgroundColor: hasUpvoted
-                          ? const Color(0xFFEF4444)
-                          : color,
-                      foregroundColor: Colors.white,
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(8),
+                  const SizedBox(width: 10),
+                  Expanded(
+                    child: FilledButton.icon(
+                      onPressed: onUpvote,
+                      icon: Icon(
+                        hasUpvoted
+                            ? Icons.thumb_down_alt_outlined
+                            : Icons.thumb_up_alt_outlined,
+                        size: 18,
                       ),
-                    ),
-                    icon: Icon(
-                      hasUpvoted
-                          ? Icons.thumb_down_alt_outlined
-                          : Icons.thumb_up_alt_outlined,
-                      size: 16,
-                    ),
-                    label: Text(
-                      hasUpvoted ? 'Remove upvote' : 'I see this too',
+                      label: Text(
+                        hasUpvoted ? 'Remove upvote' : 'I see this too',
+                      ),
                     ),
                   ),
                 ],

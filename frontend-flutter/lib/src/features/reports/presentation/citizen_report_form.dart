@@ -232,6 +232,8 @@ class _CitizenReportFormState extends State<CitizenReportForm> {
     final bool isTestMode = WidgetsBinding.instance.runtimeType
         .toString()
         .contains('Test');
+    final theme = Theme.of(context);
+    final colorScheme = theme.colorScheme;
 
     return Form(
       key: _formKey,
@@ -242,354 +244,332 @@ class _CitizenReportFormState extends State<CitizenReportForm> {
           }
           return false;
         },
-        child: ListView(
-          key: const Key('report_form_list'),
-          controller: _scrollController,
-          cacheExtent: 1000,
-          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 24),
-          children: [
-            // SECTION 1: INCIDENT CATEGORY SELECTOR (GRID CARD STATEFUL VIEW)
-            Text(
-              'Incident Category',
-              style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                fontWeight: FontWeight.bold,
-                color: const Color(0xFF111C2D),
-              ),
-            ),
-            const SizedBox(height: 12),
-            GridView.builder(
-              shrinkWrap: true,
-              physics: const NeverScrollableScrollPhysics(),
-              gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-                crossAxisCount: 2,
-                crossAxisSpacing: 16,
-                mainAxisSpacing: 16,
-                mainAxisExtent: 100,
-              ),
-              itemCount: ReportCategory.values.length,
-              itemBuilder: (context, index) {
-                final currentCat = ReportCategory.values[index];
-                final isSelected = _category == currentCat;
+        child: LayoutBuilder(
+          builder: (context, constraints) {
+            final isWide = constraints.maxWidth >= 680;
 
-                return InkWell(
-                  onTap: _isSaving
-                      ? null
-                      : () {
-                          setState(() => _category = currentCat);
-                        },
-                  borderRadius: BorderRadius.circular(12),
-                  child: Container(
-                    decoration: BoxDecoration(
-                      color: isSelected
-                          ? const Color(0xFFBDECE2)
-                          : const Color(0xFFF9F9FF),
-                      borderRadius: BorderRadius.circular(12),
-                      border: Border.all(
-                        color: isSelected
-                            ? const Color(0xFF0F766E)
-                            : const Color(0xFFBDC9C6).withOpacity(0.5),
-                        width: isSelected ? 2.0 : 1.0,
-                      ),
-                    ),
-                    child: Stack(
-                      children: [
-                        Center(
-                          child: Column(
-                            mainAxisAlignment: MainAxisAlignment.center,
-                            children: [
-                              Icon(
-                                _getCategoryIconLocal(currentCat),
-                                size: 36,
+            return ListView(
+              key: const Key('report_form_list'),
+              primary: false,
+              controller: _scrollController,
+              cacheExtent: 1000,
+              padding: EdgeInsets.all(isWide ? 28 : 18),
+              children: [
+                Text(
+                  widget.initialReport == null
+                      ? 'Tell us what happened'
+                      : 'Update report information',
+                  style: theme.textTheme.headlineSmall?.copyWith(
+                    fontWeight: FontWeight.w800,
+                  ),
+                ),
+                const SizedBox(height: 6),
+                Text(
+                  'Complete each section below. Clear information helps the city team respond faster.',
+                  style: theme.textTheme.bodyMedium?.copyWith(
+                    color: colorScheme.onSurfaceVariant,
+                    height: 1.45,
+                  ),
+                ),
+                const SizedBox(height: 24),
+
+                _FormSection(
+                  step: '1',
+                  title: 'Issue category',
+                  description: 'Choose the option that best matches the problem.',
+                  child: LayoutBuilder(
+                    builder: (context, sectionConstraints) {
+                      final columns = sectionConstraints.maxWidth >= 620 ? 4 : 2;
+                      return GridView.builder(
+                        shrinkWrap: true,
+                        physics: const NeverScrollableScrollPhysics(),
+                        gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+                          crossAxisCount: columns,
+                          crossAxisSpacing: 12,
+                          mainAxisSpacing: 12,
+                          mainAxisExtent: 92,
+                        ),
+                        itemCount: ReportCategory.values.length,
+                        itemBuilder: (context, index) {
+                          final currentCat = ReportCategory.values[index];
+                          final isSelected = _category == currentCat;
+
+                          return InkWell(
+                            onTap: _isSaving
+                                ? null
+                                : () => setState(() => _category = currentCat),
+                            borderRadius: BorderRadius.circular(16),
+                            child: AnimatedContainer(
+                              duration: const Duration(milliseconds: 180),
+                              decoration: BoxDecoration(
                                 color: isSelected
-                                    ? const Color(0xFF0F766E)
-                                    : const Color(0xFF3E4947),
-                              ),
-                              const SizedBox(height: 6),
-                              Text(
-                                currentCat.label,
-                                textAlign: TextAlign.center,
-                                style: TextStyle(
-                                  fontSize: 14,
-                                  fontWeight: isSelected
-                                      ? FontWeight.bold
-                                      : FontWeight.w500,
+                                    ? colorScheme.primaryContainer
+                                    : colorScheme.surfaceContainerLowest,
+                                borderRadius: BorderRadius.circular(16),
+                                border: Border.all(
                                   color: isSelected
-                                      ? const Color(0xFF0F766E)
-                                      : const Color(0xFF111C2D),
+                                      ? colorScheme.primary
+                                      : colorScheme.outlineVariant,
+                                  width: isSelected ? 1.6 : 1,
                                 ),
                               ),
-                            ],
-                          ),
-                        ),
-                        if (isSelected)
-                          Positioned(
-                            top: 8,
-                            right: 8,
-                            child: Container(
-                              width: 22,
-                              height: 22,
-                              decoration: const BoxDecoration(
-                                color: Color(0xFF0F766E),
-                                shape: BoxShape.circle,
+                              padding: const EdgeInsets.all(12),
+                              child: Column(
+                                mainAxisAlignment: MainAxisAlignment.center,
+                                children: [
+                                  Icon(
+                                    _getCategoryIconLocal(currentCat),
+                                    color: isSelected
+                                        ? colorScheme.primary
+                                        : colorScheme.onSurfaceVariant,
+                                    size: 26,
+                                  ),
+                                  const SizedBox(height: 8),
+                                  Text(
+                                    currentCat.localizedLabel(context),
+                                    maxLines: 2,
+                                    overflow: TextOverflow.ellipsis,
+                                    textAlign: TextAlign.center,
+                                    style: theme.textTheme.labelMedium?.copyWith(
+                                      color: isSelected
+                                          ? colorScheme.onPrimaryContainer
+                                          : colorScheme.onSurface,
+                                      fontWeight: isSelected
+                                          ? FontWeight.w800
+                                          : FontWeight.w600,
+                                    ),
+                                  ),
+                                ],
                               ),
-                              child: const Icon(
-                                Icons.check,
-                                size: 14,
-                                color: Colors.white,
+                            ),
+                          );
+                        },
+                      );
+                    },
+                  ),
+                ),
+                const SizedBox(height: 18),
+
+                _FormSection(
+                  step: '2',
+                  title: 'Photo evidence',
+                  description: 'Add one clear photo showing the issue.',
+                  trailing: Text(
+                    _beforePhotoUrl != null ? '1 of 1 added' : 'Required',
+                    style: theme.textTheme.labelMedium?.copyWith(
+                      color: _beforePhotoUrl != null
+                          ? colorScheme.primary
+                          : colorScheme.error,
+                      fontWeight: FontWeight.w700,
+                    ),
+                  ),
+                  child: _PhotoUploadField(
+                    label: 'Upload a picture before any actions are taken',
+                    fileUrl: _beforePhotoUrl,
+                    errorText: _beforePhotoError,
+                    isUploading: _isUploadingPhoto,
+                    onUpload: _pickAndUploadBeforePhoto,
+                    onRemove: () => setState(() => _beforePhotoUrl = null),
+                  ),
+                ),
+                const SizedBox(height: 18),
+
+                _FormSection(
+                  step: '3',
+                  title: 'Location',
+                  description: 'Confirm the exact position of the issue.',
+                  child: Column(
+                    children: [
+                      if (!isTestMode) ...[
+                        SizedBox(
+                          width: double.infinity,
+                          child: FilledButton.tonalIcon(
+                            onPressed: _isSaving ? null : _openMapPicker,
+                            icon: const Icon(Icons.map_outlined),
+                            label: const Text('Choose location on map'),
+                            style: FilledButton.styleFrom(
+                              padding: const EdgeInsets.symmetric(vertical: 15),
+                              shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(14),
                               ),
                             ),
                           ),
+                        ),
+                        const SizedBox(height: 14),
                       ],
-                    ),
-                  ),
-                );
-              },
-            ),
-            const SizedBox(height: 28),
+                      TextFormField(
+                        controller: _addressController,
+                        decoration: const InputDecoration(
+                          labelText: 'Street address',
+                          hintText: 'Add a nearby landmark or street name',
+                          prefixIcon: Icon(Icons.location_on_outlined),
+                          border: OutlineInputBorder(),
+                        ),
+                        textInputAction: TextInputAction.next,
+                      ),
+                      const SizedBox(height: 14),
+                      LayoutBuilder(
+                        builder: (context, fieldConstraints) {
+                          final horizontal = fieldConstraints.maxWidth >= 520;
+                          final latitudeField = TextFormField(
+                            controller: _latitudeController,
+                            readOnly: true,
+                            decoration: const InputDecoration(
+                              labelText: 'Latitude',
+                              prefixIcon: Icon(Icons.my_location_outlined),
+                              border: OutlineInputBorder(),
+                            ),
+                          );
+                          final longitudeField = TextFormField(
+                            controller: _longitudeController,
+                            readOnly: true,
+                            decoration: const InputDecoration(
+                              labelText: 'Longitude',
+                              prefixIcon: Icon(Icons.explore_outlined),
+                              border: OutlineInputBorder(),
+                            ),
+                          );
 
-            // SECTION 2: VISUAL PROOF & IMAGE PREVIEW PANEL
-            Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: [
-                Text(
-                  'Visual Proof',
-                  style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                    fontWeight: FontWeight.bold,
-                    color: const Color(0xFF111C2D),
+                          return horizontal
+                              ? Row(
+                                  children: [
+                                    Expanded(child: latitudeField),
+                                    const SizedBox(width: 12),
+                                    Expanded(child: longitudeField),
+                                  ],
+                                )
+                              : Column(
+                                  children: [
+                                    latitudeField,
+                                    const SizedBox(height: 12),
+                                    longitudeField,
+                                  ],
+                                );
+                        },
+                      ),
+                    ],
                   ),
                 ),
-                Text(
-                  _beforePhotoUrl != null ? '1/1 Photo' : '0/1 Photo',
-                  style: const TextStyle(
-                    fontSize: 12,
-                    color: Color(0xFF3E4947),
+                const SizedBox(height: 18),
+
+                _FormSection(
+                  step: '4',
+                  title: 'Report details',
+                  description: 'Use a short title and describe what you observed.',
+                  child: Column(
+                    children: [
+                      TextFormField(
+                        key: const Key('report_title_field'),
+                        controller: _titleController,
+                        decoration: const InputDecoration(
+                          labelText: 'Report title',
+                          hintText: 'Example: Broken street light',
+                          prefixIcon: Icon(Icons.title_outlined),
+                          border: OutlineInputBorder(),
+                        ),
+                        textInputAction: TextInputAction.next,
+                        validator: _required,
+                      ),
+                      const SizedBox(height: 14),
+                      TextFormField(
+                        key: const Key('report_description_field'),
+                        controller: _descriptionController,
+                        decoration: const InputDecoration(
+                          labelText: 'Description',
+                          alignLabelWithHint: true,
+                          hintText:
+                              'Describe the issue, when you noticed it and any useful details.',
+                          border: OutlineInputBorder(),
+                        ),
+                        minLines: 5,
+                        maxLines: 7,
+                        validator: _required,
+                      ),
+                    ],
+                  ),
+                ),
+
+                if (widget.initialReport == null) ...[
+                  const SizedBox(height: 18),
+                  _FormSection(
+                    step: '5',
+                    title: 'Privacy',
+                    description: 'Choose whether your identity is shown publicly.',
+                    child: Container(
+                      decoration: BoxDecoration(
+                        color: colorScheme.surfaceContainerLowest,
+                        borderRadius: BorderRadius.circular(16),
+                        border: Border.all(color: colorScheme.outlineVariant),
+                      ),
+                      child: SwitchListTile(
+                        value: _anonymous,
+                        onChanged: _isSaving
+                            ? null
+                            : (value) => setState(() => _anonymous = value),
+                        secondary: Icon(
+                          _anonymous
+                              ? Icons.visibility_off_outlined
+                              : Icons.account_circle_outlined,
+                        ),
+                        title: const Text('Submit anonymously'),
+                        subtitle: const Text(
+                          'Your personal information will be hidden from the public report.',
+                        ),
+                        contentPadding: const EdgeInsets.symmetric(
+                          horizontal: 16,
+                          vertical: 6,
+                        ),
+                      ),
+                    ),
+                  ),
+                ],
+
+                const SizedBox(height: 24),
+                Container(
+                  padding: const EdgeInsets.all(18),
+                  decoration: BoxDecoration(
+                    color: colorScheme.primaryContainer.withOpacity(0.45),
+                    borderRadius: BorderRadius.circular(18),
+                  ),
+                  child: Column(
+                    children: [
+                      SizedBox(
+                        width: double.infinity,
+                        child: FilledButton.icon(
+                          onPressed: _isSaving || _isUploadingPhoto
+                              ? null
+                              : _submit,
+                          icon: _isSaving
+                              ? const SizedBox.square(
+                                  dimension: 18,
+                                  child: CircularProgressIndicator(
+                                    strokeWidth: 2,
+                                  ),
+                                )
+                              : const Icon(Icons.send_outlined),
+                          label: Text(widget.submitLabel),
+                          style: FilledButton.styleFrom(
+                            padding: const EdgeInsets.symmetric(vertical: 16),
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(14),
+                            ),
+                          ),
+                        ),
+                      ),
+                      const SizedBox(height: 10),
+                      Text(
+                        'Please review the information before submitting.',
+                        textAlign: TextAlign.center,
+                        style: theme.textTheme.bodySmall?.copyWith(
+                          color: colorScheme.onSurfaceVariant,
+                        ),
+                      ),
+                    ],
                   ),
                 ),
               ],
-            ),
-            const SizedBox(height: 12),
-            _PhotoUploadField(
-              label: 'Upload a picture before any actions are taken',
-              fileUrl: _beforePhotoUrl,
-              errorText: _beforePhotoError,
-              isUploading: _isUploadingPhoto,
-              onUpload: _pickAndUploadBeforePhoto,
-              onRemove: () {
-                setState(() => _beforePhotoUrl = null);
-              },
-            ),
-            const SizedBox(height: 28),
-
-            // SECTION 3: GEOLOCATION AND MAPPING
-            if (!isTestMode) ...[
-              Text(
-                'Location Details',
-                style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                  fontWeight: FontWeight.bold,
-                  color: const Color(0xFF111C2D),
-                ),
-              ),
-              const SizedBox(height: 12),
-              // Map Action Button
-              FilledButton.icon(
-                onPressed: _isSaving ? null : _openMapPicker,
-                icon: const Icon(Icons.map, size: 20),
-                label: const Text(
-                  'Select Location on Map',
-                  style: TextStyle(fontWeight: FontWeight.w600),
-                ),
-                style: FilledButton.styleFrom(
-                  backgroundColor: const Color(0xFFBDECE2),
-                  foregroundColor: const Color(0xFF416C65),
-                  padding: const EdgeInsets.symmetric(vertical: 14),
-                  elevation: 0,
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(12),
-                  ),
-                ),
-              ),
-              const SizedBox(height: 12),
-            ],
-
-            // Latitude and Longitude Metadata Chips
-            LayoutBuilder(
-              builder: (context, constraints) {
-                final isWide = constraints.maxWidth >= 560;
-                final latitudeField = TextFormField(
-                  controller: _latitudeController,
-                  readOnly: true,
-                  decoration: const InputDecoration(
-                    labelText: 'Latitude',
-                    prefixIcon: Icon(
-                      Icons.my_location,
-                      color: Color(0xFF005C55),
-                    ),
-                    border: OutlineInputBorder(
-                      borderRadius: BorderRadius.all(Radius.circular(12)),
-                    ),
-                  ),
-                );
-                final longitudeField = TextFormField(
-                  controller: _longitudeController,
-                  readOnly: true,
-                  decoration: const InputDecoration(
-                    labelText: 'Longitude',
-                    prefixIcon: Icon(Icons.explore, color: Color(0xFF005C55)),
-                    border: OutlineInputBorder(
-                      borderRadius: BorderRadius.all(Radius.circular(12)),
-                    ),
-                  ),
-                );
-
-                return isWide
-                    ? Row(
-                        children: [
-                          Expanded(child: latitudeField),
-                          const SizedBox(width: 16),
-                          Expanded(child: longitudeField),
-                        ],
-                      )
-                    : Column(
-                        children: [
-                          latitudeField,
-                          const SizedBox(height: 16),
-                          longitudeField,
-                        ],
-                      );
-              },
-            ),
-            const SizedBox(height: 16),
-
-            // Street Address Input
-            TextFormField(
-              controller: _addressController,
-              decoration: const InputDecoration(
-                labelText: 'Street Address',
-                prefixIcon: Icon(Icons.location_on),
-                border: OutlineInputBorder(
-                  borderRadius: BorderRadius.all(Radius.circular(12)),
-                ),
-              ),
-              textInputAction: TextInputAction.next,
-            ),
-            const SizedBox(height: 28),
-
-            // SECTION 4: INCIDENT INFORMATION (TEXT FIELDS)
-            Text(
-              'Incident Details',
-              style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                fontWeight: FontWeight.bold,
-                color: const Color(0xFF111C2D),
-              ),
-            ),
-            const SizedBox(height: 12),
-
-            // Report Title Field
-            TextFormField(
-              key: const Key('report_title_field'),
-              controller: _titleController,
-              decoration: const InputDecoration(
-                labelText: 'Report Title',
-                prefixIcon: Icon(Icons.edit_note),
-                border: OutlineInputBorder(
-                  borderRadius: BorderRadius.all(Radius.circular(12)),
-                ),
-              ),
-              textInputAction: TextInputAction.next,
-              validator: _required,
-            ),
-            const SizedBox(height: 16),
-
-            // Detailed Description Textarea
-            TextFormField(
-              key: const Key('report_description_field'),
-              controller: _descriptionController,
-              decoration: const InputDecoration(
-                labelText: 'Detailed Description',
-                alignLabelWithHint: true,
-                hintText: 'Please describe the issue in detail...',
-                border: OutlineInputBorder(
-                  borderRadius: BorderRadius.all(Radius.circular(12)),
-                ),
-              ),
-              minLines: 4,
-              maxLines: 6,
-              validator: _required,
-            ),
-            const SizedBox(height: 28),
-
-            // SECTION 5: PROFILE & ANONYMOUS SWITCH CARD
-            if (widget.initialReport == null) ...[
-              Container(
-                decoration: BoxDecoration(
-                  color: const Color(0xFFF0F3FF),
-                  borderRadius: BorderRadius.circular(12),
-                  border: Border.all(
-                    color: const Color(0xFFBDC9C6).withOpacity(0.4),
-                  ),
-                ),
-                child: SwitchListTile(
-                  value: _anonymous,
-                  activeColor: const Color(0xFF005C55),
-                  onChanged: _isSaving
-                      ? null
-                      : (value) => setState(() => _anonymous = value),
-                  title: const Text(
-                    'Submit Anonymously',
-                    style: TextStyle(
-                      fontWeight: FontWeight.bold,
-                      color: Color(0xFF111C2D),
-                    ),
-                  ),
-                  subtitle: const Text(
-                    'Your personal information will be hidden from the public timeline.',
-                    style: TextStyle(fontSize: 12, color: Color(0xFF3E4947)),
-                  ),
-                  contentPadding: const EdgeInsets.symmetric(
-                    horizontal: 16,
-                    vertical: 6,
-                  ),
-                ),
-              ),
-              const SizedBox(height: 32),
-            ],
-
-            // SECTION 6: ACTION FOOTER SUBMIT BUTTON
-            FilledButton.icon(
-              onPressed: _isSaving || _isUploadingPhoto ? null : _submit,
-              icon: _isSaving
-                  ? const SizedBox.square(
-                      dimension: 18,
-                      child: CircularProgressIndicator(
-                        strokeWidth: 2,
-                        color: Colors.white,
-                      ),
-                    )
-                  : const Icon(Icons.send),
-              style: FilledButton.styleFrom(
-                backgroundColor: const Color(0xFF0F766E),
-                foregroundColor: Colors.white,
-                padding: const EdgeInsets.symmetric(vertical: 16),
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(12),
-                ),
-                elevation: 2,
-              ),
-              label: Text(
-                widget.submitLabel,
-                style: const TextStyle(
-                  fontSize: 16,
-                  fontWeight: FontWeight.bold,
-                ),
-              ),
-            ),
-            const SizedBox(height: 12),
-            const Text(
-              "By submitting, you agree to the City's terms of service.",
-              textAlign: TextAlign.center,
-              style: TextStyle(fontSize: 12, color: Color(0xFF3E4947)),
-            ),
-          ],
+            );
+          },
         ),
       ),
     );
@@ -641,6 +621,93 @@ class _CitizenReportFormState extends State<CitizenReportForm> {
   }
 }
 
+class _FormSection extends StatelessWidget {
+  const _FormSection({
+    required this.step,
+    required this.title,
+    required this.description,
+    required this.child,
+    this.trailing,
+  });
+
+  final String step;
+  final String title;
+  final String description;
+  final Widget child;
+  final Widget? trailing;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final colorScheme = theme.colorScheme;
+
+    return Container(
+      padding: const EdgeInsets.all(18),
+      decoration: BoxDecoration(
+        color: colorScheme.surface,
+        borderRadius: BorderRadius.circular(18),
+        border: Border.all(
+          color: colorScheme.outlineVariant.withOpacity(0.8),
+        ),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Container(
+                width: 34,
+                height: 34,
+                alignment: Alignment.center,
+                decoration: BoxDecoration(
+                  color: colorScheme.primaryContainer,
+                  borderRadius: BorderRadius.circular(11),
+                ),
+                child: Text(
+                  step,
+                  style: theme.textTheme.labelLarge?.copyWith(
+                    color: colorScheme.onPrimaryContainer,
+                    fontWeight: FontWeight.w800,
+                  ),
+                ),
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      title,
+                      style: theme.textTheme.titleMedium?.copyWith(
+                        fontWeight: FontWeight.w800,
+                      ),
+                    ),
+                    const SizedBox(height: 3),
+                    Text(
+                      description,
+                      style: theme.textTheme.bodySmall?.copyWith(
+                        color: colorScheme.onSurfaceVariant,
+                        height: 1.4,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              if (trailing != null) ...[
+                const SizedBox(width: 10),
+                trailing!,
+              ],
+            ],
+          ),
+          const SizedBox(height: 18),
+          child,
+        ],
+      ),
+    );
+  }
+}
+
 class _PhotoUploadField extends StatelessWidget {
   const _PhotoUploadField({
     required this.label,
@@ -661,6 +728,8 @@ class _PhotoUploadField extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final hasFile = (fileUrl ?? '').trim().isNotEmpty;
+    final theme = Theme.of(context);
+    final colorScheme = theme.colorScheme;
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -668,13 +737,11 @@ class _PhotoUploadField extends StatelessWidget {
         if (hasFile)
           Container(
             width: double.infinity,
-            height: 220,
+            height: 230,
             decoration: BoxDecoration(
-              color: const Color(0xFFF9F9FF),
-              borderRadius: BorderRadius.circular(16),
-              border: Border.all(
-                color: const Color(0xFFBDC9C6).withOpacity(0.5),
-              ),
+              color: colorScheme.surfaceContainerLowest,
+              borderRadius: BorderRadius.circular(18),
+              border: Border.all(color: colorScheme.outlineVariant),
             ),
             clipBehavior: Clip.antiAlias,
             child: Stack(
@@ -683,36 +750,52 @@ class _PhotoUploadField extends StatelessWidget {
                 UploadedPhotoImage(
                   fileUrl: fileUrl!,
                   fit: BoxFit.cover,
-                  errorWidget: const Center(
+                  errorWidget: Center(
                     child: Icon(
-                      Icons.broken_image,
+                      Icons.broken_image_outlined,
                       size: 48,
-                      color: Color(0xFFBA1A1A),
+                      color: colorScheme.error,
                     ),
                   ),
                 ),
                 Positioned(
-                  top: 12,
                   right: 12,
-                  child: GestureDetector(
-                    onTap: onRemove,
-                    child: Container(
-                      padding: const EdgeInsets.all(8),
-                      decoration: BoxDecoration(
-                        color: Colors.white.withOpacity(0.9),
-                        shape: BoxShape.circle,
-                        boxShadow: const [
-                          BoxShadow(
-                            color: Colors.black12,
-                            blurRadius: 4,
-                            offset: Offset(0, 2),
-                          ),
-                        ],
+                  top: 12,
+                  child: Material(
+                    color: colorScheme.surface.withOpacity(0.94),
+                    borderRadius: BorderRadius.circular(12),
+                    child: IconButton(
+                      tooltip: 'Remove photo',
+                      onPressed: onRemove,
+                      icon: Icon(
+                        Icons.delete_outline,
+                        color: colorScheme.error,
                       ),
-                      child: const Icon(
-                        Icons.close,
-                        size: 20,
-                        color: Color(0xFFBA1A1A),
+                    ),
+                  ),
+                ),
+                Positioned(
+                  left: 12,
+                  bottom: 12,
+                  child: Material(
+                    color: colorScheme.surface.withOpacity(0.94),
+                    borderRadius: BorderRadius.circular(12),
+                    child: InkWell(
+                      onTap: isUploading ? null : onUpload,
+                      borderRadius: BorderRadius.circular(12),
+                      child: const Padding(
+                        padding: EdgeInsets.symmetric(
+                          horizontal: 12,
+                          vertical: 9,
+                        ),
+                        child: Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            Icon(Icons.refresh, size: 17),
+                            SizedBox(width: 6),
+                            Text('Replace photo'),
+                          ],
+                        ),
                       ),
                     ),
                   ),
@@ -724,40 +807,56 @@ class _PhotoUploadField extends StatelessWidget {
           InkWell(
             key: const Key('report_photo_upload'),
             onTap: isUploading ? null : onUpload,
-            borderRadius: BorderRadius.circular(12),
+            borderRadius: BorderRadius.circular(18),
             child: Container(
               width: double.infinity,
-              padding: const EdgeInsets.symmetric(vertical: 32),
+              padding: const EdgeInsets.symmetric(
+                horizontal: 20,
+                vertical: 30,
+              ),
               decoration: BoxDecoration(
-                color: const Color(0xFFF9F9FF),
-                borderRadius: BorderRadius.circular(12),
-                border: Border.all(color: const Color(0xFFBDC9C6), width: 2),
+                color: colorScheme.surfaceContainerLowest,
+                borderRadius: BorderRadius.circular(18),
+                border: Border.all(
+                  color: errorText != null
+                      ? colorScheme.error
+                      : colorScheme.outlineVariant,
+                  width: 1.4,
+                ),
               ),
               child: Column(
-                mainAxisAlignment: MainAxisAlignment.center,
                 children: [
-                  isUploading
-                      ? const SizedBox.square(
-                          dimension: 28,
-                          child: CircularProgressIndicator(
-                            strokeWidth: 2,
-                            color: Color(0xFF0F766E),
+                  Container(
+                    width: 52,
+                    height: 52,
+                    decoration: BoxDecoration(
+                      color: colorScheme.primaryContainer,
+                      borderRadius: BorderRadius.circular(16),
+                    ),
+                    child: isUploading
+                        ? const Padding(
+                            padding: EdgeInsets.all(14),
+                            child: CircularProgressIndicator(strokeWidth: 2),
+                          )
+                        : Icon(
+                            Icons.add_a_photo_outlined,
+                            color: colorScheme.onPrimaryContainer,
+                            size: 27,
                           ),
-                        )
-                      : const Icon(
-                          Icons.add_a_photo,
-                          size: 36,
-                          color: Color(0xFF3E4947),
-                        ),
-                  const SizedBox(height: 8),
+                  ),
+                  const SizedBox(height: 12),
                   Text(
-                    isUploading
-                        ? 'Uploading proof image...'
-                        : 'Add Environmental Photo',
-                    style: const TextStyle(
-                      fontSize: 14,
-                      fontWeight: FontWeight.w600,
-                      color: Color(0xFF111C2D),
+                    isUploading ? 'Uploading photo…' : 'Add a photo',
+                    style: theme.textTheme.titleSmall?.copyWith(
+                      fontWeight: FontWeight.w800,
+                    ),
+                  ),
+                  const SizedBox(height: 4),
+                  Text(
+                    label,
+                    textAlign: TextAlign.center,
+                    style: theme.textTheme.bodySmall?.copyWith(
+                      color: colorScheme.onSurfaceVariant,
                     ),
                   ),
                 ],
@@ -768,10 +867,9 @@ class _PhotoUploadField extends StatelessWidget {
           const SizedBox(height: 8),
           Text(
             errorText!,
-            style: const TextStyle(
-              color: Color(0xFFBA1A1A),
-              fontSize: 13,
-              fontWeight: FontWeight.w500,
+            style: theme.textTheme.bodySmall?.copyWith(
+              color: colorScheme.error,
+              fontWeight: FontWeight.w600,
             ),
           ),
         ],

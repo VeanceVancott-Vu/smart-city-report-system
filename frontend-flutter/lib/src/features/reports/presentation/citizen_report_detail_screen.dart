@@ -89,21 +89,25 @@ class _CitizenReportDetailScreenState extends State<CitizenReportDetailScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final colorScheme = theme.colorScheme;
+
     return Scaffold(
-      backgroundColor: const Color(0xFFF7F9F8),
+      backgroundColor: colorScheme.surfaceContainerLowest,
       appBar: AppBar(
-        title: const Text(
-          'Report Details',
-          style: TextStyle(
-            fontWeight: FontWeight.bold,
-            color: Color(0xFF111C2D),
+        title: Text(
+          'Report details',
+          style: theme.textTheme.titleLarge?.copyWith(
+            fontWeight: FontWeight.w700,
           ),
         ),
-        backgroundColor: Colors.white,
+        backgroundColor: colorScheme.surface,
+        surfaceTintColor: colorScheme.surfaceTint,
         elevation: 0,
-        scrolledUnderElevation: 0,
+        scrolledUnderElevation: 1,
         leading: IconButton(
-          icon: const Icon(Icons.arrow_back, color: Color(0xFF111C2D)),
+          tooltip: 'Back',
+          icon: const Icon(Icons.arrow_back),
           onPressed: () => Navigator.of(context).pop(),
         ),
       ),
@@ -111,76 +115,79 @@ class _CitizenReportDetailScreenState extends State<CitizenReportDetailScreen> {
         future: _reportFuture,
         builder: (context, snapshot) {
           if (snapshot.connectionState != ConnectionState.done) {
-            return const Center(
-              child: CircularProgressIndicator(color: Color(0xFF0F766E)),
-            );
+            return const _LoadingState();
           }
 
           if (snapshot.hasError) {
             return _ErrorState(
-              message: 'Unable to load report detailed insight specifications.',
+              message: 'We could not load this report right now.',
               onSecondary: _loadReport,
             );
           }
 
-          final report = snapshot.data!;
+          final report = snapshot.requireData;
 
           return LayoutBuilder(
             builder: (context, constraints) {
-              final isDesktop = constraints.maxWidth >= 900;
+              final isDesktop = constraints.maxWidth >= 980;
+              final horizontalPadding = isDesktop ? 32.0 : 16.0;
 
-              return Center(
-                child: ConstrainedBox(
-                  constraints: BoxConstraints(
-                    maxWidth: isDesktop ? 1100 : double.infinity,
-                  ),
-                  child: SingleChildScrollView(
-                    padding: EdgeInsets.all(isDesktop ? 32 : 16),
-                    child: isDesktop
-                        ? Row(
+              return SingleChildScrollView(
+                padding: EdgeInsets.fromLTRB(
+                  horizontalPadding,
+                  isDesktop ? 28 : 16,
+                  horizontalPadding,
+                  40,
+                ),
+                child: Center(
+                  child: ConstrainedBox(
+                    constraints: const BoxConstraints(maxWidth: 1180),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.stretch,
+                      children: [
+                        _buildHeroSection(report, isDesktop),
+                        SizedBox(height: isDesktop ? 28 : 20),
+                        if (isDesktop)
+                          Row(
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
-                              // CỘT TRÁI WEB (60%): Ảnh, Bản đồ, Vị trí địa lý
                               Expanded(
-                                flex: 6,
+                                flex: 7,
                                 child: Column(
                                   children: [
-                                    _buildPhotosSection(report),
+                                    _buildDescriptionSection(report),
                                     const SizedBox(height: 20),
                                     _buildLocationSection(report),
                                   ],
                                 ),
                               ),
                               const SizedBox(width: 24),
-                              // CỘT PHẢI WEB (40%): Thông tin tổng quan, Trạng thái, Mô tả
                               Expanded(
                                 flex: 4,
                                 child: Column(
                                   children: [
-                                    _buildOverviewCard(report),
+                                    _buildCurrentStatusSection(report),
                                     const SizedBox(height: 20),
-                                    _buildCurrentStatusCard(report),
-                                    const SizedBox(height: 20),
-                                    _buildDescriptionCard(report),
+                                    _buildReportMetaSection(report),
                                   ],
                                 ),
                               ),
                             ],
                           )
-                        : Column(
-                            // BỐ CỤC MOBILE DI ĐỘNG: Các thẻ xếp dọc liền mạch
+                        else
+                          Column(
                             children: [
-                              _buildOverviewCard(report),
+                              _buildCurrentStatusSection(report),
                               const SizedBox(height: 16),
-                              _buildCurrentStatusCard(report),
-                              const SizedBox(height: 16),
-                              _buildPhotosSection(report),
+                              _buildDescriptionSection(report),
                               const SizedBox(height: 16),
                               _buildLocationSection(report),
                               const SizedBox(height: 16),
-                              _buildDescriptionCard(report),
+                              _buildReportMetaSection(report),
                             ],
                           ),
+                      ],
+                    ),
                   ),
                 ),
               );
@@ -191,469 +198,678 @@ class _CitizenReportDetailScreenState extends State<CitizenReportDetailScreen> {
     );
   }
 
-  Widget _buildCurrentStatusCard(Report report) {
-    return Card(
-      color: Colors.white,
-      elevation: 0,
-      shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(16),
-        side: const BorderSide(color: Color(0xFFE2E8F0)),
-      ),
-      child: Padding(
-        padding: const EdgeInsets.all(20),
-        child: FutureBuilder<Task?>(
-          future: _assignedTaskFuture,
-          builder: (context, snapshot) {
-            final task = snapshot.data;
-            final staff = task?.assignedStaff;
-
-            return Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  'Current Status',
-                  style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                    fontWeight: FontWeight.bold,
-                    color: const Color(0xFF111C2D),
-                  ),
-                ),
-                const SizedBox(height: 14),
-                Row(
-                  children: [
-                    _StatusBadge(status: report.status),
-                    if (task != null) ...[
-                      const SizedBox(width: 8),
-                      Chip(
-                        avatar: const Icon(Icons.assignment_outlined, size: 16),
-                        label: Text(task.status.label),
-                        visualDensity: VisualDensity.compact,
-                      ),
-                    ],
-                  ],
-                ),
-                const SizedBox(height: 16),
-                const Divider(color: Color(0xFFE2E8F0)),
-                const SizedBox(height: 12),
-                Row(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Icon(
-                      staff == null
-                          ? Icons.person_off_outlined
-                          : Icons.person_outline,
-                      size: 20,
-                      color: const Color(0xFF64748B),
-                    ),
-                    const SizedBox(width: 8),
-                    Expanded(
-                      child: staff == null
-                          ? const Text(
-                              'Not assigned to a staff member yet',
-                              style: TextStyle(color: Color(0xFF64748B)),
-                            )
-                          : Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                const Text(
-                                  'Assigned staff',
-                                  style: TextStyle(
-                                    fontSize: 12,
-                                    color: Color(0xFF64748B),
-                                  ),
-                                ),
-                                const SizedBox(height: 3),
-                                Text(
-                                  staff.fullName,
-                                  style: const TextStyle(
-                                    fontWeight: FontWeight.w600,
-                                    color: Color(0xFF1E293B),
-                                  ),
-                                ),
-                                Text(
-                                  staff.role,
-                                  style: const TextStyle(
-                                    fontSize: 12,
-                                    color: Color(0xFF64748B),
-                                  ),
-                                ),
-                              ],
-                            ),
-                    ),
-                  ],
-                ),
-              ],
-            );
-          },
-        ),
-      ),
+  Widget _buildHeroSection(Report report, bool isDesktop) {
+    final theme = Theme.of(context);
+    final colorScheme = theme.colorScheme;
+    final shortId = report.id.substring(
+      0,
+      report.id.length > 8 ? 8 : report.id.length,
     );
-  }
 
-  // COMPONENT 1: THẺ TỔNG QUAN (MÃ SỰ CỐ, DANH MỤC, TRẠNG THÁI)
-  Widget _buildOverviewCard(Report report) {
-    return Card(
-      color: Colors.white,
-      elevation: 0,
-      shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(16),
-        side: const BorderSide(color: Color(0xFFE2E8F0)),
-      ),
-      child: Padding(
-        padding: const EdgeInsets.all(20),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: [
-                Container(
-                  decoration: BoxDecoration(
-                    color: const Color(0xFFF0F3FF),
-                    borderRadius: BorderRadius.circular(6),
-                  ),
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 10,
-                    vertical: 4,
-                  ),
-                  child: Text(
-                    '#RPT-${report.id.substring(0, report.id.length > 8 ? 8 : report.id.length).toUpperCase()}',
-                    style: const TextStyle(
-                      fontSize: 12,
-                      fontWeight: FontWeight.bold,
-                      color: Color(0xFF425268),
-                    ),
-                  ),
-                ),
-                _StatusBadge(status: report.status),
-              ],
-            ),
-            const SizedBox(height: 16),
-            Text(
-              report.title,
-              style: const TextStyle(
-                fontSize: 20,
-                fontWeight: FontWeight.bold,
-                color: Color(0xFF111C2D),
-              ),
-            ),
-            const SizedBox(height: 12),
-            const Divider(color: Color(0xFFE2E8F0)),
-            const SizedBox(height: 12),
-            Wrap(
-              spacing: 8,
-              runSpacing: 8,
-              children: [
-                _InfoChip(
-                  icon: Icons.category_outlined,
-                  label: report.category.label,
-                ),
-                _InfoChip(
-                  icon: Icons.flash_on_outlined,
-                  label: 'Priority: ${report.priorityScore}',
-                ),
-                _InfoChip(
-                  icon: Icons.thumb_up_outlined,
-                  label: '${report.upvoteCount} Confirmations',
-                ),
-              ],
-            ),
-          ],
+    return Container(
+      decoration: BoxDecoration(
+        color: colorScheme.surface,
+        borderRadius: BorderRadius.circular(24),
+        border: Border.all(
+          color: colorScheme.outlineVariant.withOpacity(0.75),
         ),
+        boxShadow: [
+          BoxShadow(
+            color: colorScheme.shadow.withOpacity(0.05),
+            blurRadius: 24,
+            offset: const Offset(0, 10),
+          ),
+        ],
       ),
-    );
-  }
-
-  // COMPONENT 2: KHU VỰC HÌNH ẢNH TRƯỚC VÀ SAU XỬ LÝ (BEFORE / AFTER CANVAS)
-  Widget _buildPhotosSection(Report report) {
-    // Report currently exposes only the before photo. The after-photo field
-    // will be added when the backend workflow supports it.
-    const String? afterPhotoUrl = null;
-    final hasAfterPhoto = afterPhotoUrl != null;
-
-    return Card(
-      color: Colors.white,
-      elevation: 0,
-      shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(16),
-        side: const BorderSide(color: Color(0xFFE2E8F0)),
-      ),
-      child: Padding(
-        padding: const EdgeInsets.all(20),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text(
-              'Visual Proof Evidence',
-              style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                fontWeight: FontWeight.bold,
-                color: const Color(0xFF111C2D),
-              ),
-            ),
-            const SizedBox(height: 14),
-            Row(
-              children: [
-                // Khung ảnh trước xử lý (Before Photo)
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      const Text(
-                        'BEFORE',
-                        style: TextStyle(
-                          fontSize: 11,
-                          fontWeight: FontWeight.bold,
-                          color: Color(0xFF64748B),
-                        ),
-                      ),
-                      const SizedBox(height: 6),
-                      GestureDetector(
-                        onTap: report.beforePhotoUrl != null
-                            ? () => _openFullPhoto(report.beforePhotoUrl!)
-                            : null,
-                        child: Container(
-                          height: 180,
-                          decoration: BoxDecoration(
-                            color: const Color(0xFFF7F9F8),
-                            borderRadius: BorderRadius.circular(12),
-                            border: Border.all(color: const Color(0xFFE2E8F0)),
-                          ),
-                          clipBehavior: Clip.antiAlias,
-                          child: report.beforePhotoUrl != null
-                              ? UploadedPhotoImage(
-                                  fileUrl: report.beforePhotoUrl!,
-                                  fit: BoxFit.cover,
-                                )
-                              : const Center(
-                                  child: Icon(
-                                    Icons.image_not_supported_outlined,
-                                    color: Color(0xFF64748B),
-                                  ),
-                                ),
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-                // Khung ảnh sau xử lý nếu có (After Photo)
-                if (hasAfterPhoto) ...[
-                  const SizedBox(width: 16),
+      clipBehavior: Clip.antiAlias,
+      child: isDesktop
+          ? SizedBox(
+              height: 360,
+              child: Row(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
                   Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
+                    flex: 6,
+                    child: _buildHeroPhoto(report, 360),
+                  ),
+                  Expanded(
+                    flex: 5,
+                    child: Padding(
+                      padding: const EdgeInsets.all(28),
+                      child: SingleChildScrollView(
+                        child: _buildHeroContent(report, shortId),
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            )
+          : Column(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                _buildHeroPhoto(report, 250),
+                Padding(
+                  padding: const EdgeInsets.all(20),
+                  child: _buildHeroContent(report, shortId),
+                ),
+              ],
+            ),
+    );
+  }
+
+  Widget _buildHeroPhoto(Report report, double height) {
+    final colorScheme = Theme.of(context).colorScheme;
+
+    return GestureDetector(
+      onTap: report.beforePhotoUrl != null
+          ? () => _openFullPhoto(report.beforePhotoUrl!)
+          : null,
+      child: SizedBox(
+        height: height,
+        child: Stack(
+          fit: StackFit.expand,
+          children: [
+            if (report.beforePhotoUrl != null)
+              UploadedPhotoImage(
+                fileUrl: report.beforePhotoUrl!,
+                fit: BoxFit.cover,
+              )
+            else
+              ColoredBox(
+                color: colorScheme.surfaceContainerHighest,
+                child: Center(
+                  child: Icon(
+                    Icons.image_not_supported_outlined,
+                    size: 56,
+                    color: colorScheme.onSurfaceVariant,
+                  ),
+                ),
+              ),
+            if (report.beforePhotoUrl != null)
+              Positioned(
+                right: 14,
+                bottom: 14,
+                child: Material(
+                  color: colorScheme.surface.withOpacity(0.92),
+                  borderRadius: BorderRadius.circular(12),
+                  child: Padding(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 12,
+                      vertical: 8,
+                    ),
+                    child: Row(
+                      mainAxisSize: MainAxisSize.min,
                       children: [
-                        const Text(
-                          'AFTER RESOLVED',
-                          style: TextStyle(
-                            fontSize: 11,
-                            fontWeight: FontWeight.bold,
-                            color: Color(0xFF0F766E),
-                          ),
+                        Icon(
+                          Icons.open_in_full,
+                          size: 16,
+                          color: colorScheme.onSurface,
                         ),
-                        const SizedBox(height: 6),
-                        GestureDetector(
-                          onTap: () => _openFullPhoto(afterPhotoUrl!),
-                          child: Container(
-                            height: 180,
-                            decoration: BoxDecoration(
-                              color: const Color(0xFFCCFBF1),
-                              borderRadius: BorderRadius.circular(12),
-                              border: Border.all(
-                                color: const Color(0xFF0F766E).withOpacity(0.3),
-                              ),
-                            ),
-                            clipBehavior: Clip.antiAlias,
-                            child: UploadedPhotoImage(
-                              fileUrl: afterPhotoUrl,
-                              fit: BoxFit.cover,
-                            ),
-                          ),
+                        const SizedBox(width: 6),
+                        Text(
+                          'View photo',
+                          style: Theme.of(context).textTheme.labelLarge,
                         ),
                       ],
                     ),
                   ),
-                ],
-              ],
-            ),
+                ),
+              ),
           ],
         ),
       ),
     );
   }
 
-  // COMPONENT 3: VỊ TRÍ CHI TIẾT KÈM MINI MAP WORKSPACE TỰ THÍCH ỨNG
+  Widget _buildHeroContent(Report report, String shortId) {
+    final theme = Theme.of(context);
+    final colorScheme = theme.colorScheme;
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      mainAxisAlignment: MainAxisAlignment.center,
+      children: [
+        Row(
+          children: [
+            Container(
+              padding: const EdgeInsets.symmetric(
+                horizontal: 10,
+                vertical: 6,
+              ),
+              decoration: BoxDecoration(
+                color: colorScheme.surfaceContainerHighest,
+                borderRadius: BorderRadius.circular(999),
+              ),
+              child: Text(
+                '#RPT-${shortId.toUpperCase()}',
+                style: theme.textTheme.labelMedium?.copyWith(
+                  color: colorScheme.onSurfaceVariant,
+                  fontWeight: FontWeight.w700,
+                ),
+              ),
+            ),
+            const Spacer(),
+            _StatusBadge(status: report.status),
+          ],
+        ),
+        const SizedBox(height: 20),
+        Text(
+          report.title,
+          style: theme.textTheme.headlineSmall?.copyWith(
+            fontWeight: FontWeight.w800,
+            height: 1.2,
+          ),
+        ),
+        const SizedBox(height: 16),
+        Wrap(
+          spacing: 10,
+          runSpacing: 10,
+          children: [
+            _InfoChip(
+              icon: Icons.category_outlined,
+              label: report.category.localizedLabel(context),
+            ),
+            _InfoChip(
+              icon: Icons.trending_up,
+              label: 'Priority ${report.priorityScore}',
+            ),
+            _InfoChip(
+              icon: Icons.thumb_up_alt_outlined,
+              label: '${report.upvoteCount} confirmations',
+            ),
+          ],
+        ),
+      ],
+    );
+  }
+
+  Widget _buildCurrentStatusSection(Report report) {
+    final theme = Theme.of(context);
+    final colorScheme = theme.colorScheme;
+
+    return _SectionSurface(
+      title: 'Current status',
+      subtitle: 'Track how this report is being handled.',
+      child: FutureBuilder<Task?>(
+        future: _assignedTaskFuture,
+        builder: (context, snapshot) {
+          final task = snapshot.data;
+          final staff = task?.assignedStaff;
+
+          return Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              _StatusProgress(status: report.status),
+              const SizedBox(height: 20),
+              Divider(color: colorScheme.outlineVariant),
+              const SizedBox(height: 16),
+              Row(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Container(
+                    width: 42,
+                    height: 42,
+                    decoration: BoxDecoration(
+                      color: colorScheme.secondaryContainer,
+                      borderRadius: BorderRadius.circular(13),
+                    ),
+                    child: Icon(
+                      staff == null
+                          ? Icons.person_search_outlined
+                          : Icons.person_outline,
+                      color: colorScheme.onSecondaryContainer,
+                    ),
+                  ),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: staff == null
+                        ? Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(
+                                'Staff assignment',
+                                style: theme.textTheme.titleSmall?.copyWith(
+                                  fontWeight: FontWeight.w700,
+                                ),
+                              ),
+                              const SizedBox(height: 4),
+                              Text(
+                                'A staff member has not been assigned yet.',
+                                style: theme.textTheme.bodyMedium?.copyWith(
+                                  color: colorScheme.onSurfaceVariant,
+                                ),
+                              ),
+                            ],
+                          )
+                        : Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(
+                                'Assigned staff',
+                                style: theme.textTheme.labelLarge?.copyWith(
+                                  color: colorScheme.onSurfaceVariant,
+                                ),
+                              ),
+                              const SizedBox(height: 3),
+                              Text(
+                                staff.fullName,
+                                style: theme.textTheme.titleSmall?.copyWith(
+                                  fontWeight: FontWeight.w800,
+                                ),
+                              ),
+                              Text(
+                                staff.role,
+                                style: theme.textTheme.bodySmall?.copyWith(
+                                  color: colorScheme.onSurfaceVariant,
+                                ),
+                              ),
+                            ],
+                          ),
+                  ),
+                  if (task != null)
+                    Chip(
+                      avatar: const Icon(Icons.assignment_outlined, size: 16),
+                      label: Text(task.status.label),
+                      visualDensity: VisualDensity.compact,
+                    ),
+                ],
+              ),
+            ],
+          );
+        },
+      ),
+    );
+  }
+
+  Widget _buildDescriptionSection(Report report) {
+    final theme = Theme.of(context);
+    final colorScheme = theme.colorScheme;
+
+    return _SectionSurface(
+      title: 'Description',
+      subtitle: 'Details provided with the original report.',
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            report.description.isEmpty
+                ? 'No additional description was provided.'
+                : report.description,
+            style: theme.textTheme.bodyLarge?.copyWith(
+              height: 1.6,
+              color: colorScheme.onSurface,
+            ),
+          ),
+          const SizedBox(height: 18),
+          Divider(color: colorScheme.outlineVariant),
+          const SizedBox(height: 14),
+          Row(
+            children: [
+              Icon(
+                report.anonymous
+                    ? Icons.visibility_off_outlined
+                    : Icons.account_circle_outlined,
+                size: 18,
+                color: colorScheme.onSurfaceVariant,
+              ),
+              const SizedBox(width: 8),
+              Expanded(
+                child: Text(
+                  report.anonymous
+                      ? 'Submitted anonymously'
+                      : 'Submitted from a public profile',
+                  style: theme.textTheme.bodySmall?.copyWith(
+                    color: colorScheme.onSurfaceVariant,
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+
   Widget _buildLocationSection(Report report) {
+    final theme = Theme.of(context);
+    final colorScheme = theme.colorScheme;
     final reportLatLng = LatLng(report.latitude, report.longitude);
 
-    return Card(
-      color: Colors.white,
-      elevation: 0,
-      shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(16),
-        side: const BorderSide(color: Color(0xFFE2E8F0)),
-      ),
-      child: Padding(
-        padding: const EdgeInsets.all(20),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text(
-              'Incident Location',
-              style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                fontWeight: FontWeight.bold,
-                color: const Color(0xFF111C2D),
-              ),
+    return _SectionSurface(
+      title: 'Location',
+      subtitle: 'The position attached to this report.',
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Container(
+            height: 300,
+            decoration: BoxDecoration(
+              borderRadius: BorderRadius.circular(18),
+              border: Border.all(color: colorScheme.outlineVariant),
             ),
-            const SizedBox(height: 14),
-            // Bản đồ Mini tích hợp (Mini Map Canvas Box)
-            Container(
-              height: 260,
-              decoration: BoxDecoration(
-                borderRadius: BorderRadius.circular(12),
-                border: Border.all(color: const Color(0xFFE2E8F0)),
-              ),
-              clipBehavior: Clip.antiAlias,
-              child: FlutterMap(
-                options: MapOptions(
-                  initialCenter: reportLatLng,
-                  initialZoom: 16.0,
-                  onTap: (_, point) {
-                    ScaffoldMessenger.of(context)
-                      ..hideCurrentSnackBar()
-                      ..showSnackBar(
-                        SnackBar(
-                          content: Text(
-                            'Selected location: '
-                            '${point.latitude.toStringAsFixed(6)}, '
-                            '${point.longitude.toStringAsFixed(6)}',
-                          ),
-                          duration: const Duration(seconds: 2),
+            clipBehavior: Clip.antiAlias,
+            child: FlutterMap(
+              options: MapOptions(
+                initialCenter: reportLatLng,
+                initialZoom: 16.0,
+                onTap: (_, point) {
+                  ScaffoldMessenger.of(context)
+                    ..hideCurrentSnackBar()
+                    ..showSnackBar(
+                      SnackBar(
+                        content: Text(
+                          'Selected location: '
+                          '${point.latitude.toStringAsFixed(6)}, '
+                          '${point.longitude.toStringAsFixed(6)}',
                         ),
-                      );
-                  },
-                ),
-                children: [
-                  TileLayer(
-                    urlTemplate:
-                        'https://tile.openstreetmap.org/{z}/{x}/{y}.png',
-                    userAgentPackageName: 'com.smartcity.report',
-                  ),
-                  MarkerLayer(
-                    markers: [
-                      Marker(
-                        point: reportLatLng,
-                        width: 40,
-                        height: 40,
-                        child: const Icon(
-                          Icons.location_on,
-                          color: Color(0xFFEF4444),
-                          size: 32,
-                        ),
+                        duration: const Duration(seconds: 2),
                       ),
-                    ],
-                  ),
-                ],
+                    );
+                },
               ),
-            ),
-            const SizedBox(height: 14),
-            Row(
-              crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                const Icon(
-                  Icons.place_outlined,
-                  color: Color(0xFF64748B),
-                  size: 20,
+                TileLayer(
+                  urlTemplate:
+                      'https://tile.openstreetmap.org/{z}/{x}/{y}.png',
+                  userAgentPackageName: 'com.smartcity.report',
                 ),
-                const SizedBox(width: 8),
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        report.addressText ??
-                            'GPS Geocoded Workplace Address Position',
-                        style: const TextStyle(
-                          fontSize: 14,
-                          fontWeight: FontWeight.w500,
-                          color: Color(0xFF1E293B),
+                MarkerLayer(
+                  markers: [
+                    Marker(
+                      point: reportLatLng,
+                      width: 48,
+                      height: 48,
+                      child: Container(
+                        decoration: BoxDecoration(
+                          color: colorScheme.primary,
+                          shape: BoxShape.circle,
+                          boxShadow: [
+                            BoxShadow(
+                              color: colorScheme.shadow.withOpacity(0.2),
+                              blurRadius: 10,
+                              offset: const Offset(0, 4),
+                            ),
+                          ],
+                        ),
+                        child: Icon(
+                          Icons.location_on,
+                          color: colorScheme.onPrimary,
+                          size: 28,
                         ),
                       ),
-                      const SizedBox(height: 4),
-                      Text(
-                        'Coordinates: ${report.latitude.toStringAsFixed(4)}° N, ${report.longitude.toStringAsFixed(4)}° E',
-                        style: const TextStyle(
-                          fontSize: 12,
-                          color: Color(0xFF64748B),
-                        ),
-                      ),
-                    ],
-                  ),
+                    ),
+                  ],
                 ),
               ],
             ),
-          ],
-        ),
+          ),
+          const SizedBox(height: 16),
+          Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Container(
+                width: 40,
+                height: 40,
+                decoration: BoxDecoration(
+                  color: colorScheme.primaryContainer,
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                child: Icon(
+                  Icons.place_outlined,
+                  color: colorScheme.onPrimaryContainer,
+                ),
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      report.addressText ?? 'Address not available',
+                      style: theme.textTheme.titleSmall?.copyWith(
+                        fontWeight: FontWeight.w700,
+                      ),
+                    ),
+                    const SizedBox(height: 4),
+                    Text(
+                      '${report.latitude.toStringAsFixed(4)}, '
+                      '${report.longitude.toStringAsFixed(4)}',
+                      style: theme.textTheme.bodySmall?.copyWith(
+                        color: colorScheme.onSurfaceVariant,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+        ],
       ),
     );
   }
 
-  // COMPONENT 4: THỂ HIỆN NỘI DUNG MÔ TẢ PHẢN ÁNH CHI TIẾT
-  Widget _buildDescriptionCard(Report report) {
-    return Card(
-      color: Colors.white,
-      elevation: 0,
-      shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(16),
-        side: const BorderSide(color: Color(0xFFE2E8F0)),
+  Widget _buildReportMetaSection(Report report) {
+    return _SectionSurface(
+      title: 'Report overview',
+      subtitle: 'Quick reference information.',
+      child: Column(
+        children: [
+          _MetaRow(
+            icon: Icons.confirmation_number_outlined,
+            label: 'Report ID',
+            value:
+                '#RPT-${report.id.substring(0, report.id.length > 8 ? 8 : report.id.length).toUpperCase()}',
+          ),
+          const SizedBox(height: 14),
+          _MetaRow(
+            icon: Icons.category_outlined,
+            label: 'Category',
+            value: report.category.localizedLabel(context),
+          ),
+          const SizedBox(height: 14),
+          _MetaRow(
+            icon: Icons.trending_up,
+            label: 'Priority score',
+            value: '${report.priorityScore}',
+          ),
+          const SizedBox(height: 14),
+          _MetaRow(
+            icon: Icons.thumb_up_alt_outlined,
+            label: 'Confirmations',
+            value: '${report.upvoteCount}',
+          ),
+        ],
       ),
-      child: Padding(
-        padding: const EdgeInsets.all(20),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text(
-              'Incident Description Context',
-              style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                fontWeight: FontWeight.bold,
-                color: const Color(0xFF111C2D),
-              ),
-            ),
-            const SizedBox(height: 12),
-            Text(
-              report.description.isEmpty
-                  ? 'No supplementary detailed description texts provided.'
-                  : report.description,
-              style: const TextStyle(
-                fontSize: 15,
-                height: 1.5,
-                color: Color(0xFF3E4947),
-              ),
-            ),
-            const SizedBox(height: 16),
-            const Divider(color: Color(0xFFE2E8F0)),
-            const SizedBox(height: 12),
-            Row(
-              children: [
-                const Icon(
-                  Icons.account_circle_outlined,
-                  size: 18,
-                  color: Color(0xFF64748B),
-                ),
-                const SizedBox(width: 8),
-                Text(
-                  report.anonymous
-                      ? 'Submitted Anonymously (Ẩn danh)'
-                      : 'Public Profile Transmission',
-                  style: const TextStyle(
-                    fontSize: 12,
-                    fontWeight: FontWeight.w500,
-                    color: Color(0xFF64748B),
-                  ),
-                ),
-              ],
-            ),
-          ],
+    );
+  }
+}
+
+class _SectionSurface extends StatelessWidget {
+  const _SectionSurface({
+    required this.title,
+    required this.subtitle,
+    required this.child,
+  });
+
+  final String title;
+  final String subtitle;
+  final Widget child;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final colorScheme = theme.colorScheme;
+
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.all(22),
+      decoration: BoxDecoration(
+        color: colorScheme.surface,
+        borderRadius: BorderRadius.circular(20),
+        border: Border.all(
+          color: colorScheme.outlineVariant.withOpacity(0.75),
         ),
       ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            title,
+            style: theme.textTheme.titleLarge?.copyWith(
+              fontWeight: FontWeight.w800,
+            ),
+          ),
+          const SizedBox(height: 4),
+          Text(
+            subtitle,
+            style: theme.textTheme.bodySmall?.copyWith(
+              color: colorScheme.onSurfaceVariant,
+            ),
+          ),
+          const SizedBox(height: 20),
+          child,
+        ],
+      ),
+    );
+  }
+}
+
+class _StatusProgress extends StatelessWidget {
+  const _StatusProgress({required this.status});
+
+  final ReportStatus status;
+
+  int get _currentStep {
+    switch (status) {
+      case ReportStatus.submitted:
+        return 0;
+      case ReportStatus.inProgress:
+        return 1;
+      case ReportStatus.fixed:
+        return 2;
+      case ReportStatus.cancelled:
+        return 0;
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final colorScheme = Theme.of(context).colorScheme;
+    final steps = const [
+      ('Submitted', Icons.inbox_outlined),
+      ('In progress', Icons.build_outlined),
+      ('Resolved', Icons.check_circle_outline),
+    ];
+
+    return Row(
+      children: List.generate(steps.length, (index) {
+        final active = status != ReportStatus.cancelled && index <= _currentStep;
+        final isLast = index == steps.length - 1;
+
+        return Expanded(
+          child: Row(
+            children: [
+              Column(
+                children: [
+                  Container(
+                    width: 36,
+                    height: 36,
+                    decoration: BoxDecoration(
+                      color: active
+                          ? colorScheme.primary
+                          : colorScheme.surfaceContainerHighest,
+                      shape: BoxShape.circle,
+                    ),
+                    child: Icon(
+                      steps[index].$2,
+                      size: 19,
+                      color: active
+                          ? colorScheme.onPrimary
+                          : colorScheme.onSurfaceVariant,
+                    ),
+                  ),
+                  const SizedBox(height: 6),
+                  Text(
+                    steps[index].$1,
+                    style: Theme.of(context).textTheme.labelSmall?.copyWith(
+                      color: active
+                          ? colorScheme.primary
+                          : colorScheme.onSurfaceVariant,
+                      fontWeight: active ? FontWeight.w700 : FontWeight.w500,
+                    ),
+                  ),
+                ],
+              ),
+              if (!isLast)
+                Expanded(
+                  child: Container(
+                    height: 2,
+                    margin: const EdgeInsets.fromLTRB(8, 0, 8, 22),
+                    color: index < _currentStep
+                        ? colorScheme.primary
+                        : colorScheme.outlineVariant,
+                  ),
+                ),
+            ],
+          ),
+        );
+      }),
+    );
+  }
+}
+
+class _MetaRow extends StatelessWidget {
+  const _MetaRow({
+    required this.icon,
+    required this.label,
+    required this.value,
+  });
+
+  final IconData icon;
+  final String label;
+  final String value;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final colorScheme = theme.colorScheme;
+
+    return Row(
+      children: [
+        Container(
+          width: 38,
+          height: 38,
+          decoration: BoxDecoration(
+            color: colorScheme.surfaceContainerHighest,
+            borderRadius: BorderRadius.circular(11),
+          ),
+          child: Icon(
+            icon,
+            size: 19,
+            color: colorScheme.onSurfaceVariant,
+          ),
+        ),
+        const SizedBox(width: 12),
+        Expanded(
+          child: Text(
+            label,
+            style: theme.textTheme.bodyMedium?.copyWith(
+              color: colorScheme.onSurfaceVariant,
+            ),
+          ),
+        ),
+        const SizedBox(width: 12),
+        Flexible(
+          child: Text(
+            value,
+            textAlign: TextAlign.end,
+            style: theme.textTheme.bodyMedium?.copyWith(
+              fontWeight: FontWeight.w700,
+            ),
+          ),
+        ),
+      ],
     );
   }
 }
@@ -674,8 +890,8 @@ class _StatusBadge extends StatelessWidget {
         foregroundColor = const Color(0xFF005C55);
         break;
       case ReportStatus.inProgress:
-        backgroundColor = const Color(0xFFFFDAD6);
-        foregroundColor = Colors.orange.shade900;
+        backgroundColor = const Color(0xFFFFE4C7);
+        foregroundColor = const Color(0xFF8A4B00);
         break;
       case ReportStatus.fixed:
         backgroundColor = const Color(0xFFCCFBF1);
@@ -692,13 +908,13 @@ class _StatusBadge extends StatelessWidget {
         color: backgroundColor,
         borderRadius: BorderRadius.circular(9999),
       ),
-      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+      padding: const EdgeInsets.symmetric(horizontal: 11, vertical: 6),
       child: Text(
         status.label,
         style: TextStyle(
           color: foregroundColor,
           fontSize: 11,
-          fontWeight: FontWeight.bold,
+          fontWeight: FontWeight.w800,
         ),
       ),
     );
@@ -713,27 +929,76 @@ class _InfoChip extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final colorScheme = theme.colorScheme;
+
     return Container(
       decoration: BoxDecoration(
-        color: const Color(0xFFF7F9F8),
-        borderRadius: BorderRadius.circular(8),
-        border: Border.all(color: const Color(0xFFE2E8F0)),
+        color: colorScheme.surfaceContainerHighest,
+        borderRadius: BorderRadius.circular(10),
       ),
-      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 7),
       child: Row(
         mainAxisSize: MainAxisSize.min,
         children: [
-          Icon(icon, size: 16, color: const Color(0xFF64748B)),
+          Icon(icon, size: 16, color: colorScheme.onSurfaceVariant),
           const SizedBox(width: 6),
           Text(
             label,
-            style: const TextStyle(
-              fontSize: 12,
-              color: Color(0xFF1E293B),
-              fontWeight: FontWeight.w500,
+            style: theme.textTheme.bodySmall?.copyWith(
+              color: colorScheme.onSurface,
+              fontWeight: FontWeight.w600,
             ),
           ),
         ],
+      ),
+    );
+  }
+}
+
+class _LoadingState extends StatelessWidget {
+  const _LoadingState();
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final colorScheme = theme.colorScheme;
+
+    return Center(
+      child: Padding(
+        padding: const EdgeInsets.all(24),
+        child: ConstrainedBox(
+          constraints: const BoxConstraints(maxWidth: 420),
+          child: Container(
+            padding: const EdgeInsets.all(28),
+            decoration: BoxDecoration(
+              color: colorScheme.surface,
+              borderRadius: BorderRadius.circular(24),
+              border: Border.all(color: colorScheme.outlineVariant),
+            ),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                const CircularProgressIndicator(),
+                const SizedBox(height: 18),
+                Text(
+                  'Loading report',
+                  style: theme.textTheme.titleMedium?.copyWith(
+                    fontWeight: FontWeight.w800,
+                  ),
+                ),
+                const SizedBox(height: 6),
+                Text(
+                  'Please wait while the latest information is prepared.',
+                  textAlign: TextAlign.center,
+                  style: theme.textTheme.bodyMedium?.copyWith(
+                    color: colorScheme.onSurfaceVariant,
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
       ),
     );
   }
@@ -747,28 +1012,63 @@ class _ErrorState extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final colorScheme = theme.colorScheme;
+
     return Center(
       child: Padding(
         padding: const EdgeInsets.all(24),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Text(
-              message,
-              textAlign: TextAlign.center,
-              style: const TextStyle(color: Color(0xFF64748B)),
-            ),
-            const SizedBox(height: 12),
-            OutlinedButton.icon(
-              onPressed: onSecondary,
-              icon: const Icon(Icons.refresh),
-              label: const Text('Retry Lookup'),
-              style: OutlinedButton.styleFrom(
-                foregroundColor: const Color(0xFF0F766E),
-                side: const BorderSide(color: Color(0xFFBDC9C6)),
+        child: ConstrainedBox(
+          constraints: const BoxConstraints(maxWidth: 440),
+          child: Container(
+            padding: const EdgeInsets.all(28),
+            decoration: BoxDecoration(
+              color: colorScheme.surface,
+              borderRadius: BorderRadius.circular(24),
+              border: Border.all(
+                color: colorScheme.error.withOpacity(0.18),
               ),
             ),
-          ],
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Container(
+                  width: 58,
+                  height: 58,
+                  decoration: BoxDecoration(
+                    color: colorScheme.errorContainer,
+                    borderRadius: BorderRadius.circular(18),
+                  ),
+                  child: Icon(
+                    Icons.cloud_off_outlined,
+                    color: colorScheme.onErrorContainer,
+                    size: 30,
+                  ),
+                ),
+                const SizedBox(height: 18),
+                Text(
+                  'Unable to load report',
+                  style: theme.textTheme.titleLarge?.copyWith(
+                    fontWeight: FontWeight.w800,
+                  ),
+                ),
+                const SizedBox(height: 8),
+                Text(
+                  message,
+                  textAlign: TextAlign.center,
+                  style: theme.textTheme.bodyMedium?.copyWith(
+                    color: colorScheme.onSurfaceVariant,
+                  ),
+                ),
+                const SizedBox(height: 20),
+                FilledButton.icon(
+                  onPressed: onSecondary,
+                  icon: const Icon(Icons.refresh),
+                  label: const Text('Try again'),
+                ),
+              ],
+            ),
+          ),
         ),
       ),
     );

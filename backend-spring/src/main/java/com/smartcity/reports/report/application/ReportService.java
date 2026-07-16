@@ -22,6 +22,7 @@ import jakarta.persistence.criteria.Predicate;
 import org.springframework.data.domain.Sort;
 import org.springframework.data.jpa.domain.Specification;
 import org.springframework.security.access.AccessDeniedException;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -54,6 +55,7 @@ public class ReportService {
         );
     }
 
+    @Autowired
     public ReportService(
             ReportRepository reportRepository,
             ReportUpvoteRepository reportUpvoteRepository,

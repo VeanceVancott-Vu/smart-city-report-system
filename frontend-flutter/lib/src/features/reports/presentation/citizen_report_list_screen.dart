@@ -73,284 +73,368 @@ class CitizenReportListScreenState extends State<CitizenReportListScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final colorScheme = theme.colorScheme;
+
     return Scaffold(
-      backgroundColor: const Color(0xFFF7F9F8),
-      appBar: AppBar(
-        title: const Text(
-          'My Reports',
-          style: TextStyle(
-            fontWeight: FontWeight.bold,
-            color: Color(0xFF111C2D),
-          ),
-        ),
-        backgroundColor: Colors.white,
-        elevation: 0,
-        scrolledUnderElevation: 0,
-        actions: [
-          IconButton(
-            icon: const Icon(Icons.refresh, color: Color(0xFF0F766E)),
-            onPressed: reload,
-          ),
-        ],
-      ),
+      backgroundColor: colorScheme.surfaceContainerLowest,
       floatingActionButton: FloatingActionButton.extended(
         heroTag: 'citizen_report_list_create_report',
         onPressed: openCreateReport,
-        backgroundColor: const Color(0xFF0F766E),
-        foregroundColor: Colors.white,
         icon: const Icon(Icons.add),
-        label: const Text(
-          'New Report',
-          style: TextStyle(fontWeight: FontWeight.bold),
-        ),
+        label: const Text('New report'),
       ),
-      body: LayoutBuilder(
-        builder: (context, constraints) {
-          final isDesktop = constraints.maxWidth >= 900;
+      body: SafeArea(
+        child: LayoutBuilder(
+          builder: (context, constraints) {
+            final isDesktop = constraints.maxWidth >= 960;
 
-          return Column(
-            children: [
-              // PANEL ĐIỀU KHIỂN: TÌM KIẾM & BỘ SẮP XẾP SỰ CỐ
-              Container(
-                color: Colors.white,
-                padding: const EdgeInsets.all(16),
-                child: Row(
-                  children: [
-                    Expanded(
-                      child: Container(
-                        decoration: BoxDecoration(
-                          color: const Color(0xFFF0F3FF),
-                          borderRadius: BorderRadius.circular(9999),
-                        ),
-                        child: TextField(
-                          controller: _searchController,
-                          onChanged: (value) {
-                            setState(() {
-                              _searchQuery = value;
-                            });
-                          },
-                          decoration: InputDecoration(
-                            hintText: 'Search my reports...',
-                            hintStyle: const TextStyle(
-                              color: Color(0xFF64748B),
-                              fontSize: 14,
-                            ),
-                            prefixIcon: const Icon(
-                              Icons.search,
-                              color: Color(0xFF64748B),
-                            ),
-                            border: InputBorder.none,
-                            contentPadding: const EdgeInsets.symmetric(
-                              vertical: 12,
-                            ),
-                            suffixIcon: _searchQuery.isNotEmpty
-                                ? IconButton(
-                                    icon: const Icon(Icons.clear, size: 18),
-                                    onPressed: () {
+            return Column(
+              children: [
+                _PageHeader(
+                  isDesktop: isDesktop,
+                  onCreate: openCreateReport,
+                  onRefresh: reload,
+                ),
+                Expanded(
+                  child: FutureBuilder<List<Report>>(
+                    future: _reportsFuture,
+                    builder: (context, snapshot) {
+                      if (snapshot.connectionState != ConnectionState.done) {
+                        return const _LoadingState();
+                      }
+
+                      if (snapshot.hasError) {
+                        return _ErrorState(
+                          message: 'Unable to load your reports.',
+                          onRetry: reload,
+                        );
+                      }
+
+                      final reports = snapshot.data ?? const <Report>[];
+                      final filteredReports = reports.where((r) {
+                        final matchesStatus =
+                            _selectedStatus == null ||
+                            r.status == _selectedStatus;
+                        final matchesQuery =
+                            r.title.toLowerCase().contains(
+                                  _searchQuery.toLowerCase(),
+                                ) ||
+                            r.category.label.toLowerCase().contains(
+                                  _searchQuery.toLowerCase(),
+                                );
+                        return matchesStatus && matchesQuery;
+                      }).toList();
+
+                      if (_sortBy == 'Newest') {
+                        filteredReports.sort(
+                          (a, b) => b.createdAt.compareTo(a.createdAt),
+                        );
+                      } else if (_sortBy == 'Oldest') {
+                        filteredReports.sort(
+                          (a, b) => a.createdAt.compareTo(b.createdAt),
+                        );
+                      } else if (_sortBy == 'Priority') {
+                        filteredReports.sort(
+                          (a, b) =>
+                              b.priorityScore.compareTo(a.priorityScore),
+                        );
+                      }
+
+                      return Column(
+                        children: [
+                          _Toolbar(
+                            searchController: _searchController,
+                            searchQuery: _searchQuery,
+                            selectedStatus: _selectedStatus,
+                            sortBy: _sortBy,
+                            onSearchChanged: (value) {
+                              setState(() => _searchQuery = value);
+                            },
+                            onClearSearch: () {
+                              setState(() {
+                                _searchController.clear();
+                                _searchQuery = '';
+                              });
+                            },
+                            onStatusChanged: (status) {
+                              setState(() => _selectedStatus = status);
+                            },
+                            onSortChanged: (value) {
+                              setState(() => _sortBy = value);
+                            },
+                          ),
+                          Expanded(
+                            child: filteredReports.isEmpty
+                                ? _EmptyState(
+                                    hasFilters:
+                                        _searchQuery.isNotEmpty ||
+                                        _selectedStatus != null,
+                                    onCreate: openCreateReport,
+                                    onClearFilters: () {
                                       setState(() {
                                         _searchController.clear();
                                         _searchQuery = '';
+                                        _selectedStatus = null;
                                       });
                                     },
+                                    onRefresh: reload,
                                   )
-                                : null,
+                                : RefreshIndicator(
+                                    onRefresh: reload,
+                                    child: isDesktop
+                                        ? ListView.separated(
+                                            padding: const EdgeInsets.fromLTRB(
+                                              24,
+                                              14,
+                                              24,
+                                              96,
+                                            ),
+                                            itemCount: filteredReports.length,
+                                            separatorBuilder: (_, __) =>
+                                                const SizedBox(height: 12),
+                                            itemBuilder: (context, index) =>
+                                                _DesktopReportRow(
+                                              report: filteredReports[index],
+                                              onTap: () => _openDetails(
+                                                filteredReports[index].id,
+                                              ),
+                                            ),
+                                          )
+                                        : ListView.separated(
+                                            padding: const EdgeInsets.fromLTRB(
+                                              16,
+                                              14,
+                                              16,
+                                              96,
+                                            ),
+                                            itemCount: filteredReports.length,
+                                            separatorBuilder: (_, __) =>
+                                                const SizedBox(height: 12),
+                                            itemBuilder: (context, index) =>
+                                                _ReportTile(
+                                              report: filteredReports[index],
+                                              onTap: () => _openDetails(
+                                                filteredReports[index].id,
+                                              ),
+                                            ),
+                                          ),
+                                  ),
                           ),
-                        ),
-                      ),
+                        ],
+                      );
+                    },
+                  ),
+                ),
+              ],
+            );
+          },
+        ),
+      ),
+    );
+  }
+}
+
+class _PageHeader extends StatelessWidget {
+  const _PageHeader({
+    required this.isDesktop,
+    required this.onCreate,
+    required this.onRefresh,
+  });
+
+  final bool isDesktop;
+  final VoidCallback onCreate;
+  final Future<void> Function() onRefresh;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final colorScheme = theme.colorScheme;
+
+    return Container(
+      color: colorScheme.surface,
+      padding: EdgeInsets.fromLTRB(
+        isDesktop ? 24 : 16,
+        isDesktop ? 22 : 18,
+        isDesktop ? 24 : 16,
+        18,
+      ),
+      child: Row(
+        children: [
+          Container(
+            width: 48,
+            height: 48,
+            decoration: BoxDecoration(
+              color: colorScheme.primaryContainer,
+              borderRadius: BorderRadius.circular(15),
+            ),
+            child: Icon(
+              Icons.assignment_outlined,
+              color: colorScheme.onPrimaryContainer,
+            ),
+          ),
+          const SizedBox(width: 14),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  'My reports',
+                  style: theme.textTheme.headlineSmall?.copyWith(
+                    fontWeight: FontWeight.w800,
+                  ),
+                ),
+                const SizedBox(height: 3),
+                Text(
+                  'Track the progress of issues you have submitted.',
+                  style: theme.textTheme.bodyMedium?.copyWith(
+                    color: colorScheme.onSurfaceVariant,
+                  ),
+                ),
+              ],
+            ),
+          ),
+          IconButton(
+            tooltip: 'Refresh reports',
+            onPressed: onRefresh,
+            icon: const Icon(Icons.refresh),
+          ),
+          if (isDesktop) ...[
+            const SizedBox(width: 8),
+            FilledButton.icon(
+              onPressed: onCreate,
+              icon: const Icon(Icons.add),
+              label: const Text('New report'),
+            ),
+          ],
+        ],
+      ),
+    );
+  }
+}
+
+class _Toolbar extends StatelessWidget {
+  const _Toolbar({
+    required this.searchController,
+    required this.searchQuery,
+    required this.selectedStatus,
+    required this.sortBy,
+    required this.onSearchChanged,
+    required this.onClearSearch,
+    required this.onStatusChanged,
+    required this.onSortChanged,
+  });
+
+  final TextEditingController searchController;
+  final String searchQuery;
+  final ReportStatus? selectedStatus;
+  final String sortBy;
+  final ValueChanged<String> onSearchChanged;
+  final VoidCallback onClearSearch;
+  final ValueChanged<ReportStatus?> onStatusChanged;
+  final ValueChanged<String> onSortChanged;
+
+  @override
+  Widget build(BuildContext context) {
+    final colorScheme = Theme.of(context).colorScheme;
+
+    return Container(
+      color: colorScheme.surface,
+      padding: const EdgeInsets.fromLTRB(16, 0, 16, 14),
+      child: Column(
+        children: [
+          Row(
+            children: [
+              Expanded(
+                child: TextField(
+                  controller: searchController,
+                  onChanged: onSearchChanged,
+                  decoration: InputDecoration(
+                    hintText: 'Search reports',
+                    prefixIcon: const Icon(Icons.search),
+                    suffixIcon: searchQuery.isNotEmpty
+                        ? IconButton(
+                            tooltip: 'Clear search',
+                            onPressed: onClearSearch,
+                            icon: const Icon(Icons.close),
+                          )
+                        : null,
+                    filled: true,
+                    fillColor: colorScheme.surfaceContainerLowest,
+                    border: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(14),
+                      borderSide: BorderSide.none,
                     ),
-                    const SizedBox(width: 12),
-                    PopupMenuButton<String>(
-                      initialValue: _sortBy,
-                      onSelected: (String item) {
-                        setState(() {
-                          _sortBy = item;
-                        });
-                      },
-                      icon: const Icon(
-                        Icons.sort_rounded,
-                        color: Color(0xFF0F766E),
-                      ),
-                      itemBuilder: (BuildContext context) =>
-                          <PopupMenuEntry<String>>[
-                            const PopupMenuItem<String>(
-                              value: 'Newest',
-                              child: Text('Sort by: Newest'),
-                            ),
-                            const PopupMenuItem<String>(
-                              value: 'Oldest',
-                              child: Text('Sort by: Oldest'),
-                            ),
-                            const PopupMenuItem<String>(
-                              value: 'Priority',
-                              child: Text('Sort by: Priority'),
-                            ),
-                          ],
-                    ),
-                  ],
+                  ),
                 ),
               ),
-
-              // DẢI FILTER NGANG: LỌC DANH SÁCH THEO REPORT STATUS CHUẨN MATERIAL 3
-              Container(
-                color: Colors.white,
-                padding: const EdgeInsets.fromLTRB(16, 0, 16, 12),
-                child: SingleChildScrollView(
-                  scrollDirection: Axis.horizontal,
+              const SizedBox(width: 10),
+              PopupMenuButton<String>(
+                initialValue: sortBy,
+                onSelected: onSortChanged,
+                tooltip: 'Sort reports',
+                itemBuilder: (context) => const [
+                  PopupMenuItem(
+                    value: 'Newest',
+                    child: Text('Newest first'),
+                  ),
+                  PopupMenuItem(
+                    value: 'Oldest',
+                    child: Text('Oldest first'),
+                  ),
+                  PopupMenuItem(
+                    value: 'Priority',
+                    child: Text('Highest priority'),
+                  ),
+                ],
+                child: Container(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 14,
+                    vertical: 14,
+                  ),
+                  decoration: BoxDecoration(
+                    color: colorScheme.surfaceContainerLowest,
+                    borderRadius: BorderRadius.circular(14),
+                  ),
                   child: Row(
                     children: [
-                      FilterChip(
-                        label: const Text('All'),
-                        selected: _selectedStatus == null,
-                        onSelected: (_) =>
-                            setState(() => _selectedStatus = null),
-                        selectedColor: const Color(0xFFCCFBF1),
-                        checkmarkColor: const Color(0xFF115E59),
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(9999),
-                        ),
-                      ),
+                      const Icon(Icons.sort),
                       const SizedBox(width: 8),
-                      ...ReportStatus.values.map((status) {
-                        final isSelected = _selectedStatus == status;
-                        return Padding(
-                          padding: const EdgeInsets.only(right: 8),
-                          child: FilterChip(
-                            label: Text(status.label),
-                            selected: isSelected,
-                            onSelected: (_) =>
-                                setState(() => _selectedStatus = status),
-                            selectedColor: const Color(0xFFCCFBF1),
-                            checkmarkColor: const Color(0xFF115E59),
-                            shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(9999),
-                            ),
-                          ),
-                        );
-                      }),
+                      Text(sortBy),
+                      const SizedBox(width: 4),
+                      const Icon(Icons.keyboard_arrow_down),
                     ],
                   ),
                 ),
               ),
-
-              // THÂN TRANG GIAO DIỆN CHỨA FUTUREBUILDER VÀ LIST/GRID TỰ THÍCH ỨNG RESPONSIVE
-              Expanded(
-                child: FutureBuilder<List<Report>>(
-                  future: _reportsFuture,
-                  builder: (context, snapshot) {
-                    if (snapshot.connectionState != ConnectionState.done) {
-                      return const Center(
-                        child: CircularProgressIndicator(
-                          color: Color(0xFF0F766E),
-                        ),
-                      );
-                    }
-
-                    if (snapshot.hasError) {
-                      return _ErrorState(
-                        message: 'Unable to load your citizen reports list.',
-                        onRetry: reload,
-                      );
-                    }
-
-                    final reports = snapshot.data ?? const <Report>[];
-
-                    // Xử lý bộ lọc tại chỗ (Local Client Filtering)
-                    final filteredReports = reports.where((r) {
-                      final matchesStatus =
-                          _selectedStatus == null ||
-                          r.status == _selectedStatus;
-                      final matchesQuery =
-                          r.title.toLowerCase().contains(
-                            _searchQuery.toLowerCase(),
-                          ) ||
-                          r.category.label.toLowerCase().contains(
-                            _searchQuery.toLowerCase(),
-                          );
-                      return matchesStatus && matchesQuery;
-                    }).toList();
-
-                    // Xử lý sắp xếp dữ liệu tại chỗ (Local Client Sorting)
-                    if (_sortBy == 'Newest') {
-                      filteredReports.sort(
-                        (a, b) => b.createdAt.compareTo(a.createdAt),
-                      );
-                    } else if (_sortBy == 'Oldest') {
-                      filteredReports.sort(
-                        (a, b) => a.createdAt.compareTo(b.createdAt),
-                      );
-                    } else if (_sortBy == 'Priority') {
-                      filteredReports.sort(
-                        (a, b) => b.priorityScore.compareTo(a.priorityScore),
-                      );
-                    }
-
-                    if (filteredReports.isEmpty) {
-                      return RefreshIndicator(
-                        onRefresh: reload,
-                        color: const Color(0xFF0F766E),
-                        child: ListView(
-                          children: const [
-                            SizedBox(height: 120),
-                            Center(
-                              child: Text(
-                                'No reports matching your constraints.',
-                                style: TextStyle(color: Color(0xFF64748B)),
-                              ),
-                            ),
-                          ],
-                        ),
-                      );
-                    }
-
-                    // Điều hướng giao diện thích ứng: Web dùng Grid, Mobile dùng ListView Dọc
-                    return RefreshIndicator(
-                      onRefresh: reload,
-                      color: const Color(0xFF0F766E),
-                      child: isDesktop
-                          ? GridView.builder(
-                              padding: const EdgeInsets.fromLTRB(
-                                24,
-                                16,
-                                24,
-                                96,
-                              ),
-                              gridDelegate:
-                                  const SliverGridDelegateWithFixedCrossAxisCount(
-                                    crossAxisCount: 2,
-                                    crossAxisSpacing: 16,
-                                    mainAxisSpacing: 16,
-                                    mainAxisExtent: 180,
-                                  ),
-                              itemCount: filteredReports.length,
-                              itemBuilder: (context, index) => _ReportTile(
-                                report: filteredReports[index],
-                                onTap: () =>
-                                    _openDetails(filteredReports[index].id),
-                              ),
-                            )
-                          : ListView.separated(
-                              padding: const EdgeInsets.fromLTRB(
-                                16,
-                                12,
-                                16,
-                                96,
-                              ),
-                              itemCount: filteredReports.length,
-                              separatorBuilder: (_, __) =>
-                                  const SizedBox(height: 12),
-                              itemBuilder: (context, index) => _ReportTile(
-                                report: filteredReports[index],
-                                onTap: () =>
-                                    _openDetails(filteredReports[index].id),
-                              ),
-                            ),
-                    );
-                  },
-                ),
-              ),
             ],
-          );
-        },
+          ),
+          const SizedBox(height: 12),
+          SizedBox(
+            height: 38,
+            child: ListView(
+              scrollDirection: Axis.horizontal,
+              children: [
+                ChoiceChip(
+                  label: const Text('All'),
+                  selected: selectedStatus == null,
+                  onSelected: (_) => onStatusChanged(null),
+                ),
+                const SizedBox(width: 8),
+                ...ReportStatus.values.map(
+                  (status) => Padding(
+                    padding: const EdgeInsets.only(right: 8),
+                    child: ChoiceChip(
+                      label: Text(status.localizedLabel(context)),
+                      selected: selectedStatus == status,
+                      onSelected: (_) => onStatusChanged(status),
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ],
       ),
     );
   }
@@ -364,54 +448,46 @@ class _ReportTile extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final colorScheme = theme.colorScheme;
     final photoUrl = resolveUploadedPhotoUrl(report.beforePhotoUrl);
-    return Card(
-      color: Colors.white,
-      elevation: 0,
-      shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(12),
-        side: const BorderSide(color: Color(0xFFE2E8F0)),
-      ),
+
+    return Material(
+      color: colorScheme.surface,
+      borderRadius: BorderRadius.circular(18),
       clipBehavior: Clip.antiAlias,
       child: InkWell(
         onTap: onTap,
-        child: Padding(
-          padding: const EdgeInsets.all(12),
+        child: Container(
+          decoration: BoxDecoration(
+            border: Border.all(color: colorScheme.outlineVariant),
+            borderRadius: BorderRadius.circular(18),
+          ),
+          padding: const EdgeInsets.all(14),
           child: Row(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              // Khung hiển thị ảnh thu nhỏ (Thumbnail Box)
               Container(
-                width: 90,
-                height: 90,
+                width: 92,
+                height: 92,
                 decoration: BoxDecoration(
-                  color: const Color(0xFFF7F9F8),
-                  borderRadius: BorderRadius.circular(8),
-                  border: Border.all(color: const Color(0xFFE2E8F0)),
+                  color: colorScheme.surfaceContainerHighest,
+                  borderRadius: BorderRadius.circular(14),
                 ),
                 clipBehavior: Clip.antiAlias,
                 child: photoUrl != null
                     ? UploadedPhotoImage(
                         fileUrl: photoUrl,
                         fit: BoxFit.cover,
-                        errorWidget: const Icon(
-                          Icons.broken_image_outlined,
-                          size: 28,
-                          color: Color(0xFF64748B),
-                        ),
                       )
-                    : const Icon(
+                    : Icon(
                         Icons.image_outlined,
-                        size: 28,
-                        color: Color(0xFF64748B),
+                        color: colorScheme.onSurfaceVariant,
                       ),
               ),
               const SizedBox(width: 14),
-
-              // Cụm thông tin chi tiết phản ánh đô thị bên phải
               Expanded(
                 child: Column(
-                  mainAxisSize: MainAxisSize.min,
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Row(
@@ -420,70 +496,151 @@ class _ReportTile extends StatelessWidget {
                         Expanded(
                           child: Text(
                             report.title,
-                            maxLines: 1,
+                            maxLines: 2,
                             overflow: TextOverflow.ellipsis,
-                            style: const TextStyle(
-                              fontWeight: FontWeight.bold,
-                              fontSize: 15,
-                              color: Color(0xFF111C2D),
+                            style: theme.textTheme.titleMedium?.copyWith(
+                              fontWeight: FontWeight.w800,
+                              height: 1.25,
                             ),
                           ),
                         ),
-                        const SizedBox(width: 6),
+                        const SizedBox(width: 8),
                         _StatusBadge(status: report.status),
                       ],
                     ),
-                    const SizedBox(height: 4),
+                    const SizedBox(height: 8),
                     Text(
-                      'ID: #${report.id.substring(0, report.id.length > 8 ? 8 : report.id.length).toUpperCase()}',
-                      style: const TextStyle(
-                        fontSize: 11,
-                        fontWeight: FontWeight.w600,
-                        color: Color(0xFF64748B),
+                      report.addressText ?? 'Address not available',
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: theme.textTheme.bodySmall?.copyWith(
+                        color: colorScheme.onSurfaceVariant,
                       ),
                     ),
-                    const SizedBox(height: 6),
-                    Row(
-                      children: [
-                        const Icon(
-                          Icons.place_outlined,
-                          size: 14,
-                          color: Color(0xFF64748B),
-                        ),
-                        const SizedBox(width: 4),
-                        Expanded(
-                          child: Text(
-                            report.addressText ??
-                                'GPS Coordinates Point Location',
-                            maxLines: 1,
-                            overflow: TextOverflow.ellipsis,
-                            style: const TextStyle(
-                              fontSize: 12,
-                              color: Color(0xFF64748B),
-                            ),
-                          ),
-                        ),
-                      ],
-                    ),
-                    const SizedBox(height: 8),
-
-                    // Footer chứa điểm ưu tiên và số người xác nhận sự cố
+                    const SizedBox(height: 12),
                     Wrap(
-                      spacing: 6,
-                      runSpacing: 4,
+                      spacing: 8,
+                      runSpacing: 8,
                       children: [
                         _MetaChip(
-                          icon: Icons.flash_on,
+                          icon: Icons.category_outlined,
+                          label: report.category.localizedLabel(context),
+                        ),
+                        _MetaChip(
+                          icon: Icons.trending_up,
                           label: 'Priority ${report.priorityScore}',
                         ),
                         _MetaChip(
-                          icon: Icons.thumb_up_outlined,
-                          label: '${report.upvoteCount} upvotes',
+                          icon: Icons.thumb_up_alt_outlined,
+                          label: '${report.upvoteCount}',
                         ),
                       ],
                     ),
                   ],
                 ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class _DesktopReportRow extends StatelessWidget {
+  const _DesktopReportRow({required this.report, required this.onTap});
+
+  final Report report;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final colorScheme = theme.colorScheme;
+    final photoUrl = resolveUploadedPhotoUrl(report.beforePhotoUrl);
+
+    return Material(
+      color: colorScheme.surface,
+      borderRadius: BorderRadius.circular(16),
+      child: InkWell(
+        onTap: onTap,
+        borderRadius: BorderRadius.circular(16),
+        child: Container(
+          padding: const EdgeInsets.all(14),
+          decoration: BoxDecoration(
+            border: Border.all(color: colorScheme.outlineVariant),
+            borderRadius: BorderRadius.circular(16),
+          ),
+          child: Row(
+            children: [
+              Container(
+                width: 72,
+                height: 72,
+                clipBehavior: Clip.antiAlias,
+                decoration: BoxDecoration(
+                  color: colorScheme.surfaceContainerHighest,
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                child: photoUrl != null
+                    ? UploadedPhotoImage(
+                        fileUrl: photoUrl,
+                        fit: BoxFit.cover,
+                      )
+                    : Icon(
+                        Icons.image_outlined,
+                        color: colorScheme.onSurfaceVariant,
+                      ),
+              ),
+              const SizedBox(width: 16),
+              Expanded(
+                flex: 3,
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      report.title,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: theme.textTheme.titleMedium?.copyWith(
+                        fontWeight: FontWeight.w800,
+                      ),
+                    ),
+                    const SizedBox(height: 5),
+                    Text(
+                      report.addressText ?? 'Address not available',
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: theme.textTheme.bodySmall?.copyWith(
+                        color: colorScheme.onSurfaceVariant,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              Expanded(
+                child: Text(
+                  report.category.localizedLabel(context),
+                  style: theme.textTheme.bodyMedium,
+                ),
+              ),
+              Expanded(
+                child: _StatusBadge(status: report.status),
+              ),
+              Expanded(
+                child: Text(
+                  'Priority ${report.priorityScore}',
+                  style: theme.textTheme.bodyMedium,
+                ),
+              ),
+              Expanded(
+                child: Text(
+                  '${report.upvoteCount} confirmations',
+                  style: theme.textTheme.bodyMedium,
+                ),
+              ),
+              Icon(
+                Icons.chevron_right,
+                color: colorScheme.onSurfaceVariant,
               ),
             ],
           ),
@@ -509,8 +666,8 @@ class _StatusBadge extends StatelessWidget {
         foregroundColor = const Color(0xFF005C55);
         break;
       case ReportStatus.inProgress:
-        backgroundColor = const Color(0xFFFFDAD6);
-        foregroundColor = Colors.orange.shade900;
+        backgroundColor = const Color(0xFFFFE4C7);
+        foregroundColor = const Color(0xFF8A4B00);
         break;
       case ReportStatus.fixed:
         backgroundColor = const Color(0xFFCCFBF1);
@@ -522,18 +679,21 @@ class _StatusBadge extends StatelessWidget {
         break;
     }
 
-    return Container(
-      decoration: BoxDecoration(
-        color: backgroundColor,
-        borderRadius: BorderRadius.circular(9999),
-      ),
-      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-      child: Text(
-        status.label,
-        style: TextStyle(
-          color: foregroundColor,
-          fontSize: 10,
-          fontWeight: FontWeight.bold,
+    return Align(
+      alignment: Alignment.centerLeft,
+      child: Container(
+        decoration: BoxDecoration(
+          color: backgroundColor,
+          borderRadius: BorderRadius.circular(999),
+        ),
+        padding: const EdgeInsets.symmetric(horizontal: 9, vertical: 5),
+        child: Text(
+          status.localizedLabel(context),
+          style: TextStyle(
+            color: foregroundColor,
+            fontSize: 11,
+            fontWeight: FontWeight.w800,
+          ),
         ),
       ),
     );
@@ -548,25 +708,112 @@ class _MetaChip extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final colorScheme = Theme.of(context).colorScheme;
     return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 5),
       decoration: BoxDecoration(
-        color: const Color(0xFFF0F3FF),
-        borderRadius: BorderRadius.circular(6),
-        border: Border.all(color: const Color(0xFFBDC9C6).withOpacity(0.4)),
+        color: colorScheme.surfaceContainerLowest,
+        borderRadius: BorderRadius.circular(9),
       ),
-      padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 3),
       child: Row(
         mainAxisSize: MainAxisSize.min,
         children: [
-          Icon(icon, size: 12, color: const Color(0xFF3E4947)),
-          const SizedBox(width: 4),
+          Icon(icon, size: 14, color: colorScheme.onSurfaceVariant),
+          const SizedBox(width: 5),
           Text(
             label,
-            style: const TextStyle(
-              fontSize: 10,
-              fontWeight: FontWeight.w500,
-              color: Color(0xFF3E4947),
+            style: Theme.of(context).textTheme.labelSmall?.copyWith(
+                  color: colorScheme.onSurfaceVariant,
+                  fontWeight: FontWeight.w600,
+                ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _LoadingState extends StatelessWidget {
+  const _LoadingState();
+
+  @override
+  Widget build(BuildContext context) {
+    return const Center(
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          CircularProgressIndicator(),
+          SizedBox(height: 16),
+          Text('Loading your reports…'),
+        ],
+      ),
+    );
+  }
+}
+
+class _EmptyState extends StatelessWidget {
+  const _EmptyState({
+    required this.hasFilters,
+    required this.onCreate,
+    required this.onClearFilters,
+    required this.onRefresh,
+  });
+
+  final bool hasFilters;
+  final VoidCallback onCreate;
+  final VoidCallback onClearFilters;
+  final Future<void> Function() onRefresh;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final colorScheme = theme.colorScheme;
+
+    return RefreshIndicator(
+      onRefresh: onRefresh,
+      child: ListView(
+        physics: const AlwaysScrollableScrollPhysics(),
+        padding: const EdgeInsets.all(32),
+        children: [
+          const SizedBox(height: 64),
+          Icon(
+            hasFilters
+                ? Icons.search_off_outlined
+                : Icons.assignment_outlined,
+            size: 62,
+            color: colorScheme.primary,
+          ),
+          const SizedBox(height: 18),
+          Text(
+            hasFilters ? 'No matching reports' : 'No reports yet',
+            textAlign: TextAlign.center,
+            style: theme.textTheme.headlineSmall?.copyWith(
+              fontWeight: FontWeight.w800,
             ),
+          ),
+          const SizedBox(height: 8),
+          Text(
+            hasFilters
+                ? 'Try changing your search or filters.'
+                : 'Create your first report to start tracking an issue.',
+            textAlign: TextAlign.center,
+            style: theme.textTheme.bodyMedium?.copyWith(
+              color: colorScheme.onSurfaceVariant,
+            ),
+          ),
+          const SizedBox(height: 20),
+          Center(
+            child: hasFilters
+                ? OutlinedButton.icon(
+                    onPressed: onClearFilters,
+                    icon: const Icon(Icons.filter_alt_off_outlined),
+                    label: const Text('Clear filters'),
+                  )
+                : FilledButton.icon(
+                    onPressed: onCreate,
+                    icon: const Icon(Icons.add),
+                    label: const Text('Create report'),
+                  ),
           ),
         ],
       ),
@@ -582,28 +829,45 @@ class _ErrorState extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final colorScheme = theme.colorScheme;
+
     return Center(
       child: Padding(
         padding: const EdgeInsets.all(24),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Text(
-              message,
-              textAlign: TextAlign.center,
-              style: const TextStyle(color: Color(0xFF64748B)),
-            ),
-            const SizedBox(height: 12),
-            OutlinedButton.icon(
-              onPressed: onRetry,
-              icon: const Icon(Icons.refresh),
-              label: const Text('Retry'),
-              style: OutlinedButton.styleFrom(
-                foregroundColor: const Color(0xFF0F766E),
-                side: const BorderSide(color: Color(0xFFBDC9C6)),
+        child: ConstrainedBox(
+          constraints: const BoxConstraints(maxWidth: 420),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Icon(
+                Icons.cloud_off_outlined,
+                size: 54,
+                color: colorScheme.error,
               ),
-            ),
-          ],
+              const SizedBox(height: 16),
+              Text(
+                'Unable to load reports',
+                style: theme.textTheme.titleLarge?.copyWith(
+                  fontWeight: FontWeight.w800,
+                ),
+              ),
+              const SizedBox(height: 8),
+              Text(
+                message,
+                textAlign: TextAlign.center,
+                style: theme.textTheme.bodyMedium?.copyWith(
+                  color: colorScheme.onSurfaceVariant,
+                ),
+              ),
+              const SizedBox(height: 20),
+              FilledButton.icon(
+                onPressed: onRetry,
+                icon: const Icon(Icons.refresh),
+                label: const Text('Try again'),
+              ),
+            ],
+          ),
         ),
       ),
     );
