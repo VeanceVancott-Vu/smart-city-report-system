@@ -1,3 +1,4 @@
+import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:smart_city_report_frontend/src/core/files/uploaded_photo_view.dart';
 
@@ -24,5 +25,14 @@ void main() {
       resolveUploadedPhotoUrl('/uploads/report-before/before.jpg', baseUrl: ''),
       isNull,
     );
+  });
+
+  testWidgets('does not render stored photo URLs', (tester) async {
+    const photoUrl = '/uploads/report-before/before.jpg';
+    await tester.pumpWidget(
+      const MaterialApp(home: UploadedPhotoView(fileUrl: photoUrl)),
+    );
+
+    expect(find.text(photoUrl), findsNothing);
   });
 }

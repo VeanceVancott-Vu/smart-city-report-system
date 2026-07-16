@@ -143,14 +143,9 @@ class _CitizenEditReportScreenState extends State<CitizenEditReportScreen> {
                           : Column(
                               crossAxisAlignment: CrossAxisAlignment.stretch,
                               children: [
-                                _EditReportIntro(
-                                  report: report,
-                                  compact: true,
-                                ),
+                                _EditReportIntro(report: report, compact: true),
                                 const SizedBox(height: 16),
-                                Expanded(
-                                  child: _buildFormSurface(report),
-                                ),
+                                Expanded(child: _buildFormSurface(report)),
                               ],
                             ),
                     ),
@@ -172,9 +167,7 @@ class _CitizenEditReportScreenState extends State<CitizenEditReportScreen> {
       decoration: BoxDecoration(
         color: colorScheme.surface,
         borderRadius: BorderRadius.circular(24),
-        border: Border.all(
-          color: colorScheme.outlineVariant.withOpacity(0.75),
-        ),
+        border: Border.all(color: colorScheme.outlineVariant.withOpacity(0.75)),
         boxShadow: [
           BoxShadow(
             color: colorScheme.shadow.withOpacity(0.06),
@@ -198,10 +191,7 @@ class _CitizenEditReportScreenState extends State<CitizenEditReportScreen> {
 }
 
 class _EditReportIntro extends StatelessWidget {
-  const _EditReportIntro({
-    required this.report,
-    this.compact = false,
-  });
+  const _EditReportIntro({required this.report, this.compact = false});
 
   final Report report;
   final bool compact;
@@ -210,19 +200,13 @@ class _EditReportIntro extends StatelessWidget {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final colorScheme = theme.colorScheme;
-    final shortId = report.id.substring(
-      0,
-      report.id.length > 8 ? 8 : report.id.length,
-    );
 
     return Container(
       padding: EdgeInsets.all(compact ? 20 : 28),
       decoration: BoxDecoration(
         color: colorScheme.secondaryContainer.withOpacity(0.58),
         borderRadius: BorderRadius.circular(24),
-        border: Border.all(
-          color: colorScheme.secondary.withOpacity(0.12),
-        ),
+        border: Border.all(color: colorScheme.secondary.withOpacity(0.12)),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -240,27 +224,6 @@ class _EditReportIntro extends StatelessWidget {
                   Icons.edit_note_rounded,
                   color: colorScheme.onSecondary,
                   size: 30,
-                ),
-              ),
-              const Spacer(),
-              Container(
-                padding: const EdgeInsets.symmetric(
-                  horizontal: 10,
-                  vertical: 6,
-                ),
-                decoration: BoxDecoration(
-                  color: colorScheme.surface.withOpacity(0.86),
-                  borderRadius: BorderRadius.circular(999),
-                  border: Border.all(
-                    color: colorScheme.outlineVariant.withOpacity(0.65),
-                  ),
-                ),
-                child: Text(
-                  '#${shortId.toUpperCase()}',
-                  style: theme.textTheme.labelMedium?.copyWith(
-                    color: colorScheme.onSurfaceVariant,
-                    fontWeight: FontWeight.w700,
-                  ),
                 ),
               ),
             ],
@@ -297,19 +260,22 @@ class _EditReportIntro extends StatelessWidget {
           const _EditHint(
             icon: Icons.photo_camera_outlined,
             title: 'Keep the photo clear',
-            description: 'Replace the image only when a better view is available.',
+            description:
+                'Replace the image only when a better view is available.',
           ),
           const SizedBox(height: 16),
           const _EditHint(
             icon: Icons.location_on_outlined,
             title: 'Check the location',
-            description: 'Confirm that the pin still matches the reported issue.',
+            description:
+                'Confirm that the pin still matches the reported issue.',
           ),
           const SizedBox(height: 16),
           const _EditHint(
             icon: Icons.fact_check_outlined,
             title: 'Save accurate details',
-            description: 'Clear information helps the city team respond correctly.',
+            description:
+                'Clear information helps the city team respond correctly.',
           ),
         ],
       ),
@@ -343,15 +309,9 @@ class _EditHint extends StatelessWidget {
           decoration: BoxDecoration(
             color: colorScheme.surface,
             borderRadius: BorderRadius.circular(10),
-            border: Border.all(
-              color: colorScheme.secondary.withOpacity(0.16),
-            ),
+            border: Border.all(color: colorScheme.secondary.withOpacity(0.16)),
           ),
-          child: Icon(
-            icon,
-            size: 18,
-            color: colorScheme.secondary,
-          ),
+          child: Icon(icon, size: 18, color: colorScheme.secondary),
         ),
         const SizedBox(width: 12),
         Expanded(
@@ -451,9 +411,7 @@ class _ErrorState extends StatelessWidget {
             decoration: BoxDecoration(
               color: colorScheme.surface,
               borderRadius: BorderRadius.circular(24),
-              border: Border.all(
-                color: colorScheme.error.withOpacity(0.18),
-              ),
+              border: Border.all(color: colorScheme.error.withOpacity(0.18)),
             ),
             child: Column(
               mainAxisSize: MainAxisSize.min,
@@ -522,9 +480,7 @@ class _InfoState extends StatelessWidget {
             decoration: BoxDecoration(
               color: colorScheme.surface,
               borderRadius: BorderRadius.circular(24),
-              border: Border.all(
-                color: colorScheme.primary.withOpacity(0.16),
-              ),
+              border: Border.all(color: colorScheme.primary.withOpacity(0.16)),
             ),
             child: Column(
               mainAxisSize: MainAxisSize.min,

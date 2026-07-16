@@ -1532,6 +1532,42 @@ abstract class AppLocalizations {
   /// **'No assigned tasks yet.'**
   String get staffNoAssignedTasks;
 
+  /// No description provided for @staffTaskSearchHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Search tasks by title, area, or category...'**
+  String get staffTaskSearchHint;
+
+  /// No description provided for @staffTaskSort.
+  ///
+  /// In en, this message translates to:
+  /// **'Sort tasks'**
+  String get staffTaskSort;
+
+  /// No description provided for @staffTaskSortNewest.
+  ///
+  /// In en, this message translates to:
+  /// **'Newest'**
+  String get staffTaskSortNewest;
+
+  /// No description provided for @staffTaskSortOldest.
+  ///
+  /// In en, this message translates to:
+  /// **'Oldest'**
+  String get staffTaskSortOldest;
+
+  /// No description provided for @staffTaskSortPriority.
+  ///
+  /// In en, this message translates to:
+  /// **'Most priority'**
+  String get staffTaskSortPriority;
+
+  /// No description provided for @staffNoTaskMatches.
+  ///
+  /// In en, this message translates to:
+  /// **'No tasks match your search.'**
+  String get staffNoTaskMatches;
+
   /// No description provided for @staffHideReports.
   ///
   /// In en, this message translates to:

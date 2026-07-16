@@ -12,6 +12,7 @@ import '../../auth/data/auth_api_service.dart';
 import '../../auth/domain/current_user.dart';
 import '../data/report_api_service.dart';
 import '../domain/report.dart';
+import 'report_category_visuals.dart';
 
 class CitizenMapScreen extends StatefulWidget {
   const CitizenMapScreen({
@@ -1349,24 +1350,7 @@ class _ErrorState extends StatelessWidget {
 }
 
 IconData _getCategoryIcon(ReportCategory category) {
-  switch (category) {
-    case ReportCategory.roadDamage:
-      return Icons.construction;
-    case ReportCategory.streetLight:
-      return Icons.lightbulb;
-    case ReportCategory.garbage:
-      return Icons.delete_outline;
-    case ReportCategory.waterLeak:
-      return Icons.opacity;
-    case ReportCategory.drainage:
-      return Icons.waves;
-    case ReportCategory.trafficSign:
-      return Icons.traffic;
-    case ReportCategory.treeBlockage:
-      return Icons.park;
-    case ReportCategory.other:
-      return Icons.help_outline;
-  }
+  return reportCategoryIcon(category);
 }
 
 Color _getCategoryColor(ReportCategory category) {

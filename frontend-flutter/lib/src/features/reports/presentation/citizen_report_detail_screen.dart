@@ -14,6 +14,7 @@ import '../../tasks/data/task_api_service.dart';
 import '../../tasks/domain/task.dart';
 import '../data/report_api_service.dart';
 import '../domain/report.dart';
+import 'report_category_visuals.dart';
 
 class CitizenReportDetailScreen extends StatefulWidget {
   const CitizenReportDetailScreen({
@@ -201,18 +202,12 @@ class _CitizenReportDetailScreenState extends State<CitizenReportDetailScreen> {
   Widget _buildHeroSection(Report report, bool isDesktop) {
     final theme = Theme.of(context);
     final colorScheme = theme.colorScheme;
-    final shortId = report.id.substring(
-      0,
-      report.id.length > 8 ? 8 : report.id.length,
-    );
 
     return Container(
       decoration: BoxDecoration(
         color: colorScheme.surface,
         borderRadius: BorderRadius.circular(24),
-        border: Border.all(
-          color: colorScheme.outlineVariant.withOpacity(0.75),
-        ),
+        border: Border.all(color: colorScheme.outlineVariant.withOpacity(0.75)),
         boxShadow: [
           BoxShadow(
             color: colorScheme.shadow.withOpacity(0.05),
@@ -228,16 +223,13 @@ class _CitizenReportDetailScreenState extends State<CitizenReportDetailScreen> {
               child: Row(
                 crossAxisAlignment: CrossAxisAlignment.stretch,
                 children: [
-                  Expanded(
-                    flex: 6,
-                    child: _buildHeroPhoto(report, 360),
-                  ),
+                  Expanded(flex: 6, child: _buildHeroPhoto(report, 360)),
                   Expanded(
                     flex: 5,
                     child: Padding(
                       padding: const EdgeInsets.all(28),
                       child: SingleChildScrollView(
-                        child: _buildHeroContent(report, shortId),
+                        child: _buildHeroContent(report),
                       ),
                     ),
                   ),
@@ -250,7 +242,7 @@ class _CitizenReportDetailScreenState extends State<CitizenReportDetailScreen> {
                 _buildHeroPhoto(report, 250),
                 Padding(
                   padding: const EdgeInsets.all(20),
-                  child: _buildHeroContent(report, shortId),
+                  child: _buildHeroContent(report),
                 ),
               ],
             ),
@@ -321,37 +313,14 @@ class _CitizenReportDetailScreenState extends State<CitizenReportDetailScreen> {
     );
   }
 
-  Widget _buildHeroContent(Report report, String shortId) {
+  Widget _buildHeroContent(Report report) {
     final theme = Theme.of(context);
-    final colorScheme = theme.colorScheme;
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       mainAxisAlignment: MainAxisAlignment.center,
       children: [
-        Row(
-          children: [
-            Container(
-              padding: const EdgeInsets.symmetric(
-                horizontal: 10,
-                vertical: 6,
-              ),
-              decoration: BoxDecoration(
-                color: colorScheme.surfaceContainerHighest,
-                borderRadius: BorderRadius.circular(999),
-              ),
-              child: Text(
-                '#RPT-${shortId.toUpperCase()}',
-                style: theme.textTheme.labelMedium?.copyWith(
-                  color: colorScheme.onSurfaceVariant,
-                  fontWeight: FontWeight.w700,
-                ),
-              ),
-            ),
-            const Spacer(),
-            _StatusBadge(status: report.status),
-          ],
-        ),
+        Row(children: [_StatusBadge(status: report.status)]),
         const SizedBox(height: 20),
         Text(
           report.title,
@@ -366,7 +335,7 @@ class _CitizenReportDetailScreenState extends State<CitizenReportDetailScreen> {
           runSpacing: 10,
           children: [
             _InfoChip(
-              icon: Icons.category_outlined,
+              icon: reportCategoryIcon(report.category),
               label: report.category.localizedLabel(context),
             ),
             _InfoChip(
@@ -570,8 +539,7 @@ class _CitizenReportDetailScreenState extends State<CitizenReportDetailScreen> {
               ),
               children: [
                 TileLayer(
-                  urlTemplate:
-                      'https://tile.openstreetmap.org/{z}/{x}/{y}.png',
+                  urlTemplate: 'https://tile.openstreetmap.org/{z}/{x}/{y}.png',
                   userAgentPackageName: 'com.smartcity.report',
                 ),
                 MarkerLayer(
@@ -656,14 +624,7 @@ class _CitizenReportDetailScreenState extends State<CitizenReportDetailScreen> {
       child: Column(
         children: [
           _MetaRow(
-            icon: Icons.confirmation_number_outlined,
-            label: 'Report ID',
-            value:
-                '#RPT-${report.id.substring(0, report.id.length > 8 ? 8 : report.id.length).toUpperCase()}',
-          ),
-          const SizedBox(height: 14),
-          _MetaRow(
-            icon: Icons.category_outlined,
+            icon: reportCategoryIcon(report.category),
             label: 'Category',
             value: report.category.localizedLabel(context),
           ),
@@ -707,9 +668,7 @@ class _SectionSurface extends StatelessWidget {
       decoration: BoxDecoration(
         color: colorScheme.surface,
         borderRadius: BorderRadius.circular(20),
-        border: Border.all(
-          color: colorScheme.outlineVariant.withOpacity(0.75),
-        ),
+        border: Border.all(color: colorScheme.outlineVariant.withOpacity(0.75)),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -764,7 +723,8 @@ class _StatusProgress extends StatelessWidget {
 
     return Row(
       children: List.generate(steps.length, (index) {
-        final active = status != ReportStatus.cancelled && index <= _currentStep;
+        final active =
+            status != ReportStatus.cancelled && index <= _currentStep;
         final isLast = index == steps.length - 1;
 
         return Expanded(
@@ -844,11 +804,7 @@ class _MetaRow extends StatelessWidget {
             color: colorScheme.surfaceContainerHighest,
             borderRadius: BorderRadius.circular(11),
           ),
-          child: Icon(
-            icon,
-            size: 19,
-            color: colorScheme.onSurfaceVariant,
-          ),
+          child: Icon(icon, size: 19, color: colorScheme.onSurfaceVariant),
         ),
         const SizedBox(width: 12),
         Expanded(
@@ -1025,9 +981,7 @@ class _ErrorState extends StatelessWidget {
             decoration: BoxDecoration(
               color: colorScheme.surface,
               borderRadius: BorderRadius.circular(24),
-              border: Border.all(
-                color: colorScheme.error.withOpacity(0.18),
-              ),
+              border: Border.all(color: colorScheme.error.withOpacity(0.18)),
             ),
             child: Column(
               mainAxisSize: MainAxisSize.min,

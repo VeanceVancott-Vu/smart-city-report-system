@@ -787,6 +787,25 @@ class AppLocalizationsEn extends AppLocalizations {
   String get staffNoAssignedTasks => 'No assigned tasks yet.';
 
   @override
+  String get staffTaskSearchHint =>
+      'Search tasks by title, area, or category...';
+
+  @override
+  String get staffTaskSort => 'Sort tasks';
+
+  @override
+  String get staffTaskSortNewest => 'Newest';
+
+  @override
+  String get staffTaskSortOldest => 'Oldest';
+
+  @override
+  String get staffTaskSortPriority => 'Most priority';
+
+  @override
+  String get staffNoTaskMatches => 'No tasks match your search.';
+
+  @override
   String get staffHideReports => 'Hide reports';
 
   @override

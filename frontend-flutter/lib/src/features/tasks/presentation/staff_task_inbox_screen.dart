@@ -10,6 +10,7 @@ import '../../reports/data/report_api_service.dart';
 import '../../reports/domain/report.dart';
 import '../data/task_api_service.dart';
 import '../domain/staff_task.dart';
+import '../domain/staff_task_query.dart';
 
 class StaffTaskInboxScreen extends StatefulWidget {
   const StaffTaskInboxScreen({
@@ -35,12 +36,22 @@ class _StaffTaskInboxScreenState extends State<StaffTaskInboxScreen> {
   Map<String, List<Report>> _reportsByTaskId = const <String, List<Report>>{};
   StaffTask? _selectedTask;
   StaffTaskStatus? _selectedStatus;
+  late final TextEditingController _taskSearchController;
+  String _taskSearchQuery = '';
+  StaffTaskSort _taskSort = StaffTaskSort.newest;
 
   @override
   void initState() {
     super.initState();
     _mapController = MapController();
+    _taskSearchController = TextEditingController();
     _loadTasks();
+  }
+
+  @override
+  void dispose() {
+    _taskSearchController.dispose();
+    super.dispose();
   }
 
   void _loadTasks() {
@@ -116,6 +127,14 @@ class _StaffTaskInboxScreenState extends State<StaffTaskInboxScreen> {
     await Navigator.of(
       context,
     ).pushNamed(AppRoutes.staffReportDetail, arguments: reportId);
+  }
+
+  void _setTaskSearchQuery(String query) {
+    setState(() => _taskSearchQuery = query);
+  }
+
+  void _setTaskSort(StaffTaskSort sort) {
+    setState(() => _taskSort = sort);
   }
 
   void _selectTask(StaffTask task) {
@@ -230,6 +249,11 @@ class _StaffTaskInboxScreenState extends State<StaffTaskInboxScreen> {
                 );
             final tasks = data.tasks;
             final visibleTasks = _filteredTasks(tasks);
+            final sidebarTasks = filterAndSortStaffTasks(
+              visibleTasks,
+              query: _taskSearchQuery,
+              sort: _taskSort,
+            );
             final selectedTask = _visibleSelectedTask(visibleTasks);
 
             return LayoutBuilder(
@@ -239,6 +263,7 @@ class _StaffTaskInboxScreenState extends State<StaffTaskInboxScreen> {
                   return _buildWideDashboard(
                     tasks: tasks,
                     visibleTasks: visibleTasks,
+                    sidebarTasks: sidebarTasks,
                     selectedTask: selectedTask,
                     reportsByTaskId: data.reportsByTaskId,
                   );
@@ -247,6 +272,7 @@ class _StaffTaskInboxScreenState extends State<StaffTaskInboxScreen> {
                 return _buildCompactDashboard(
                   tasks: tasks,
                   visibleTasks: visibleTasks,
+                  sidebarTasks: sidebarTasks,
                   selectedTask: selectedTask,
                   reportsByTaskId: data.reportsByTaskId,
                 );
@@ -261,6 +287,7 @@ class _StaffTaskInboxScreenState extends State<StaffTaskInboxScreen> {
   Widget _buildWideDashboard({
     required List<StaffTask> tasks,
     required List<StaffTask> visibleTasks,
+    required List<StaffTask> sidebarTasks,
     required StaffTask? selectedTask,
     required Map<String, List<Report>> reportsByTaskId,
   }) {
@@ -295,10 +322,15 @@ class _StaffTaskInboxScreenState extends State<StaffTaskInboxScreen> {
                 SizedBox(
                   width: 430,
                   child: _TaskListPanel(
-                    tasks: visibleTasks,
+                    tasks: sidebarTasks,
                     selectedTask: selectedTask,
                     reportsByTaskId: reportsByTaskId,
                     embedded: false,
+                    searchController: _taskSearchController,
+                    searchQuery: _taskSearchQuery,
+                    sortOrder: _taskSort,
+                    onSearchChanged: _setTaskSearchQuery,
+                    onSortChanged: _setTaskSort,
                     onOpenTask: _openTask,
                     onOpenReport: _openReport,
                     onFocusTask: _focusTaskOnMap,
@@ -315,6 +347,7 @@ class _StaffTaskInboxScreenState extends State<StaffTaskInboxScreen> {
   Widget _buildCompactDashboard({
     required List<StaffTask> tasks,
     required List<StaffTask> visibleTasks,
+    required List<StaffTask> sidebarTasks,
     required StaffTask? selectedTask,
     required Map<String, List<Report>> reportsByTaskId,
   }) {
@@ -346,10 +379,15 @@ class _StaffTaskInboxScreenState extends State<StaffTaskInboxScreen> {
           ),
           const SizedBox(height: 12),
           _TaskListPanel(
-            tasks: visibleTasks,
+            tasks: sidebarTasks,
             selectedTask: selectedTask,
             reportsByTaskId: reportsByTaskId,
             embedded: true,
+            searchController: _taskSearchController,
+            searchQuery: _taskSearchQuery,
+            sortOrder: _taskSort,
+            onSearchChanged: _setTaskSearchQuery,
+            onSortChanged: _setTaskSort,
             onOpenTask: _openTask,
             onOpenReport: _openReport,
             onFocusTask: _focusTaskOnMap,
@@ -880,6 +918,11 @@ class _TaskListPanel extends StatelessWidget {
     required this.selectedTask,
     required this.reportsByTaskId,
     required this.embedded,
+    required this.searchController,
+    required this.searchQuery,
+    required this.sortOrder,
+    required this.onSearchChanged,
+    required this.onSortChanged,
     required this.onOpenTask,
     required this.onOpenReport,
     required this.onFocusTask,
@@ -889,6 +932,11 @@ class _TaskListPanel extends StatelessWidget {
   final StaffTask? selectedTask;
   final Map<String, List<Report>> reportsByTaskId;
   final bool embedded;
+  final TextEditingController searchController;
+  final String searchQuery;
+  final StaffTaskSort sortOrder;
+  final ValueChanged<String> onSearchChanged;
+  final ValueChanged<StaffTaskSort> onSortChanged;
   final ValueChanged<String> onOpenTask;
   final ValueChanged<String> onOpenReport;
   final ValueChanged<StaffTask> onFocusTask;
@@ -896,7 +944,11 @@ class _TaskListPanel extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final list = tasks.isEmpty
-        ? const _EmptyTaskList()
+        ? _EmptyTaskList(
+            message: searchQuery.trim().isEmpty
+                ? context.l10n.staffNoAssignedTasks
+                : context.l10n.staffNoTaskMatches,
+          )
         : ListView.separated(
             shrinkWrap: embedded,
             physics: embedded ? const NeverScrollableScrollPhysics() : null,
@@ -945,6 +997,67 @@ class _TaskListPanel extends StatelessWidget {
               ],
             ),
           ),
+          Padding(
+            padding: const EdgeInsets.fromLTRB(12, 0, 12, 8),
+            child: TextField(
+              key: const Key('staffTaskSearchField'),
+              controller: searchController,
+              onChanged: onSearchChanged,
+              decoration: InputDecoration(
+                hintText: context.l10n.staffTaskSearchHint,
+                prefixIcon: const Icon(Icons.search),
+                suffixIcon: searchQuery.trim().isEmpty
+                    ? null
+                    : IconButton(
+                        tooltip: context.l10n.commonClose,
+                        onPressed: () {
+                          searchController.clear();
+                          onSearchChanged('');
+                        },
+                        icon: const Icon(Icons.clear),
+                      ),
+                isDense: true,
+                border: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(10),
+                ),
+              ),
+            ),
+          ),
+          Padding(
+            padding: const EdgeInsets.fromLTRB(12, 0, 12, 12),
+            child: DropdownButtonFormField<StaffTaskSort>(
+              key: const Key('staffTaskSortDropdown'),
+              value: sortOrder,
+              isExpanded: true,
+              decoration: InputDecoration(
+                labelText: context.l10n.staffTaskSort,
+                prefixIcon: const Icon(Icons.sort),
+                isDense: true,
+                border: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(10),
+                ),
+              ),
+              items: [
+                DropdownMenuItem(
+                  value: StaffTaskSort.newest,
+                  child: Text(context.l10n.staffTaskSortNewest),
+                ),
+                DropdownMenuItem(
+                  value: StaffTaskSort.oldest,
+                  child: Text(context.l10n.staffTaskSortOldest),
+                ),
+                DropdownMenuItem(
+                  value: StaffTaskSort.priority,
+                  child: Text(context.l10n.staffTaskSortPriority),
+                ),
+              ],
+              onChanged: (value) {
+                if (value != null) {
+                  onSortChanged(value);
+                }
+              },
+            ),
+          ),
           if (embedded) list else Expanded(child: list),
         ],
       ),
@@ -974,7 +1087,9 @@ class _SmallCount extends StatelessWidget {
 }
 
 class _EmptyTaskList extends StatelessWidget {
-  const _EmptyTaskList();
+  const _EmptyTaskList({required this.message});
+
+  final String message;
 
   @override
   Widget build(BuildContext context) {
@@ -989,7 +1104,7 @@ class _EmptyTaskList extends StatelessWidget {
           ),
           const SizedBox(height: 10),
           Text(
-            context.l10n.staffNoAssignedTasks,
+            message,
             textAlign: TextAlign.center,
             style: TextStyle(
               color: Colors.grey.shade700,

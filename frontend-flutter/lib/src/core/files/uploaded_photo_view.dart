@@ -39,12 +39,12 @@ class _UploadedPhotoViewState extends State<UploadedPhotoView> {
     }
 
     if (_isFlutterTestBinding()) {
-      return Text(rawUrl);
+      return const Icon(Icons.image_outlined);
     }
 
     final imageUrl = resolveUploadedPhotoUrl(rawUrl);
     if (imageUrl == null) {
-      return Text(rawUrl);
+      return const Icon(Icons.broken_image_outlined);
     }
 
     final requiresAuthentication = _requiresUploadedPhotoAuthentication(rawUrl);
@@ -64,18 +64,7 @@ class _UploadedPhotoViewState extends State<UploadedPhotoView> {
             ? <String, String>{'Authorization': 'Bearer $token'}
             : null;
 
-        return Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            _ImagePreview(imageUrl: imageUrl, headers: headers),
-            const SizedBox(height: 8),
-            Text(
-              rawUrl,
-              style: TextStyle(color: Theme.of(context).colorScheme.primary),
-              overflow: TextOverflow.ellipsis,
-            ),
-          ],
-        );
+        return _ImagePreview(imageUrl: imageUrl, headers: headers);
       },
     );
   }

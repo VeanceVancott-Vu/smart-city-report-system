@@ -1,7 +1,9 @@
 package com.smartcity.reports.report.application;
 
 import com.smartcity.reports.common.ResourceNotFoundException;
+import com.smartcity.reports.files.api.FileUploadResponse;
 import com.smartcity.reports.files.application.FileReferenceCleanupService;
+import com.smartcity.reports.files.application.FileStorageService;
 import com.smartcity.reports.issue.IssueCategory;
 import com.smartcity.reports.report.api.CreateReportRequest;
 import com.smartcity.reports.report.api.ReportListResponse;
@@ -25,6 +27,7 @@ import org.springframework.security.access.AccessDeniedException;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.web.multipart.MultipartFile;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -39,6 +42,7 @@ public class ReportService {
     private final ReportMapper reportMapper;
     private final FileReferenceCleanupService fileReferenceCleanupService;
     private final TaskRepository taskRepository;
+    private final FileStorageService fileStorageService;
 
     public ReportService(
             ReportRepository reportRepository,
@@ -51,6 +55,7 @@ public class ReportService {
                 reportUpvoteRepository,
                 reportMapper,
                 fileReferenceCleanupService,
+                null,
                 null
         );
     }
@@ -61,13 +66,15 @@ public class ReportService {
             ReportUpvoteRepository reportUpvoteRepository,
             ReportMapper reportMapper,
             FileReferenceCleanupService fileReferenceCleanupService,
-            TaskRepository taskRepository
+            TaskRepository taskRepository,
+            FileStorageService fileStorageService
     ) {
         this.reportRepository = reportRepository;
         this.reportUpvoteRepository = reportUpvoteRepository;
         this.reportMapper = reportMapper;
         this.fileReferenceCleanupService = fileReferenceCleanupService;
         this.taskRepository = taskRepository;
+        this.fileStorageService = fileStorageService;
     }
 
     @Transactional
@@ -160,6 +167,38 @@ public class ReportService {
         }
         return reportMapper.toResponse(report);
     }
+    @Transactional
+    public ReportResponse uploadAfterPhoto(
+            UUID id,
+            MultipartFile file,
+            User currentUser
+    ) {
+        requireAuthenticated(currentUser);
+        requireStaff(currentUser);
+
+        Report report = getReportEntity(id);
+        ensureStaffOwnsLinkedTask(report, currentUser);
+        if (fileStorageService == null) {
+            throw new IllegalStateException("File storage is not configured");
+        }
+
+        FileUploadResponse uploaded = fileStorageService.uploadReportAfter(file, currentUser);
+        try {
+            return updateAfterPhoto(
+                    id,
+                    new UpdateReportAfterPhotoRequest(uploaded.fileUrl()),
+                    currentUser
+            );
+        } catch (RuntimeException exception) {
+            try {
+                fileStorageService.delete(uploaded.fileUrl());
+            } catch (RuntimeException cleanupException) {
+                exception.addSuppressed(cleanupException);
+            }
+            throw exception;
+        }
+    }
+
 
     @Transactional
     public ReportResponse cancelReport(UUID id, User currentUser) {

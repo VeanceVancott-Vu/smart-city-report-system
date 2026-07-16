@@ -16,6 +16,7 @@ import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
 import org.springframework.boot.test.mock.mockito.MockBean;
 import org.springframework.context.annotation.Import;
 import org.springframework.http.MediaType;
+import org.springframework.mock.web.MockMultipartFile;
 import org.springframework.security.access.AccessDeniedException;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
@@ -35,6 +36,7 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.patch;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.multipart;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.put;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.header;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
@@ -221,6 +223,25 @@ class ReportControllerTest {
                 .andExpect(jsonPath("$.id").value(reportId.toString()));
     }
 
+    @Test
+    void uploadAfterPhotoReturnsUpdatedReport() throws Exception {
+        UUID reportId = UUID.randomUUID();
+        User staff = user(UserRole.STAFF);
+        MockMultipartFile file = new MockMultipartFile(
+                "file",
+                "after.jpg",
+                MediaType.IMAGE_JPEG_VALUE,
+                new byte[] {(byte) 0xFF, (byte) 0xD8, (byte) 0xFF}
+        );
+        when(reportService.uploadAfterPhoto(eq(reportId), any(), nullable(User.class)))
+                .thenReturn(response(reportId, staff));
+
+        mockMvc.perform(multipart("/api/reports/{id}/after-photo/upload", reportId)
+                        .file(file)
+                        .with(authentication(authenticationToken(staff))))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.id").value(reportId.toString()));
+    }
     @Test
     void cancelReportReturnsCancelledReport() throws Exception {
         UUID reportId = UUID.randomUUID();

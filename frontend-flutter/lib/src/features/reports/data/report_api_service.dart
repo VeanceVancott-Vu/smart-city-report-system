@@ -80,25 +80,13 @@ class BackendReportApiService extends ApiService implements ReportApiService {
     required String filename,
     required List<int> bytes,
   }) async {
-    final uploadResponse = await _uploadFile(
-      path: '/api/files/report-after',
+    final response = await _uploadFile(
+      path: '/api/reports/$reportId/after-photo/upload',
       filename: filename,
       bytes: bytes,
     );
-    final fileUrl = _decodeMap(uploadResponse.body)['fileUrl'];
-    if (fileUrl is! String || fileUrl.isEmpty) {
-      throw const ReportApiException(
-        'Upload response did not include fileUrl.',
-      );
-    }
-
-    final response = await _client.patch(
-      _uri('/api/reports/$reportId/after-photo'),
-      headers: await _headers(),
-      body: jsonEncode(<String, String>{'afterPhotoUrl': fileUrl}),
-    );
     _ensureSuccess(response);
-    return Report.fromJson(_decodeMap(response.body));
+    return fetchReport(reportId);
   }
 
   @override

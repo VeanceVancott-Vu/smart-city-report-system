@@ -36,6 +36,7 @@ class _StaffReportDetailScreenState extends State<StaffReportDetailScreen> {
   }
 
   void _loadReport() {
+    _afterPhotoError = null;
     final reportId = _reportId;
     _reportFuture = reportId == null
         ? Future<Report>.error(
@@ -73,7 +74,10 @@ class _StaffReportDetailScreenState extends State<StaffReportDetailScreen> {
       if (!mounted) {
         return;
       }
-      setState(() => _reportFuture = Future<Report>.value(updated));
+      setState(() {
+        _afterPhotoError = null;
+        _reportFuture = Future<Report>.value(updated);
+      });
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(content: Text(context.l10n.staffAfterPhotoUploaded)),
       );
@@ -246,7 +250,6 @@ class _AfterPhotoSection extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final hasPhoto = (report.afterPhotoUrl ?? '').trim().isNotEmpty;
-    final colorScheme = Theme.of(context).colorScheme;
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -265,16 +268,13 @@ class _AfterPhotoSection extends StatelessWidget {
             hasPhoto ? context.l10n.photoReplace : context.l10n.photoUpload,
           ),
         ),
-        if (hasPhoto)
-          Text(
-            report.afterPhotoUrl!,
-            style: TextStyle(color: colorScheme.primary),
-            overflow: TextOverflow.ellipsis,
-          ),
         if (errorText != null)
           Padding(
             padding: const EdgeInsets.only(top: 8),
-            child: Text(errorText!, style: TextStyle(color: colorScheme.error)),
+            child: Text(
+              errorText!,
+              style: TextStyle(color: Theme.of(context).colorScheme.error),
+            ),
           ),
       ],
     );

@@ -779,6 +779,25 @@ class AppLocalizationsVi extends AppLocalizations {
   String get staffNoAssignedTasks => 'Chưa có công việc được giao.';
 
   @override
+  String get staffTaskSearchHint =>
+      'Tìm công việc theo tiêu đề, khu vực hoặc danh mục…';
+
+  @override
+  String get staffTaskSort => 'Sắp xếp công việc';
+
+  @override
+  String get staffTaskSortNewest => 'Mới nhất';
+
+  @override
+  String get staffTaskSortOldest => 'Cũ nhất';
+
+  @override
+  String get staffTaskSortPriority => 'Ưu tiên cao nhất';
+
+  @override
+  String get staffNoTaskMatches => 'Không có công việc phù hợp với tìm kiếm.';
+
+  @override
   String get staffHideReports => 'Ẩn báo cáo';
 
   @override

@@ -7,6 +7,7 @@ import com.smartcity.reports.user.domain.User;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.DecimalMax;
 import jakarta.validation.constraints.DecimalMin;
+import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.validation.annotation.Validated;
@@ -20,6 +21,7 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.multipart.MultipartFile;
 
 import java.net.URI;
 import java.util.List;
@@ -108,6 +110,14 @@ public class ReportController {
         return reportService.updateAfterPhoto(id, request, currentUser);
     }
 
+    @PostMapping(value = "/{id}/after-photo/upload", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
+    public ReportResponse uploadAfterPhoto(
+            @PathVariable UUID id,
+            @RequestParam("file") MultipartFile file,
+            @AuthenticationPrincipal User currentUser
+    ) {
+        return reportService.uploadAfterPhoto(id, file, currentUser);
+    }
     @PatchMapping("/{id}/cancel")
     public ReportResponse cancelReport(
             @PathVariable UUID id,
