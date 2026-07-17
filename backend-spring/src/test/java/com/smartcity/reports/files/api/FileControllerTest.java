@@ -64,24 +64,6 @@ class FileControllerTest {
                 .andExpect(jsonPath("$.fileUrl").value("/uploads/report-before/before.jpg"));
     }
 
-    @Test
-    void uploadTaskAfterReturnsFileUrl() throws Exception {
-        User staff = user(UserRole.STAFF);
-        MockMultipartFile file = new MockMultipartFile(
-                "file",
-                "after.png",
-                "image/png",
-                new byte[] {(byte) 0x89, 0x50, 0x4E, 0x47}
-        );
-        when(fileStorageService.uploadTaskAfter(any(), nullable(User.class)))
-                .thenReturn(new FileUploadResponse("/uploads/task-after/after.png"));
-
-        mockMvc.perform(multipart("/api/files/task-after")
-                        .file(file)
-                        .with(authentication(authenticationToken(staff))))
-                .andExpect(status().isOk())
-                .andExpect(jsonPath("$.fileUrl").value("/uploads/task-after/after.png"));
-    }
 
     @Test
     void downloadReturnsStoredImage() throws Exception {

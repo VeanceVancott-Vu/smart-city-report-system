@@ -41,9 +41,6 @@ public record CreateTaskRequest(
 
         UUID assignedStaffId,
 
-        @Size(max = 2048)
-        String beforePhotoUrl,
-
         List<UUID> reportIds
 ) {
     public int priorityScoreOrZero() {

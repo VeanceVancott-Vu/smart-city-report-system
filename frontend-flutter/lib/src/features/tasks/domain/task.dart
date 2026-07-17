@@ -56,8 +56,6 @@ class Task {
     required this.priorityScore,
     required this.assignedStaff,
     required this.createdByOverseer,
-    required this.beforePhotoUrl,
-    required this.afterPhotoUrl,
     required this.staffNote,
     required this.aiConfidenceScore,
     required this.aiDecision,
@@ -81,8 +79,6 @@ class Task {
   final int priorityScore;
   final ReportUserSummary? assignedStaff;
   final ReportUserSummary? createdByOverseer;
-  final String? beforePhotoUrl;
-  final String? afterPhotoUrl;
   final String? staffNote;
   final double? aiConfidenceScore;
   final String? aiDecision;
@@ -115,8 +111,6 @@ class Task {
       priorityScore: json['priorityScore'] as int? ?? 0,
       assignedStaff: _userSummary(json['assignedStaff']),
       createdByOverseer: _userSummary(json['createdByOverseer']),
-      beforePhotoUrl: json['beforePhotoUrl'] as String?,
-      afterPhotoUrl: json['afterPhotoUrl'] as String?,
       staffNote: json['staffNote'] as String?,
       aiConfidenceScore: (json['aiConfidenceScore'] as num?)?.toDouble(),
       aiDecision: json['aiDecision'] as String?,
@@ -144,8 +138,6 @@ class Task {
     int? priorityScore,
     ReportUserSummary? assignedStaff,
     ReportUserSummary? createdByOverseer,
-    String? beforePhotoUrl,
-    String? afterPhotoUrl,
     String? staffNote,
     double? aiConfidenceScore,
     String? aiDecision,
@@ -169,8 +161,6 @@ class Task {
       priorityScore: priorityScore ?? this.priorityScore,
       assignedStaff: assignedStaff ?? this.assignedStaff,
       createdByOverseer: createdByOverseer ?? this.createdByOverseer,
-      beforePhotoUrl: beforePhotoUrl ?? this.beforePhotoUrl,
-      afterPhotoUrl: afterPhotoUrl ?? this.afterPhotoUrl,
       staffNote: staffNote ?? this.staffNote,
       aiConfidenceScore: aiConfidenceScore ?? this.aiConfidenceScore,
       aiDecision: aiDecision ?? this.aiDecision,
@@ -195,8 +185,6 @@ class TaskDraft {
     required this.addressText,
     required this.priorityScore,
     required this.assignedStaffId,
-    required this.beforePhotoUrl,
-    required this.afterPhotoUrl,
     required this.staffNote,
     required this.reportIds,
   });
@@ -209,8 +197,6 @@ class TaskDraft {
   final String? addressText;
   final int priorityScore;
   final String? assignedStaffId;
-  final String? beforePhotoUrl;
-  final String? afterPhotoUrl;
   final String? staffNote;
   final List<String> reportIds;
 
@@ -224,7 +210,6 @@ class TaskDraft {
       'addressText': addressText,
       'priorityScore': priorityScore,
       'assignedStaffId': assignedStaffId,
-      'beforePhotoUrl': beforePhotoUrl,
       'reportIds': reportIds,
     };
   }
@@ -238,8 +223,6 @@ class TaskDraft {
       'longitude': longitude,
       'addressText': addressText,
       'priorityScore': priorityScore,
-      'beforePhotoUrl': beforePhotoUrl,
-      'afterPhotoUrl': afterPhotoUrl,
       'staffNote': staffNote,
       'reportIds': reportIds,
     };
@@ -247,16 +230,12 @@ class TaskDraft {
 }
 
 class TaskCompletionDraft {
-  const TaskCompletionDraft({this.afterPhotoUrl, required this.staffNote});
+  const TaskCompletionDraft({required this.staffNote});
 
-  final String? afterPhotoUrl;
   final String? staffNote;
 
   Map<String, Object?> toJson() {
-    return <String, Object?>{
-      if (afterPhotoUrl != null) 'afterPhotoUrl': afterPhotoUrl,
-      'staffNote': staffNote,
-    };
+    return <String, Object?>{'staffNote': staffNote};
   }
 }
 

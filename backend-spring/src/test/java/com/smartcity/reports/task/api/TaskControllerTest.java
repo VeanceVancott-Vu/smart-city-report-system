@@ -75,7 +75,6 @@ class TaskControllerTest {
                                   "addressText": "District 1",
                                   "priorityScore": 4,
                                   "assignedStaffId": "%s",
-                                  "beforePhotoUrl": "/uploads/report-before/before.jpg",
                                   "reportIds": ["%s"]
                                 }
                                 """.formatted(staffId, reportId)))
@@ -122,8 +121,6 @@ class TaskControllerTest {
                                   "longitude": 106.660172,
                                   "addressText": "District 1",
                                   "priorityScore": 4,
-                                  "beforePhotoUrl": "/uploads/report-before/before.jpg",
-                                  "afterPhotoUrl": null,
                                   "staffNote": null,
                                   "reportIds": []
                                 }
@@ -181,19 +178,17 @@ class TaskControllerTest {
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("""
                                 {
-                                  "afterPhotoUrl": "/uploads/task-after/after.jpg",
                                   "staffNote": "Done"
                                 }
                                 """))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.status").value("DONE"))
-                .andExpect(jsonPath("$.afterPhotoUrl").value("/uploads/task-after/after.jpg"))
                 .andExpect(jsonPath("$.aiConfidenceScore").doesNotExist())
                 .andExpect(jsonPath("$.aiDecision").doesNotExist());
     }
 
     @Test
-    void completeTaskAllowsOptionalTaskPhoto() throws Exception {
+    void completeTaskAllowsStaffNoteOnly() throws Exception {
         UUID taskId = UUID.randomUUID();
         UUID staffId = UUID.randomUUID();
         User staff = user(UserRole.STAFF);
@@ -213,25 +208,6 @@ class TaskControllerTest {
                 .andExpect(jsonPath("$.status").value("DONE"));
     }
 
-    @Test
-    void completeTaskValidatesAfterPhotoUrlComesFromUploadEndpoint() throws Exception {
-        UUID taskId = UUID.randomUUID();
-        User staff = user(UserRole.STAFF);
-
-        mockMvc.perform(patch("/api/tasks/{id}/complete", taskId)
-                        .with(authentication(authenticationToken(staff)))
-                        .contentType(MediaType.APPLICATION_JSON)
-                        .content("""
-                                {
-                                  "afterPhotoUrl": "after.jpg",
-                                  "staffNote": "Done"
-                                }
-                                """))
-                .andExpect(status().isBadRequest())
-                .andExpect(jsonPath("$.message").value("Validation failed"))
-                .andExpect(jsonPath("$.errors.afterPhotoUrl")
-                        .value("After photo must be uploaded with /api/files/task-after"));
-    }
 
     @Test
     void approveTaskReturnsApprovedTask() throws Exception {
@@ -305,7 +281,6 @@ class TaskControllerTest {
         UserSummaryResponse assignedStaff = staffId == null
                 ? null
                 : new UserSummaryResponse(staffId, "Staff", UserRole.STAFF);
-        String afterPhotoUrl = status == TaskStatus.DONE ? "/uploads/task-after/after.jpg" : null;
         String staffNote = status == TaskStatus.DONE ? "Done" : null;
 
         return new TaskResponse(
@@ -320,8 +295,6 @@ class TaskControllerTest {
                 4,
                 assignedStaff,
                 new UserSummaryResponse(UUID.randomUUID(), "Overseer", UserRole.OVERSEER),
-                "/uploads/report-before/before.jpg",
-                afterPhotoUrl,
                 staffNote,
                 null,
                 null,

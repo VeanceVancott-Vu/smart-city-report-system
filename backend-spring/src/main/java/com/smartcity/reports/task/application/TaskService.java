@@ -1,7 +1,6 @@
 package com.smartcity.reports.task.application;
 
 import com.smartcity.reports.common.ResourceNotFoundException;
-import com.smartcity.reports.files.application.FileReferenceCleanupService;
 import com.smartcity.reports.report.domain.Report;
 import com.smartcity.reports.report.domain.ReportStatus;
 import com.smartcity.reports.report.persistence.ReportRepository;
@@ -27,7 +26,6 @@ import java.time.Instant;
 import java.util.Collection;
 import java.util.LinkedHashSet;
 import java.util.List;
-import java.util.Objects;
 import java.util.Set;
 import java.util.UUID;
 
@@ -39,22 +37,19 @@ public class TaskService {
     private final UserRepository userRepository;
     private final TaskMapper taskMapper;
     private final Clock clock;
-    private final FileReferenceCleanupService fileReferenceCleanupService;
 
     public TaskService(
             TaskRepository taskRepository,
             ReportRepository reportRepository,
             UserRepository userRepository,
             TaskMapper taskMapper,
-            Clock clock,
-            FileReferenceCleanupService fileReferenceCleanupService
+            Clock clock
     ) {
         this.taskRepository = taskRepository;
         this.reportRepository = reportRepository;
         this.userRepository = userRepository;
         this.taskMapper = taskMapper;
         this.clock = clock;
-        this.fileReferenceCleanupService = fileReferenceCleanupService;
     }
 
     @Transactional
@@ -72,8 +67,7 @@ public class TaskService {
                 request.addressText(),
                 request.priorityScoreOrZero(),
                 assignedStaff,
-                overseer,
-                request.beforePhotoUrl()
+                overseer
         );
 
         Task savedTask = taskRepository.saveAndFlush(task);
@@ -109,8 +103,6 @@ public class TaskService {
     public TaskResponse updateTask(UUID id, UpdateTaskRequest request, User currentUser) {
         requireOverseer(currentUser);
         Task task = getTaskEntity(id);
-        String previousBeforePhotoUrl = task.getBeforePhotoUrl();
-        String previousAfterPhotoUrl = task.getAfterPhotoUrl();
         task.updateDetails(
                 request.title(),
                 request.description(),
@@ -119,8 +111,6 @@ public class TaskService {
                 request.longitude(),
                 request.addressText(),
                 request.priorityScore(),
-                request.beforePhotoUrl(),
-                request.afterPhotoUrl(),
                 request.staffNote()
         );
 
@@ -128,12 +118,6 @@ public class TaskService {
             syncReports(task, request.reportIds());
         }
         taskRepository.flush();
-        if (!Objects.equals(previousBeforePhotoUrl, request.beforePhotoUrl())) {
-            fileReferenceCleanupService.deleteIfUnused(previousBeforePhotoUrl, null, task.getId());
-        }
-        if (!Objects.equals(previousAfterPhotoUrl, request.afterPhotoUrl())) {
-            fileReferenceCleanupService.deleteIfUnused(previousAfterPhotoUrl, null, task.getId());
-        }
         return taskMapper.toResponse(task);
     }
 
@@ -167,13 +151,10 @@ public class TaskService {
             throw new IllegalArgumentException("Only in-progress tasks can be completed");
         }
 
-        if (task.getReports().isEmpty()) {
-            String afterPhotoUrl = requireAfterPhotoUrl(request);
-            task.complete(Instant.now(clock), afterPhotoUrl, request.staffNote());
-        } else {
+        if (!task.getReports().isEmpty()) {
             ensureAllReportsHaveAfterPhotos(task);
-            task.complete(Instant.now(clock), task.getAfterPhotoUrl(), request == null ? null : request.staffNote());
         }
+        task.complete(Instant.now(clock), request == null ? null : request.staffNote());
         return taskMapper.toResponse(task);
     }
 
@@ -210,8 +191,6 @@ public class TaskService {
     public void deleteTask(UUID id, User currentUser) {
         requireOverseer(currentUser);
         Task task = getTaskEntity(id);
-        String beforePhotoUrl = task.getBeforePhotoUrl();
-        String afterPhotoUrl = task.getAfterPhotoUrl();
         List<Report> linkedReports = List.copyOf(task.getReports());
         for (Report report : linkedReports) {
             task.unlinkReport(report);
@@ -219,8 +198,6 @@ public class TaskService {
         }
         taskRepository.delete(task);
         taskRepository.flush();
-        fileReferenceCleanupService.deleteIfUnused(beforePhotoUrl, null, task.getId());
-        fileReferenceCleanupService.deleteIfUnused(afterPhotoUrl, null, task.getId());
     }
 
     private void syncReports(Task task, Collection<UUID> reportIds) {
@@ -312,13 +289,6 @@ public class TaskService {
     private boolean isAssignedTo(Task task, User currentUser) {
         return task.getAssignedStaff() != null
                 && task.getAssignedStaff().getId().equals(currentUser.getId());
-    }
-
-    private String requireAfterPhotoUrl(CompleteTaskRequest request) {
-        if (request == null || request.afterPhotoUrl() == null || request.afterPhotoUrl().isBlank()) {
-            throw new IllegalArgumentException("After photo is required");
-        }
-        return request.afterPhotoUrl().trim();
     }
 
     private void requireOverseer(User currentUser) {

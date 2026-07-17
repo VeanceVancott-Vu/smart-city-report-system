@@ -143,7 +143,7 @@ public class ReportService {
         );
         if (!Objects.equals(previousBeforePhotoUrl, request.beforePhotoUrl())) {
             reportRepository.flush();
-            fileReferenceCleanupService.deleteIfUnused(previousBeforePhotoUrl, report.getId(), null);
+            fileReferenceCleanupService.deleteIfUnused(previousBeforePhotoUrl, report.getId());
         }
         return reportMapper.toResponse(report);
     }
@@ -163,7 +163,7 @@ public class ReportService {
         report.updateAfterPhoto(request.afterPhotoUrl().trim());
         if (!Objects.equals(previousAfterPhotoUrl, report.getAfterPhotoUrl())) {
             reportRepository.flush();
-            fileReferenceCleanupService.deleteIfUnused(previousAfterPhotoUrl, report.getId(), null);
+            fileReferenceCleanupService.deleteIfUnused(previousAfterPhotoUrl, report.getId());
         }
         return reportMapper.toResponse(report);
     }
@@ -209,8 +209,8 @@ public class ReportService {
         String afterPhotoUrl = report.getAfterPhotoUrl();
         reportRepository.delete(report);
         reportRepository.flush();
-        fileReferenceCleanupService.deleteIfUnused(beforePhotoUrl, report.getId(), null);
-        fileReferenceCleanupService.deleteIfUnused(afterPhotoUrl, report.getId(), null);
+        fileReferenceCleanupService.deleteIfUnused(beforePhotoUrl, report.getId());
+        fileReferenceCleanupService.deleteIfUnused(afterPhotoUrl, report.getId());
         return reportMapper.toResponse(report);
     }
 

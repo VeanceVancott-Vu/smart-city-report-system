@@ -1,18 +1,26 @@
 import 'package:flutter/material.dart';
 
 import '../../../core/files/uploaded_photo_view.dart';
+import '../../reports/presentation/report_category_visuals.dart';
 import '../../../core/localization/app_localizations_extension.dart';
 import '../../../core/localization/domain_localizations.dart';
 import '../../../core/routing/app_routes.dart';
 import '../../../core/ui/app_feedback.dart';
+import '../../reports/data/report_api_service.dart';
+import '../../reports/domain/report.dart';
 import '../../tasks/data/task_api_service.dart';
 import '../../tasks/domain/task.dart';
 import 'overseer_report_dashboard_screen.dart';
 
 class OverseerTaskDetailScreen extends StatefulWidget {
-  const OverseerTaskDetailScreen({super.key, required this.taskApiService});
+  const OverseerTaskDetailScreen({
+    super.key,
+    required this.taskApiService,
+    required this.reportApiService,
+  });
 
   final TaskApiService taskApiService;
+  final ReportApiService reportApiService;
 
   @override
   State<OverseerTaskDetailScreen> createState() =>
@@ -20,7 +28,7 @@ class OverseerTaskDetailScreen extends StatefulWidget {
 }
 
 class _OverseerTaskDetailScreenState extends State<OverseerTaskDetailScreen> {
-  late Future<Task> _taskFuture;
+  late Future<_TaskDetailData> _taskFuture;
 
   String get _taskId => ModalRoute.of(context)!.settings.arguments! as String;
 
@@ -31,7 +39,17 @@ class _OverseerTaskDetailScreenState extends State<OverseerTaskDetailScreen> {
   }
 
   void _loadTask() {
-    _taskFuture = widget.taskApiService.fetchTask(_taskId);
+    _taskFuture = _fetchDetail(_taskId);
+  }
+
+  Future<_TaskDetailData> _fetchDetail(String taskId) async {
+    final task = await widget.taskApiService.fetchTask(taskId);
+    final reports = task.reportIds.isEmpty
+        ? const <Report>[]
+        : await Future.wait(
+            task.reportIds.map(widget.reportApiService.fetchReport),
+          );
+    return _TaskDetailData(task: task, reports: reports);
   }
 
   Future<void> _refresh() async {
@@ -165,10 +183,10 @@ class _OverseerTaskDetailScreenState extends State<OverseerTaskDetailScreen> {
 
   @override
   Widget build(BuildContext context) {
-    return FutureBuilder<Task>(
+    return FutureBuilder<_TaskDetailData>(
       future: _taskFuture,
       builder: (context, snapshot) {
-        final task = snapshot.data;
+        final task = snapshot.data?.task;
 
         return Scaffold(
           backgroundColor: const Color(0xFFF6F8F8),
@@ -218,7 +236,7 @@ class _OverseerTaskDetailScreenState extends State<OverseerTaskDetailScreen> {
     );
   }
 
-  Widget _buildBody(AsyncSnapshot<Task> snapshot) {
+  Widget _buildBody(AsyncSnapshot<_TaskDetailData> snapshot) {
     if (snapshot.connectionState != ConnectionState.done) {
       return const Center(child: CircularProgressIndicator());
     }
@@ -230,144 +248,333 @@ class _OverseerTaskDetailScreenState extends State<OverseerTaskDetailScreen> {
       );
     }
 
-    final task = snapshot.requireData;
+    final detail = snapshot.requireData;
+    final task = detail.task;
     return RefreshIndicator(
       onRefresh: _refresh,
       child: ListView(
         padding: const EdgeInsets.fromLTRB(20, 20, 20, 112),
         children: [
-          Center(child: ConstrainedBox(constraints: const BoxConstraints(maxWidth: 1180), child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-          Container(
-            width: double.infinity,
-            padding: const EdgeInsets.all(24),
-            decoration: BoxDecoration(color: const Color(0xFF123B38), borderRadius: BorderRadius.circular(24)),
-            child: Text(
-            task.title,
-            style: Theme.of(
-              context,
-            ).textTheme.headlineSmall?.copyWith(fontWeight: FontWeight.w800, color: Colors.white),
-          )),
-          const SizedBox(height: 14),
-          Wrap(
-            spacing: 8,
-            runSpacing: 8,
-            children: [
-              _InfoChip(
-                icon: Icons.flag_outlined,
-                label: task.status.localizedLabel(context),
+          Center(
+            child: ConstrainedBox(
+              constraints: const BoxConstraints(maxWidth: 1180),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Container(
+                    width: double.infinity,
+                    padding: const EdgeInsets.all(24),
+                    decoration: BoxDecoration(
+                      color: const Color(0xFF123B38),
+                      borderRadius: BorderRadius.circular(24),
+                    ),
+                    child: Text(
+                      task.title,
+                      style: Theme.of(context).textTheme.headlineSmall
+                          ?.copyWith(
+                            fontWeight: FontWeight.w800,
+                            color: Colors.white,
+                          ),
+                    ),
+                  ),
+                  const SizedBox(height: 14),
+                  Wrap(
+                    spacing: 8,
+                    runSpacing: 8,
+                    children: [
+                      _InfoChip(
+                        icon: Icons.flag_outlined,
+                        label: task.status.localizedLabel(context),
+                      ),
+                      _InfoChip(
+                        icon: Icons.category_outlined,
+                        label: task.category.localizedLabel(context),
+                      ),
+                      _InfoChip(
+                        icon: Icons.trending_up,
+                        label: context.l10n.priorityValue(task.priorityScore),
+                      ),
+                      _InfoChip(
+                        icon: Icons.link_outlined,
+                        label: context.l10n.reportCount(task.reportIds.length),
+                      ),
+                    ],
+                  ),
+                  _Section(
+                    title: context.l10n.commonDescription,
+                    child: Text(task.description),
+                  ),
+                  _Section(
+                    title: context.l10n.commonLocation,
+                    child: Text(task.locationLabel),
+                  ),
+                  _Section(
+                    title: context.l10n.commonCoordinates,
+                    child: Text(
+                      '${task.latitude.toStringAsFixed(6)}, ${task.longitude.toStringAsFixed(6)}',
+                    ),
+                  ),
+                  _Section(
+                    title: context.l10n.taskAssignedStaff,
+                    child: Text(
+                      task.assignedStaff?.fullName ??
+                          context.l10n.commonUnassigned,
+                    ),
+                  ),
+                  if (task.submittedAt != null && task.assignedStaff != null)
+                    _Section(
+                      title: context.l10n.taskCompletedBy,
+                      child: Text(task.assignedStaff!.fullName),
+                    ),
+                  _Section(
+                    title: context.l10n.taskCreatedBy,
+                    child: Text(
+                      task.createdByOverseer?.fullName ??
+                          context.l10n.commonNone,
+                    ),
+                  ),
+                  _TaskLifecycle(task: task),
+                  if ((task.staffNote ?? '').trim().isNotEmpty)
+                    _Section(
+                      title: context.l10n.taskStaffNote,
+                      child: Text(task.staffNote!),
+                    ),
+                  _Section(
+                    title: context.l10n.taskReportIds,
+                    child: Text(
+                      task.reportIds.isEmpty
+                          ? context.l10n.commonNone
+                          : task.reportIds.join('\n'),
+                    ),
+                  ),
+                  _Section(
+                    title: context.l10n.taskReviewEvidence,
+                    child: detail.reports.isEmpty
+                        ? Text(context.l10n.commonNone)
+                        : Column(
+                            children: detail.reports
+                                .map(
+                                  (report) => _LinkedReportCard(report: report),
+                                )
+                                .toList(growable: false),
+                          ),
+                  ),
+                  const SizedBox(height: 18),
+                  Wrap(
+                    spacing: 8,
+                    runSpacing: 8,
+                    children: [
+                      OutlinedButton.icon(
+                        onPressed: task.status.canAssign ? _assignTask : null,
+                        icon: const Icon(Icons.person_add_alt_1),
+                        label: Text(context.l10n.commonAssign),
+                      ),
+                      OutlinedButton.icon(
+                        onPressed: _editTask,
+                        icon: const Icon(Icons.edit_outlined),
+                        label: Text(context.l10n.commonEdit),
+                      ),
+                      if (task.status.canApprove)
+                        FilledButton.icon(
+                          onPressed: _approveTask,
+                          icon: const Icon(Icons.verified_outlined),
+                          label: Text(context.l10n.commonApprove),
+                        ),
+                      if (task.status.canClose)
+                        FilledButton.icon(
+                          onPressed: _closeTask,
+                          icon: const Icon(Icons.check_circle_outline),
+                          label: Text(context.l10n.commonClose),
+                        ),
+                      OutlinedButton.icon(
+                        onPressed: task.status.canDelete
+                            ? () => _deleteTask(task)
+                            : null,
+                        icon: const Icon(Icons.delete_outline),
+                        label: Text(context.l10n.commonDelete),
+                        style: OutlinedButton.styleFrom(
+                          foregroundColor: Theme.of(context).colorScheme.error,
+                        ),
+                      ),
+                    ],
+                  ),
+                ],
               ),
-              _InfoChip(
-                icon: Icons.category_outlined,
-                label: task.category.localizedLabel(context),
-              ),
-              _InfoChip(
-                icon: Icons.trending_up,
-                label: context.l10n.priorityValue(task.priorityScore),
-              ),
-              _InfoChip(
-                icon: Icons.link_outlined,
-                label: context.l10n.reportCount(task.reportIds.length),
-              ),
-            ],
-          ),
-          if (task.status.needsReviewComparison) ...[
-            const SizedBox(height: 18),
-            _ReviewComparison(task: task),
-          ],
-          _Section(
-            title: context.l10n.commonDescription,
-            child: Text(task.description),
-          ),
-          _Section(
-            title: context.l10n.commonLocation,
-            child: Text(task.locationLabel),
-          ),
-          _Section(
-            title: context.l10n.commonCoordinates,
-            child: Text(
-              '${task.latitude.toStringAsFixed(6)}, ${task.longitude.toStringAsFixed(6)}',
             ),
           ),
-          _Section(
-            title: context.l10n.taskAssignedStaff,
-            child: Text(
-              task.assignedStaff?.fullName ?? context.l10n.commonUnassigned,
-            ),
-          ),
-          if (!task.status.needsReviewComparison) ...[
-            _Section(
-              title: context.l10n.commonBeforePhoto,
-              child: UploadedPhotoView(fileUrl: task.beforePhotoUrl),
-            ),
-            if ((task.afterPhotoUrl ?? '').trim().isNotEmpty)
-              _Section(
-                title: context.l10n.commonAfterPhoto,
-                child: UploadedPhotoView(fileUrl: task.afterPhotoUrl),
-              ),
-          ],
-          if ((task.staffNote ?? '').trim().isNotEmpty)
-            _Section(
-              title: context.l10n.taskStaffNote,
-              child: Text(task.staffNote!),
-            ),
-          _Section(
-            title: context.l10n.taskReportIds,
-            child: Text(
-              task.reportIds.isEmpty
-                  ? context.l10n.commonNone
-                  : task.reportIds.join('\n'),
-            ),
-          ),
-          const SizedBox(height: 18),
-          Wrap(
-            spacing: 8,
-            runSpacing: 8,
-            children: [
-              OutlinedButton.icon(
-                onPressed: task.status.canAssign ? _assignTask : null,
-                icon: const Icon(Icons.person_add_alt_1),
-                label: Text(context.l10n.commonAssign),
-              ),
-              OutlinedButton.icon(
-                onPressed: _editTask,
-                icon: const Icon(Icons.edit_outlined),
-                label: Text(context.l10n.commonEdit),
-              ),
-              if (task.status.canApprove)
-                FilledButton.icon(
-                  onPressed: _approveTask,
-                  icon: const Icon(Icons.verified_outlined),
-                  label: Text(context.l10n.commonApprove),
-                ),
-              if (task.status.canClose)
-                FilledButton.icon(
-                  onPressed: _closeTask,
-                  icon: const Icon(Icons.check_circle_outline),
-                  label: Text(context.l10n.commonClose),
-                ),
-              OutlinedButton.icon(
-                onPressed: task.status.canDelete
-                    ? () => _deleteTask(task)
-                    : null,
-                icon: const Icon(Icons.delete_outline),
-                label: Text(context.l10n.commonDelete),
-                style: OutlinedButton.styleFrom(
-                  foregroundColor: Theme.of(context).colorScheme.error,
-                ),
-              ),
-            ],
-          ),
-          ]))),
         ],
       ),
     );
   }
 }
 
-class _ReviewComparison extends StatelessWidget {
-  const _ReviewComparison({required this.task});
+class _TaskDetailData {
+  const _TaskDetailData({required this.task, required this.reports});
 
   final Task task;
+  final List<Report> reports;
+}
+
+class _TaskLifecycle extends StatelessWidget {
+  const _TaskLifecycle({required this.task});
+
+  final Task task;
+
+  @override
+  Widget build(BuildContext context) {
+    final rows = <Widget>[
+      _DetailRow(
+        label: context.l10n.taskCreatedAt,
+        value: _formatTimestamp(task.createdAt),
+      ),
+      if (task.startedAt != null)
+        _DetailRow(
+          label: context.l10n.taskStartedAt,
+          value: _formatTimestamp(task.startedAt!),
+        ),
+      if (task.submittedAt != null)
+        _DetailRow(
+          label: context.l10n.taskSubmittedAt,
+          value: _formatTimestamp(task.submittedAt!),
+        ),
+      if (task.reviewedAt != null)
+        _DetailRow(
+          label: context.l10n.taskReviewedAt,
+          value: _formatTimestamp(task.reviewedAt!),
+        ),
+      if (task.closedAt != null)
+        _DetailRow(
+          label: context.l10n.taskClosedAt,
+          value: _formatTimestamp(task.closedAt!),
+        ),
+    ];
+
+    return _Section(
+      title: context.l10n.taskData,
+      child: Column(children: rows),
+    );
+  }
+}
+
+class _LinkedReportCard extends StatelessWidget {
+  const _LinkedReportCard({required this.report});
+
+  final Report report;
+
+  @override
+  Widget build(BuildContext context) {
+    return Card(
+      margin: const EdgeInsets.only(top: 12),
+      elevation: 0,
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(16),
+        side: const BorderSide(color: Color(0xFFDCE5E3)),
+      ),
+      child: Padding(
+        padding: const EdgeInsets.all(14),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Icon(
+                  reportCategoryIcon(report.category),
+                  color: const Color(0xFF0F766E),
+                ),
+                const SizedBox(width: 10),
+                Expanded(
+                  child: Text(
+                    report.title,
+                    style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                      fontWeight: FontWeight.w800,
+                    ),
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 10),
+            Wrap(
+              spacing: 8,
+              runSpacing: 8,
+              children: [
+                _InfoChip(
+                  icon: Icons.flag_outlined,
+                  label: report.status.localizedLabel(context),
+                ),
+                _InfoChip(
+                  icon: Icons.category_outlined,
+                  label: report.category.localizedLabel(context),
+                ),
+                _InfoChip(
+                  icon: Icons.trending_up,
+                  label: context.l10n.priorityValue(report.priorityScore),
+                ),
+                _InfoChip(
+                  icon: Icons.thumb_up_alt_outlined,
+                  label: '${report.upvoteCount}',
+                ),
+              ],
+            ),
+            _DetailRow(
+              label: context.l10n.commonDescription,
+              value: report.description,
+            ),
+            _DetailRow(
+              label: context.l10n.commonLocation,
+              value: report.addressText?.trim().isNotEmpty == true
+                  ? report.addressText!.trim()
+                  : '${report.latitude.toStringAsFixed(6)}, ${report.longitude.toStringAsFixed(6)}',
+            ),
+            _DetailRow(
+              label: context.l10n.commonCoordinates,
+              value:
+                  '${report.latitude.toStringAsFixed(6)}, ${report.longitude.toStringAsFixed(6)}',
+            ),
+            _DetailRow(label: context.l10n.taskReportIds, value: report.id),
+            _DetailRow(
+              label: context.l10n.taskCreatedBy,
+              value: report.anonymous
+                  ? 'Anonymous'
+                  : report.createdBy?.fullName ?? context.l10n.commonNone,
+            ),
+            _DetailRow(
+              label: context.l10n.taskCreatedAt,
+              value: _formatTimestamp(report.createdAt),
+            ),
+            _DetailRow(
+              label: 'Updated at',
+              value: _formatTimestamp(report.updatedAt),
+            ),
+            const SizedBox(height: 12),
+            _PhotoSection(
+              title: context.l10n.commonBeforePhoto,
+              fileUrl: report.beforePhotoUrl,
+              emptyLabel: context.l10n.taskNoBeforePhoto,
+            ),
+            const SizedBox(height: 12),
+            _PhotoSection(
+              title: context.l10n.commonAfterPhoto,
+              fileUrl: report.afterPhotoUrl,
+              emptyLabel: context.l10n.taskNoAfterPhoto,
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _PhotoSection extends StatelessWidget {
+  const _PhotoSection({
+    required this.title,
+    required this.fileUrl,
+    required this.emptyLabel,
+  });
+
+  final String title;
+  final String? fileUrl;
+  final String emptyLabel;
 
   @override
   Widget build(BuildContext context) {
@@ -375,90 +582,49 @@ class _ReviewComparison extends StatelessWidget {
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Text(
-          context.l10n.taskReviewEvidence,
+          title,
           style: Theme.of(
             context,
-          ).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.w800),
+          ).textTheme.titleSmall?.copyWith(fontWeight: FontWeight.w700),
         ),
-        const SizedBox(height: 10),
-        LayoutBuilder(
-          builder: (context, constraints) {
-            final isWide = constraints.maxWidth >= 760;
-            final before = _ReviewPhotoCard(
-              title: context.l10n.commonBeforePhoto,
-              icon: Icons.report_problem_outlined,
-              fileUrl: task.beforePhotoUrl,
-              emptyLabel: context.l10n.taskNoBeforePhoto,
-            );
-            final after = _ReviewPhotoCard(
-              title: context.l10n.commonAfterPhoto,
-              icon: Icons.task_alt_outlined,
-              fileUrl: task.afterPhotoUrl,
-              emptyLabel: context.l10n.taskNoAfterPhoto,
-            );
-
-            return isWide
-                ? Row(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Expanded(child: before),
-                      const SizedBox(width: 12),
-                      Expanded(child: after),
-                    ],
-                  )
-                : Column(children: [before, const SizedBox(height: 12), after]);
-          },
-        ),
+        const SizedBox(height: 8),
+        UploadedPhotoView(fileUrl: fileUrl, emptyLabel: emptyLabel),
       ],
     );
   }
 }
 
-class _ReviewPhotoCard extends StatelessWidget {
-  const _ReviewPhotoCard({
-    required this.title,
-    required this.icon,
-    required this.fileUrl,
-    required this.emptyLabel,
-  });
+class _DetailRow extends StatelessWidget {
+  const _DetailRow({required this.label, required this.value});
 
-  final String title;
-  final IconData icon;
-  final String? fileUrl;
-  final String emptyLabel;
+  final String label;
+  final String value;
 
   @override
   Widget build(BuildContext context) {
-    return Card(
-      elevation: 0,
-      shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(16),
-        side: const BorderSide(color: Color(0xFFDCE5E3)),
-      ),
-      child: Padding(
-        padding: const EdgeInsets.all(12),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Row(
-              children: [
-                Icon(icon, size: 18, color: const Color(0xFF0F766E)),
-                const SizedBox(width: 8),
-                Text(
-                  title,
-                  style: Theme.of(
-                    context,
-                  ).textTheme.titleSmall?.copyWith(fontWeight: FontWeight.w800),
-                ),
-              ],
+    return Padding(
+      padding: const EdgeInsets.only(top: 10),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            label,
+            style: Theme.of(context).textTheme.labelMedium?.copyWith(
+              color: Colors.black54,
+              fontWeight: FontWeight.w700,
             ),
-            const SizedBox(height: 10),
-            UploadedPhotoView(fileUrl: fileUrl, emptyLabel: emptyLabel),
-          ],
-        ),
+          ),
+          const SizedBox(height: 3),
+          Text(value),
+        ],
       ),
     );
   }
+}
+
+String _formatTimestamp(DateTime value) {
+  final local = value.toLocal();
+  return local.toString().split('.').first;
 }
 
 class _Section extends StatelessWidget {
@@ -472,7 +638,11 @@ class _Section extends StatelessWidget {
     return Container(
       margin: const EdgeInsets.only(top: 16),
       padding: const EdgeInsets.all(18),
-      decoration: BoxDecoration(color: Colors.white, borderRadius: BorderRadius.circular(20), border: Border.all(color: const Color(0xFFDCE6E3))),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(20),
+        border: Border.all(color: const Color(0xFFDCE6E3)),
+      ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [

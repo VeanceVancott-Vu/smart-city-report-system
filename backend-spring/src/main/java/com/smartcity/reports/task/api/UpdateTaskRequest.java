@@ -40,12 +40,6 @@ public record UpdateTaskRequest(
         @Min(0)
         Integer priorityScore,
 
-        @Size(max = 2048)
-        String beforePhotoUrl,
-
-        @Size(max = 2048)
-        String afterPhotoUrl,
-
         @Size(max = 4000)
         String staffNote,
 

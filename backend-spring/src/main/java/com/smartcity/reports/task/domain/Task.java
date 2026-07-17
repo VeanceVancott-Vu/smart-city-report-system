@@ -67,12 +67,6 @@ public class Task {
     @JoinColumn(name = "created_by_overseer_id")
     private User createdByOverseer;
 
-    @Column(name = "before_photo_url", length = 2048)
-    private String beforePhotoUrl;
-
-    @Column(name = "after_photo_url", length = 2048)
-    private String afterPhotoUrl;
-
     @Column(name = "staff_note", columnDefinition = "text")
     private String staffNote;
 
@@ -128,8 +122,7 @@ public class Task {
             String addressText,
             int priorityScore,
             User assignedStaff,
-            User createdByOverseer,
-            String beforePhotoUrl
+            User createdByOverseer
     ) {
         this.title = title;
         this.description = description;
@@ -140,7 +133,6 @@ public class Task {
         this.priorityScore = Math.max(0, priorityScore);
         this.assignedStaff = assignedStaff;
         this.createdByOverseer = createdByOverseer;
-        this.beforePhotoUrl = beforePhotoUrl;
         this.status = assignedStaff == null ? TaskStatus.NEW : TaskStatus.ASSIGNED;
     }
 
@@ -171,8 +163,6 @@ public class Task {
             double longitude,
             String addressText,
             int priorityScore,
-            String beforePhotoUrl,
-            String afterPhotoUrl,
             String staffNote
     ) {
         this.title = title;
@@ -182,8 +172,6 @@ public class Task {
         this.longitude = longitude;
         this.addressText = addressText;
         this.priorityScore = Math.max(0, priorityScore);
-        this.beforePhotoUrl = beforePhotoUrl;
-        this.afterPhotoUrl = afterPhotoUrl;
         this.staffNote = staffNote;
     }
 
@@ -197,10 +185,9 @@ public class Task {
         startedAt = now;
     }
 
-    public void complete(Instant now, String afterPhotoUrl, String staffNote) {
+    public void complete(Instant now, String staffNote) {
         status = TaskStatus.DONE;
         submittedAt = now;
-        this.afterPhotoUrl = afterPhotoUrl;
         if (staffNote != null) {
             this.staffNote = staffNote;
         }
@@ -278,13 +265,6 @@ public class Task {
         return createdByOverseer;
     }
 
-    public String getBeforePhotoUrl() {
-        return beforePhotoUrl;
-    }
-
-    public String getAfterPhotoUrl() {
-        return afterPhotoUrl;
-    }
 
     public String getStaffNote() {
         return staffNote;

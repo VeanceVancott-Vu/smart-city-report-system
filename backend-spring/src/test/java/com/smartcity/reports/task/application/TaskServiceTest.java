@@ -1,7 +1,6 @@
 package com.smartcity.reports.task.application;
 
 import com.smartcity.reports.task.api.TaskListResponse;
-import com.smartcity.reports.files.application.FileReferenceCleanupService;
 
 import com.smartcity.reports.task.api.AssignTaskRequest;
 import com.smartcity.reports.task.api.CompleteTaskRequest;
@@ -53,9 +52,6 @@ class TaskServiceTest {
     @Mock
     private UserRepository userRepository;
 
-    @Mock
-    private FileReferenceCleanupService fileReferenceCleanupService;
-
     private final TaskMapper taskMapper = new TaskMapper();
 
     private TaskService taskService;
@@ -67,8 +63,7 @@ class TaskServiceTest {
                 reportRepository,
                 userRepository,
                 taskMapper,
-                Clock.fixed(NOW, ZoneOffset.UTC),
-                fileReferenceCleanupService
+                Clock.fixed(NOW, ZoneOffset.UTC)
         );
     }
 
@@ -89,7 +84,6 @@ class TaskServiceTest {
                 "District 1",
                 4,
                 staff.getId(),
-                "/uploads/report-before/before.jpg",
                 List.of(report.getId())
         );
 
@@ -131,7 +125,6 @@ class TaskServiceTest {
                 "District 1",
                 4,
                 null,
-                "/uploads/report-before/before.jpg",
                 List.of(report.getId())
         );
 
@@ -165,7 +158,6 @@ class TaskServiceTest {
                 "District 1",
                 4,
                 null,
-                "/uploads/report-before/before.jpg",
                 List.of(report.getId())
         );
 
@@ -192,7 +184,6 @@ class TaskServiceTest {
                 IssueCategory.DRAINAGE,
                 10.762622,
                 106.660172,
-                null,
                 null,
                 null,
                 null,
@@ -223,7 +214,6 @@ class TaskServiceTest {
                 IssueCategory.DRAINAGE,
                 10.762622,
                 106.660172,
-                null,
                 null,
                 null,
                 null,
@@ -288,20 +278,19 @@ class TaskServiceTest {
 
         TaskResponse response = taskService.completeTask(
                 taskId,
-                new CompleteTaskRequest("/uploads/task-after/after.jpg", "Done"),
+                new CompleteTaskRequest("Done"),
                 staff
         );
 
         assertThat(response.status()).isEqualTo(TaskStatus.DONE);
         assertThat(response.submittedAt()).isEqualTo(NOW);
-        assertThat(response.afterPhotoUrl()).isEqualTo("/uploads/task-after/after.jpg");
         assertThat(response.staffNote()).isEqualTo("Done");
         assertThat(response.aiConfidenceScore()).isNull();
         assertThat(response.aiDecision()).isNull();
     }
 
     @Test
-    void completeTaskRequiresAfterPhotoUrl() {
+    void completeTaskAllowsStaffNoteOnly() {
         User staff = user(UserRole.STAFF);
         Task task = taskFor(user(UserRole.OVERSEER), staff);
         UUID taskId = UUID.randomUUID();
@@ -309,9 +298,10 @@ class TaskServiceTest {
 
         when(taskRepository.findById(taskId)).thenReturn(Optional.of(task));
 
-        assertThatThrownBy(() -> taskService.completeTask(taskId, null, staff))
-                .isInstanceOf(IllegalArgumentException.class)
-                .hasMessage("After photo is required");
+        TaskResponse response = taskService.completeTask(taskId, null, staff);
+
+        assertThat(response.status()).isEqualTo(TaskStatus.DONE);
+        assertThat(response.staffNote()).isNull();
     }
 
     @Test
@@ -326,7 +316,7 @@ class TaskServiceTest {
 
         assertThatThrownBy(() -> taskService.completeTask(
                 taskId,
-                new CompleteTaskRequest("/uploads/task-after/after.jpg", "Done"),
+                new CompleteTaskRequest("Done"),
                 otherStaff
         ))
                 .isInstanceOf(AccessDeniedException.class)
@@ -343,7 +333,7 @@ class TaskServiceTest {
 
         assertThatThrownBy(() -> taskService.completeTask(
                 taskId,
-                new CompleteTaskRequest("/uploads/task-after/after.jpg", "Done"),
+                new CompleteTaskRequest("Done"),
                 staff
         ))
                 .isInstanceOf(IllegalArgumentException.class)
@@ -389,7 +379,7 @@ class TaskServiceTest {
         task.linkReport(report);
         report.linkToTask(taskId);
         task.start(NOW.minusSeconds(120));
-        task.complete(NOW.minusSeconds(60), "/uploads/task-after/after.jpg", "Done");
+        task.complete(NOW.minusSeconds(60), "Done");
 
         when(taskRepository.findById(taskId)).thenReturn(Optional.of(task));
 
@@ -480,8 +470,7 @@ class TaskServiceTest {
                 "District 1",
                 4,
                 staff,
-                overseer,
-                "/uploads/report-before/before.jpg"
+                overseer
         );
     }
 

@@ -47,21 +47,6 @@ class FileStorageServiceTest {
         assertThat(Files.exists(uploadDir.resolve(response.fileUrl().replace("/uploads/", "")))).isTrue();
     }
 
-    @Test
-    void staffCanUploadTaskAfterPhoto() {
-        FileStorageService service = service(DataSize.ofMegabytes(1));
-        MockMultipartFile file = new MockMultipartFile(
-                "file",
-                "after.webp",
-                "image/webp",
-                webpBytes()
-        );
-
-        FileUploadResponse response = service.uploadTaskAfter(file, user(UserRole.STAFF));
-
-        assertThat(response.fileUrl()).startsWith("/uploads/task-after/");
-        assertThat(response.fileUrl()).endsWith(".webp");
-    }
 
     @Test
     void staffCannotUploadReportBeforePhoto() {
@@ -73,15 +58,6 @@ class FileStorageServiceTest {
                 .hasMessage("Only citizens can upload report before photos");
     }
 
-    @Test
-    void citizenCannotUploadTaskAfterPhoto() {
-        FileStorageService service = service(DataSize.ofMegabytes(1));
-        MockMultipartFile file = new MockMultipartFile("file", "after.png", "image/png", pngBytes());
-
-        assertThatThrownBy(() -> service.uploadTaskAfter(file, user(UserRole.CITIZEN)))
-                .isInstanceOf(AccessDeniedException.class)
-                .hasMessage("Only staff can upload task after photos");
-    }
 
     @Test
     void rejectsNonImageExtension() {

@@ -24,8 +24,6 @@ public class TaskMapper {
                 task.getPriorityScore(),
                 toUserSummary(task.getAssignedStaff()),
                 toUserSummary(task.getCreatedByOverseer()),
-                task.getBeforePhotoUrl(),
-                task.getAfterPhotoUrl(),
                 task.getStaffNote(),
                 task.getAiConfidenceScore(),
                 task.getAiDecision(),

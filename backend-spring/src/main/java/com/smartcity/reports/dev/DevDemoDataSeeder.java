@@ -147,7 +147,6 @@ public class DevDemoDataSeeder implements ApplicationRunner {
                 106.6993,
                 "Bus stop near Le Loi",
                 7,
-                "/uploads/report-before/pothole-before.jpg",
                 Instant.parse("2026-06-09T09:00:00Z")
         ), staff, overseer);
         linkReports(roadTask, List.of(pothole, curb));
@@ -161,7 +160,6 @@ public class DevDemoDataSeeder implements ApplicationRunner {
                 106.7009,
                 "Nguyen Hue, District 1",
                 3,
-                "/uploads/report-before/streetlight-before.jpg",
                 Instant.parse("2026-06-09T10:00:00Z")
         ), staff, overseer);
         linkReports(streetlightTask, List.of(streetlight));
@@ -175,7 +173,6 @@ public class DevDemoDataSeeder implements ApplicationRunner {
                 106.6956,
                 "Pasteur Street drainage cluster",
                 9,
-                "/uploads/report-before/drain-before.jpg",
                 Instant.parse("2026-06-09T11:00:00Z")
         ), staff, overseer);
         linkReports(drainageTask, List.of(blockedDrain, looseManhole, flooding));
@@ -220,8 +217,7 @@ public class DevDemoDataSeeder implements ApplicationRunner {
                             seed.addressText(),
                             seed.priorityScore(),
                             staff,
-                            overseer,
-                            seed.beforePhotoUrl()
+                            overseer
                     );
                     task.setId(seed.id());
                     task.setCreatedAt(seed.createdAt());
@@ -266,7 +262,6 @@ public class DevDemoDataSeeder implements ApplicationRunner {
             double longitude,
             String addressText,
             int priorityScore,
-            String beforePhotoUrl,
             Instant createdAt
     ) {
     }

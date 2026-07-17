@@ -693,6 +693,27 @@ class AppLocalizationsVi extends AppLocalizations {
   String get taskAssignedStaff => 'Nhân viên được giao';
 
   @override
+  String get taskCompletedBy => 'Completed by';
+
+  @override
+  String get taskCreatedBy => 'Created by overseer';
+
+  @override
+  String get taskCreatedAt => 'Created at';
+
+  @override
+  String get taskStartedAt => 'Started at';
+
+  @override
+  String get taskSubmittedAt => 'Submitted at';
+
+  @override
+  String get taskReviewedAt => 'Reviewed at';
+
+  @override
+  String get taskClosedAt => 'Closed at';
+
+  @override
   String get taskReportIds => 'Mã báo cáo';
 
   @override

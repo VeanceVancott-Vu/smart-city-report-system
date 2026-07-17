@@ -237,8 +237,6 @@ class _OverseerCreateTaskScreenState extends State<OverseerCreateTaskScreen> {
             addressText: _nullableText(_addressController),
             priorityScore: int.parse(_priorityController.text.trim()),
             assignedStaffId: _selectedStaffId,
-            beforePhotoUrl: _loadedTask?.beforePhotoUrl,
-            afterPhotoUrl: _loadedTask?.afterPhotoUrl,
             staffNote: _loadedTask?.staffNote,
             reportIds: _reportIds(),
           );
@@ -292,8 +290,6 @@ class _OverseerCreateTaskScreenState extends State<OverseerCreateTaskScreen> {
       addressText: _nullableAddress(anchor.addressText),
       priorityScore: _priorityScoreForReports(_linkedReports),
       assignedStaffId: _selectedStaffId,
-      beforePhotoUrl: _firstReportPhotoUrl(_linkedReports),
-      afterPhotoUrl: null,
       staffNote: null,
       reportIds: _linkedReports
           .map((report) => report.id)
@@ -360,16 +356,6 @@ class _OverseerCreateTaskScreenState extends State<OverseerCreateTaskScreen> {
       0,
       (highest, report) => math.max(highest, report.priorityScore),
     );
-  }
-
-  String? _firstReportPhotoUrl(List<Report> reports) {
-    for (final report in reports) {
-      final photoUrl = report.beforePhotoUrl?.trim();
-      if (photoUrl != null && photoUrl.isNotEmpty) {
-        return photoUrl;
-      }
-    }
-    return null;
   }
 
   void _showError(String message) {
@@ -587,7 +573,9 @@ class _OverseerCreateTaskScreenState extends State<OverseerCreateTaskScreen> {
     final theme = Theme.of(context);
     final anchor = _anchorReport(_linkedReports);
     final priorityScore = _priorityScoreForReports(_linkedReports);
-    final photoUrl = _firstReportPhotoUrl(_linkedReports);
+    final hasPhoto = _linkedReports.any(
+      (report) => (report.beforePhotoUrl ?? '').trim().isNotEmpty,
+    );
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -620,9 +608,9 @@ class _OverseerCreateTaskScreenState extends State<OverseerCreateTaskScreen> {
             ),
             _InfoPill(
               icon: Icons.photo_outlined,
-              label: photoUrl == null
-                  ? context.l10n.taskNoPhoto
-                  : context.l10n.taskReportPhoto,
+              label: hasPhoto
+                  ? context.l10n.taskReportPhoto
+                  : context.l10n.taskNoPhoto,
               color: const Color(0xFF2563EB),
             ),
           ],
@@ -707,139 +695,187 @@ class _OverseerCreateTaskScreenState extends State<OverseerCreateTaskScreen> {
       child: ListView(
         padding: const EdgeInsets.fromLTRB(20, 20, 20, 112),
         children: [
-          Center(child: ConstrainedBox(constraints: const BoxConstraints(maxWidth: 1040), child: Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
-          Container(padding: const EdgeInsets.all(22), decoration: BoxDecoration(color: const Color(0xFF123B38), borderRadius: BorderRadius.circular(24)), child: Text(_isEditing ? context.l10n.commonEdit : context.l10n.taskCreateTitle, style: Theme.of(context).textTheme.headlineSmall?.copyWith(color: Colors.white, fontWeight: FontWeight.w800))),
-          const SizedBox(height: 16),
-          Container(padding: const EdgeInsets.all(20), decoration: BoxDecoration(color: Colors.white, borderRadius: BorderRadius.circular(22), border: Border.all(color: const Color(0xFFDCE6E3))), child: Column(children: [
-          TextFormField(
-            controller: _titleController,
-            decoration: InputDecoration(
-              labelText: context.l10n.commonTitle,
-              prefixIcon: const Icon(Icons.title),
-            ),
-            validator: _required,
-          ),
-          const SizedBox(height: 12),
-          TextFormField(
-            controller: _descriptionController,
-            decoration: InputDecoration(
-              labelText: context.l10n.commonDescription,
-              prefixIcon: const Icon(Icons.notes_outlined),
-            ),
-            minLines: 3,
-            maxLines: 5,
-            validator: _required,
-          ),
-          const SizedBox(height: 12),
-          DropdownButtonFormField<ReportCategory>(
-            value: _category,
-            decoration: InputDecoration(
-              labelText: context.l10n.commonCategory,
-              prefixIcon: const Icon(Icons.category_outlined),
-            ),
-            items: ReportCategory.values
-                .map(
-                  (category) => DropdownMenuItem<ReportCategory>(
-                    value: category,
-                    child: Text(category.localizedLabel(context)),
+          Center(
+            child: ConstrainedBox(
+              constraints: const BoxConstraints(maxWidth: 1040),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                  Container(
+                    padding: const EdgeInsets.all(22),
+                    decoration: BoxDecoration(
+                      color: const Color(0xFF123B38),
+                      borderRadius: BorderRadius.circular(24),
+                    ),
+                    child: Text(
+                      _isEditing
+                          ? context.l10n.commonEdit
+                          : context.l10n.taskCreateTitle,
+                      style: Theme.of(context).textTheme.headlineSmall
+                          ?.copyWith(
+                            color: Colors.white,
+                            fontWeight: FontWeight.w800,
+                          ),
+                    ),
                   ),
-                )
-                .toList(growable: false),
-            onChanged: _isSaving
-                ? null
-                : (category) {
-                    if (category != null) {
-                      setState(() => _category = category);
-                    }
-                  },
-          ),
-          const SizedBox(height: 12),
-          ])),
-          const SizedBox(height: 16),
-          Container(padding: const EdgeInsets.all(20), decoration: BoxDecoration(color: Colors.white, borderRadius: BorderRadius.circular(22), border: Border.all(color: const Color(0xFFDCE6E3))), child: Column(children: [
-          LayoutBuilder(
-            builder: (context, constraints) {
-              final isWide = constraints.maxWidth >= 560;
-              final latitude = TextFormField(
-                controller: _latitudeController,
-                decoration: InputDecoration(
-                  labelText: context.l10n.commonLatitude,
-                  prefixIcon: const Icon(Icons.my_location_outlined),
-                ),
-                keyboardType: const TextInputType.numberWithOptions(
-                  signed: true,
-                  decimal: true,
-                ),
-                validator: _latitude,
-              );
-              final longitude = TextFormField(
-                controller: _longitudeController,
-                decoration: InputDecoration(
-                  labelText: context.l10n.commonLongitude,
-                  prefixIcon: const Icon(Icons.explore_outlined),
-                ),
-                keyboardType: const TextInputType.numberWithOptions(
-                  signed: true,
-                  decimal: true,
-                ),
-                validator: _longitude,
-              );
-
-              return isWide
-                  ? Row(
+                  const SizedBox(height: 16),
+                  Container(
+                    padding: const EdgeInsets.all(20),
+                    decoration: BoxDecoration(
+                      color: Colors.white,
+                      borderRadius: BorderRadius.circular(22),
+                      border: Border.all(color: const Color(0xFFDCE6E3)),
+                    ),
+                    child: Column(
                       children: [
-                        Expanded(child: latitude),
-                        const SizedBox(width: 12),
-                        Expanded(child: longitude),
-                      ],
-                    )
-                  : Column(
-                      children: [
-                        latitude,
+                        TextFormField(
+                          controller: _titleController,
+                          decoration: InputDecoration(
+                            labelText: context.l10n.commonTitle,
+                            prefixIcon: const Icon(Icons.title),
+                          ),
+                          validator: _required,
+                        ),
                         const SizedBox(height: 12),
-                        longitude,
+                        TextFormField(
+                          controller: _descriptionController,
+                          decoration: InputDecoration(
+                            labelText: context.l10n.commonDescription,
+                            prefixIcon: const Icon(Icons.notes_outlined),
+                          ),
+                          minLines: 3,
+                          maxLines: 5,
+                          validator: _required,
+                        ),
+                        const SizedBox(height: 12),
+                        DropdownButtonFormField<ReportCategory>(
+                          value: _category,
+                          decoration: InputDecoration(
+                            labelText: context.l10n.commonCategory,
+                            prefixIcon: const Icon(Icons.category_outlined),
+                          ),
+                          items: ReportCategory.values
+                              .map(
+                                (category) => DropdownMenuItem<ReportCategory>(
+                                  value: category,
+                                  child: Text(category.localizedLabel(context)),
+                                ),
+                              )
+                              .toList(growable: false),
+                          onChanged: _isSaving
+                              ? null
+                              : (category) {
+                                  if (category != null) {
+                                    setState(() => _category = category);
+                                  }
+                                },
+                        ),
+                        const SizedBox(height: 12),
                       ],
-                    );
-            },
-          ),
-          const SizedBox(height: 12),
-          TextFormField(
-            controller: _addressController,
-            decoration: InputDecoration(
-              labelText: context.l10n.commonAddress,
-              prefixIcon: const Icon(Icons.place_outlined),
+                    ),
+                  ),
+                  const SizedBox(height: 16),
+                  Container(
+                    padding: const EdgeInsets.all(20),
+                    decoration: BoxDecoration(
+                      color: Colors.white,
+                      borderRadius: BorderRadius.circular(22),
+                      border: Border.all(color: const Color(0xFFDCE6E3)),
+                    ),
+                    child: Column(
+                      children: [
+                        LayoutBuilder(
+                          builder: (context, constraints) {
+                            final isWide = constraints.maxWidth >= 560;
+                            final latitude = TextFormField(
+                              controller: _latitudeController,
+                              decoration: InputDecoration(
+                                labelText: context.l10n.commonLatitude,
+                                prefixIcon: const Icon(
+                                  Icons.my_location_outlined,
+                                ),
+                              ),
+                              keyboardType:
+                                  const TextInputType.numberWithOptions(
+                                    signed: true,
+                                    decimal: true,
+                                  ),
+                              validator: _latitude,
+                            );
+                            final longitude = TextFormField(
+                              controller: _longitudeController,
+                              decoration: InputDecoration(
+                                labelText: context.l10n.commonLongitude,
+                                prefixIcon: const Icon(Icons.explore_outlined),
+                              ),
+                              keyboardType:
+                                  const TextInputType.numberWithOptions(
+                                    signed: true,
+                                    decimal: true,
+                                  ),
+                              validator: _longitude,
+                            );
+
+                            return isWide
+                                ? Row(
+                                    children: [
+                                      Expanded(child: latitude),
+                                      const SizedBox(width: 12),
+                                      Expanded(child: longitude),
+                                    ],
+                                  )
+                                : Column(
+                                    children: [
+                                      latitude,
+                                      const SizedBox(height: 12),
+                                      longitude,
+                                    ],
+                                  );
+                          },
+                        ),
+                        const SizedBox(height: 12),
+                        TextFormField(
+                          controller: _addressController,
+                          decoration: InputDecoration(
+                            labelText: context.l10n.commonAddress,
+                            prefixIcon: const Icon(Icons.place_outlined),
+                          ),
+                        ),
+                        const SizedBox(height: 12),
+                        TextFormField(
+                          controller: _priorityController,
+                          decoration: InputDecoration(
+                            labelText: context.l10n.taskPriorityScore,
+                            prefixIcon: const Icon(Icons.trending_up),
+                          ),
+                          keyboardType: TextInputType.number,
+                          validator: _nonNegativeInt,
+                        ),
+                        const SizedBox(height: 12),
+                        _buildStaffPicker(
+                          staffUsers: staffUsers,
+                          selectedStaffId: selectedStaffId,
+                        ),
+                        const SizedBox(height: 12),
+                        TextFormField(
+                          controller: _reportIdsController,
+                          decoration: InputDecoration(
+                            labelText: context.l10n.taskReportIds,
+                            prefixIcon: const Icon(Icons.link_outlined),
+                          ),
+                          minLines: 2,
+                          maxLines: 5,
+                        ),
+                        const SizedBox(height: 12),
+                      ],
+                    ),
+                  ),
+                  const SizedBox(height: 18),
+                  _buildSubmitButton(),
+                ],
+              ),
             ),
           ),
-          const SizedBox(height: 12),
-          TextFormField(
-            controller: _priorityController,
-            decoration: InputDecoration(
-              labelText: context.l10n.taskPriorityScore,
-              prefixIcon: const Icon(Icons.trending_up),
-            ),
-            keyboardType: TextInputType.number,
-            validator: _nonNegativeInt,
-          ),
-          const SizedBox(height: 12),
-          _buildStaffPicker(
-            staffUsers: staffUsers,
-            selectedStaffId: selectedStaffId,
-          ),
-          const SizedBox(height: 12),
-          TextFormField(
-            controller: _reportIdsController,
-            decoration: InputDecoration(
-              labelText: context.l10n.taskReportIds,
-              prefixIcon: const Icon(Icons.link_outlined),
-            ),
-            minLines: 2,
-            maxLines: 5,
-          ),
-          const SizedBox(height: 12),
-          ])),
-          const SizedBox(height: 18),
-          _buildSubmitButton(),
-          ]))),
         ],
       ),
     );
@@ -849,19 +885,21 @@ class _OverseerCreateTaskScreenState extends State<OverseerCreateTaskScreen> {
     return SizedBox(
       width: double.infinity,
       child: FilledButton.icon(
-      key: const Key('overseerTaskSubmitButton'),
-      onPressed: _isSaving ? null : _save,
-      icon: _isSaving
-          ? const SizedBox.square(
-              dimension: 18,
-              child: CircularProgressIndicator(strokeWidth: 2),
-            )
-          : const Icon(Icons.save_outlined),
-      label: Text(
-        _isEditing ? context.l10n.commonSave : context.l10n.taskCreateTitle,
+        key: const Key('overseerTaskSubmitButton'),
+        onPressed: _isSaving ? null : _save,
+        icon: _isSaving
+            ? const SizedBox.square(
+                dimension: 18,
+                child: CircularProgressIndicator(strokeWidth: 2),
+              )
+            : const Icon(Icons.save_outlined),
+        label: Text(
+          _isEditing ? context.l10n.commonSave : context.l10n.taskCreateTitle,
+        ),
+        style: FilledButton.styleFrom(
+          padding: const EdgeInsets.symmetric(vertical: 17),
+        ),
       ),
-      style: FilledButton.styleFrom(padding: const EdgeInsets.symmetric(vertical: 17)),
-    ),
     );
   }
 

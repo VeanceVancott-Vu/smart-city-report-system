@@ -2,7 +2,6 @@ import 'dart:convert';
 
 import 'package:http/http.dart' as http;
 
-import '../../../core/files/upload_content_type.dart';
 import '../../../core/services/api_service.dart';
 import '../../auth/data/token_storage.dart';
 import '../../reports/domain/report.dart';
@@ -10,11 +9,6 @@ import '../domain/staff_task.dart';
 import '../domain/task.dart';
 
 abstract class TaskApiService {
-  Future<String> uploadAfterPhoto({
-    required String filename,
-    required List<int> bytes,
-  });
-
   Future<List<StaffTask>> fetchStaffTasks();
 
   Future<List<Task>> fetchTasks();
@@ -51,23 +45,6 @@ class BackendTaskApiService extends ApiService implements TaskApiService {
   final http.Client _client;
 
   @override
-  Future<String> uploadAfterPhoto({
-    required String filename,
-    required List<int> bytes,
-  }) async {
-    final response = await _uploadFile(
-      path: '/api/files/task-after',
-      filename: filename,
-      bytes: bytes,
-    );
-    final body = _decodeMap(response.body);
-    final fileUrl = body['fileUrl'];
-    if (fileUrl is String && fileUrl.isNotEmpty) {
-      return fileUrl;
-    }
-    throw const TaskApiException('Upload response did not include fileUrl.');
-  }
-
   @override
   Future<List<StaffTask>> fetchStaffTasks() async {
     final tasks = await _fetchTaskList('/api/tasks?assignedToMe=true');
@@ -199,28 +176,6 @@ class BackendTaskApiService extends ApiService implements TaskApiService {
     };
   }
 
-  Future<http.Response> _uploadFile({
-    required String path,
-    required String filename,
-    required List<int> bytes,
-  }) async {
-    final request = http.MultipartRequest('POST', _uri(path))
-      ..headers.addAll(await _headers(includeContentType: false))
-      ..files.add(
-        http.MultipartFile.fromBytes(
-          'file',
-          bytes,
-          filename: filename,
-          contentType: uploadContentTypeForFilename(filename),
-        ),
-      );
-
-    final streamedResponse = await _client.send(request);
-    final response = await http.Response.fromStream(streamedResponse);
-    _ensureSuccess(response);
-    return response;
-  }
-
   void _ensureSuccess(http.Response response) {
     if (response.statusCode >= 200 && response.statusCode < 300) {
       return;
@@ -263,17 +218,6 @@ class MockTaskApiService extends ApiService implements TaskApiService {
   final List<Task> _tasks;
 
   @override
-  Future<String> uploadAfterPhoto({
-    required String filename,
-    required List<int> bytes,
-  }) async {
-    await Future<void>.delayed(const Duration(milliseconds: 100));
-    if (bytes.isEmpty) {
-      throw const TaskApiException('Selected image is empty.');
-    }
-    return '/uploads/task-after/$filename';
-  }
-
   @override
   Future<List<StaffTask>> fetchStaffTasks() async {
     final tasks = await fetchTasks();
@@ -313,8 +257,6 @@ class MockTaskApiService extends ApiService implements TaskApiService {
       priorityScore: draft.priorityScore,
       assignedStaff: _staffSummary(draft.assignedStaffId),
       createdByOverseer: _overseerSummary,
-      beforePhotoUrl: draft.beforePhotoUrl,
-      afterPhotoUrl: null,
       staffNote: null,
       aiConfidenceScore: null,
       aiDecision: null,
@@ -343,8 +285,6 @@ class MockTaskApiService extends ApiService implements TaskApiService {
       longitude: draft.longitude,
       addressText: draft.addressText,
       priorityScore: draft.priorityScore,
-      beforePhotoUrl: draft.beforePhotoUrl,
-      afterPhotoUrl: draft.afterPhotoUrl,
       staffNote: draft.staffNote,
       reportIds: draft.reportIds,
       updatedAt: DateTime.now(),
@@ -393,7 +333,6 @@ class MockTaskApiService extends ApiService implements TaskApiService {
     }
     final updated = task.copyWith(
       status: TaskStatus.done,
-      afterPhotoUrl: draft.afterPhotoUrl,
       staffNote: draft.staffNote,
       submittedAt: DateTime.now(),
       updatedAt: DateTime.now(),
@@ -492,8 +431,6 @@ class MockTaskApiService extends ApiService implements TaskApiService {
         priorityScore: 5,
         assignedStaff: _staffSummary('44444444-4444-4444-4444-444444444444'),
         createdByOverseer: _overseerSummary,
-        beforePhotoUrl: '/uploads/report-before/pothole-before.jpg',
-        afterPhotoUrl: null,
         staffNote: null,
         aiConfidenceScore: null,
         aiDecision: null,
@@ -520,8 +457,6 @@ class MockTaskApiService extends ApiService implements TaskApiService {
         priorityScore: 3,
         assignedStaff: null,
         createdByOverseer: _overseerSummary,
-        beforePhotoUrl: '/uploads/report-before/streetlight-before.jpg',
-        afterPhotoUrl: null,
         staffNote: null,
         aiConfidenceScore: null,
         aiDecision: null,

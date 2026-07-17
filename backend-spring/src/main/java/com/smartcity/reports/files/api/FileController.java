@@ -36,11 +36,4 @@ public class FileController {
         return fileStorageService.uploadReportAfter(file, currentUser);
     }
 
-    @PostMapping(value = "/task-after", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
-    public FileUploadResponse uploadTaskAfter(
-            @RequestParam("file") MultipartFile file,
-            @AuthenticationPrincipal User currentUser
-    ) {
-        return fileStorageService.uploadTaskAfter(file, currentUser);
-    }
 }

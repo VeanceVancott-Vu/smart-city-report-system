@@ -185,8 +185,6 @@ void main() {
         addressText: 'Nguyen Hue',
         priorityScore: 3,
         assignedStaffId: null,
-        beforePhotoUrl: '/uploads/report-before/streetlight-before.jpg',
-        afterPhotoUrl: null,
         staffNote: null,
         reportIds: ['11111111-1111-1111-1111-000000000004'],
       ),
@@ -207,14 +205,10 @@ void main() {
 
     final completed = await taskApiService.completeTask(
       taskId,
-      const TaskCompletionDraft(
-        afterPhotoUrl: '/uploads/task-after/after.jpg',
-        staffNote: 'Done',
-      ),
+      const TaskCompletionDraft(staffNote: 'Done'),
     );
 
     expect(completed.status, TaskStatus.done);
-    expect(completed.afterPhotoUrl, '/uploads/task-after/after.jpg');
     expect(completed.staffNote, 'Done');
   });
 
@@ -225,10 +219,7 @@ void main() {
     await taskApiService.startTask(taskId);
     final completed = await taskApiService.completeTask(
       taskId,
-      const TaskCompletionDraft(
-        afterPhotoUrl: '/uploads/task-after/after.jpg',
-        staffNote: 'Done',
-      ),
+      const TaskCompletionDraft(staffNote: 'Done'),
     );
     expect(completed.status, TaskStatus.done);
 
@@ -550,8 +541,6 @@ void main() {
           addressText: 'Nguyen Hue',
           priorityScore: 2,
           assignedStaffId: null,
-          beforePhotoUrl: null,
-          afterPhotoUrl: null,
           staffNote: null,
           reportIds: ['11111111-1111-1111-1111-000000000004'],
         ),

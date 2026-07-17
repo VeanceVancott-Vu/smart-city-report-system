@@ -21,8 +21,6 @@ public record TaskResponse(
         int priorityScore,
         UserSummaryResponse assignedStaff,
         UserSummaryResponse createdByOverseer,
-        String beforePhotoUrl,
-        String afterPhotoUrl,
         String staffNote,
         Double aiConfidenceScore,
         String aiDecision,

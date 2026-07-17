@@ -1364,6 +1364,48 @@ abstract class AppLocalizations {
   /// **'Assigned staff'**
   String get taskAssignedStaff;
 
+  /// No description provided for @taskCompletedBy.
+  ///
+  /// In en, this message translates to:
+  /// **'Completed by'**
+  String get taskCompletedBy;
+
+  /// No description provided for @taskCreatedBy.
+  ///
+  /// In en, this message translates to:
+  /// **'Created by overseer'**
+  String get taskCreatedBy;
+
+  /// No description provided for @taskCreatedAt.
+  ///
+  /// In en, this message translates to:
+  /// **'Created at'**
+  String get taskCreatedAt;
+
+  /// No description provided for @taskStartedAt.
+  ///
+  /// In en, this message translates to:
+  /// **'Started at'**
+  String get taskStartedAt;
+
+  /// No description provided for @taskSubmittedAt.
+  ///
+  /// In en, this message translates to:
+  /// **'Submitted at'**
+  String get taskSubmittedAt;
+
+  /// No description provided for @taskReviewedAt.
+  ///
+  /// In en, this message translates to:
+  /// **'Reviewed at'**
+  String get taskReviewedAt;
+
+  /// No description provided for @taskClosedAt.
+  ///
+  /// In en, this message translates to:
+  /// **'Closed at'**
+  String get taskClosedAt;
+
   /// No description provided for @taskReportIds.
   ///
   /// In en, this message translates to:

@@ -123,13 +123,9 @@ class _StaffTaskDetailScreenState extends State<StaffTaskDetailScreen> {
       if (!mounted) {
         return;
       }
-      final changed = await Navigator.of(context).pushNamed(
-        AppRoutes.staffCompleteTask,
-        arguments: <String, Object?>{
-          'taskId': taskId,
-          'hasLinkedReports': detail.reports.isNotEmpty,
-        },
-      );
+      final changed = await Navigator.of(
+        context,
+      ).pushNamed(AppRoutes.staffCompleteTask, arguments: taskId);
       if (!mounted) {
         return;
       }

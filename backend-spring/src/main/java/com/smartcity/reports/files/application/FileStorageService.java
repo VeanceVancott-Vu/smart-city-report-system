@@ -55,10 +55,6 @@ public class FileStorageService {
         return store(file, REPORT_AFTER_DIR, currentUser);
     }
 
-    public FileUploadResponse uploadTaskAfter(MultipartFile file, User currentUser) {
-        requireRole(currentUser, UserRole.STAFF, "Only staff can upload task after photos");
-        return store(file, TASK_AFTER_DIR, currentUser);
-    }
 
     public FileDownload load(String fileUrl) {
         String storageKey = storageKeyOf(fileUrl);
