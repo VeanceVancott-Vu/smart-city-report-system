@@ -387,7 +387,12 @@ class _OverseerCreateTaskScreenState extends State<OverseerCreateTaskScreen> {
   Widget build(BuildContext context) {
     final isBusy = _isLoading || _isLoadingReports;
     return Scaffold(
+      backgroundColor: const Color(0xFFF6F8F8),
       appBar: AppBar(
+        backgroundColor: Colors.white,
+        surfaceTintColor: Colors.transparent,
+        elevation: 0,
+        scrolledUnderElevation: 1,
         title: Text(
           _isEditing
               ? context.l10n.taskEditTitle
@@ -507,7 +512,7 @@ class _OverseerCreateTaskScreenState extends State<OverseerCreateTaskScreen> {
           final linkedReports = _buildLinkedReportsList(context);
 
           return ListView(
-            padding: const EdgeInsets.all(16),
+            padding: const EdgeInsets.fromLTRB(20, 20, 20, 112),
             children: [
               if (isWide)
                 Row(
@@ -700,8 +705,12 @@ class _OverseerCreateTaskScreenState extends State<OverseerCreateTaskScreen> {
     return Form(
       key: _formKey,
       child: ListView(
-        padding: const EdgeInsets.all(16),
+        padding: const EdgeInsets.fromLTRB(20, 20, 20, 112),
         children: [
+          Center(child: ConstrainedBox(constraints: const BoxConstraints(maxWidth: 1040), child: Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
+          Container(padding: const EdgeInsets.all(22), decoration: BoxDecoration(color: const Color(0xFF123B38), borderRadius: BorderRadius.circular(24)), child: Text(_isEditing ? context.l10n.commonEdit : context.l10n.taskCreateTitle, style: Theme.of(context).textTheme.headlineSmall?.copyWith(color: Colors.white, fontWeight: FontWeight.w800))),
+          const SizedBox(height: 16),
+          Container(padding: const EdgeInsets.all(20), decoration: BoxDecoration(color: Colors.white, borderRadius: BorderRadius.circular(22), border: Border.all(color: const Color(0xFFDCE6E3))), child: Column(children: [
           TextFormField(
             controller: _titleController,
             decoration: InputDecoration(
@@ -745,6 +754,9 @@ class _OverseerCreateTaskScreenState extends State<OverseerCreateTaskScreen> {
                   },
           ),
           const SizedBox(height: 12),
+          ])),
+          const SizedBox(height: 16),
+          Container(padding: const EdgeInsets.all(20), decoration: BoxDecoration(color: Colors.white, borderRadius: BorderRadius.circular(22), border: Border.all(color: const Color(0xFFDCE6E3))), child: Column(children: [
           LayoutBuilder(
             builder: (context, constraints) {
               final isWide = constraints.maxWidth >= 560;
@@ -823,15 +835,20 @@ class _OverseerCreateTaskScreenState extends State<OverseerCreateTaskScreen> {
             minLines: 2,
             maxLines: 5,
           ),
-          const SizedBox(height: 20),
+          const SizedBox(height: 12),
+          ])),
+          const SizedBox(height: 18),
           _buildSubmitButton(),
+          ]))),
         ],
       ),
     );
   }
 
   Widget _buildSubmitButton() {
-    return FilledButton.icon(
+    return SizedBox(
+      width: double.infinity,
+      child: FilledButton.icon(
       key: const Key('overseerTaskSubmitButton'),
       onPressed: _isSaving ? null : _save,
       icon: _isSaving
@@ -843,6 +860,8 @@ class _OverseerCreateTaskScreenState extends State<OverseerCreateTaskScreen> {
       label: Text(
         _isEditing ? context.l10n.commonSave : context.l10n.taskCreateTitle,
       ),
+      style: FilledButton.styleFrom(padding: const EdgeInsets.symmetric(vertical: 17)),
+    ),
     );
   }
 
@@ -908,11 +927,11 @@ class _LinkedReportTile extends StatelessWidget {
     return Card(
       elevation: 0,
       shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(8),
-        side: const BorderSide(color: Color(0xFFDDE5E2)),
+        borderRadius: BorderRadius.circular(16),
+        side: const BorderSide(color: Color(0xFFDCE5E3)),
       ),
       child: InkWell(
-        borderRadius: BorderRadius.circular(8),
+        borderRadius: BorderRadius.circular(16),
         onTap: onOpen,
         child: Padding(
           padding: const EdgeInsets.all(12),
@@ -924,7 +943,7 @@ class _LinkedReportTile extends StatelessWidget {
                 height: 40,
                 decoration: BoxDecoration(
                   color: categoryColor.withValues(alpha: 0.1),
-                  borderRadius: BorderRadius.circular(8),
+                  borderRadius: BorderRadius.circular(16),
                 ),
                 child: Icon(
                   _categoryIcon(report.category),
@@ -1022,7 +1041,7 @@ class _InfoPill extends StatelessWidget {
       padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
       decoration: BoxDecoration(
         color: color.withValues(alpha: 0.08),
-        borderRadius: BorderRadius.circular(8),
+        borderRadius: BorderRadius.circular(16),
         border: Border.all(color: color.withValues(alpha: 0.18)),
       ),
       child: Row(
@@ -1083,7 +1102,7 @@ class _CountBadge extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 7),
       decoration: BoxDecoration(
-        color: const Color(0xFFE2F3EE),
+        color: const Color(0xFFE7F3F1),
         borderRadius: BorderRadius.circular(999),
       ),
       child: Text(

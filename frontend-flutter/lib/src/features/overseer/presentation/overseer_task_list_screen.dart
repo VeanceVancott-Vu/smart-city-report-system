@@ -62,11 +62,16 @@ class OverseerTaskListScreenState extends State<OverseerTaskListScreen> {
 
   @override
   Widget build(BuildContext context) {
-    return Column(
+    return ColoredBox(
+      color: const Color(0xFFF4F7F6),
+      child: Column(
       children: [
         Padding(
-          padding: const EdgeInsets.fromLTRB(16, 12, 16, 8),
-          child: Column(
+          padding: const EdgeInsets.fromLTRB(20, 18, 20, 10),
+          child: Container(
+            padding: const EdgeInsets.all(20),
+            decoration: BoxDecoration(color: Colors.white, borderRadius: BorderRadius.circular(22), border: Border.all(color: const Color(0xFFDCE6E3))),
+            child: Column(
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
               Row(
@@ -98,7 +103,7 @@ class OverseerTaskListScreenState extends State<OverseerTaskListScreen> {
                         selected: _selectedStatus == null,
                         onSelected: (_) =>
                             setState(() => _selectedStatus = null),
-                        selectedColor: const Color(0xFFE2F3EE),
+                        selectedColor: const Color(0xFFE7F3F1),
                         checkmarkColor: const Color(0xFF0F766E),
                       ),
                     ),
@@ -123,6 +128,7 @@ class OverseerTaskListScreenState extends State<OverseerTaskListScreen> {
                 ),
               ),
             ],
+          ),
           ),
         ),
         Expanded(
@@ -176,20 +182,32 @@ class OverseerTaskListScreenState extends State<OverseerTaskListScreen> {
 
               return RefreshIndicator(
                 onRefresh: reload,
-                child: ListView.separated(
-                  padding: const EdgeInsets.fromLTRB(16, 0, 16, 96),
-                  itemCount: filteredTasks.length,
-                  separatorBuilder: (_, _) => const SizedBox(height: 10),
-                  itemBuilder: (context, index) => _TaskTile(
-                    task: filteredTasks[index],
-                    onTap: () => _openTask(filteredTasks[index].id),
-                  ),
+                child: LayoutBuilder(
+                  builder: (context, constraints) {
+                    final columns = constraints.maxWidth >= 1080 ? 2 : 1;
+                    return GridView.builder(
+                      physics: const AlwaysScrollableScrollPhysics(),
+                      padding: const EdgeInsets.fromLTRB(20, 8, 20, 112),
+                      gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+                        crossAxisCount: columns,
+                        crossAxisSpacing: 14,
+                        mainAxisSpacing: 14,
+                        childAspectRatio: columns == 1 ? 3.15 : 2.35,
+                      ),
+                      itemCount: filteredTasks.length,
+                      itemBuilder: (context, index) => _TaskTile(
+                        task: filteredTasks[index],
+                        onTap: () => _openTask(filteredTasks[index].id),
+                      ),
+                    );
+                  },
                 ),
               );
             },
           ),
         ),
       ],
+    ),
     );
   }
 }
@@ -203,61 +221,41 @@ class _TaskTile extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final statusColor = _statusColor(task.status);
-    return Card(
-      elevation: 0,
-      shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(8),
-        side: const BorderSide(color: Color(0xFFDDE5E2)),
-      ),
-      child: ListTile(
+    return Material(
+      color: Colors.white,
+      borderRadius: BorderRadius.circular(22),
+      child: InkWell(
         onTap: onTap,
-        leading: CircleAvatar(
-          backgroundColor: statusColor.withValues(alpha: 0.1),
-          foregroundColor: statusColor,
-          child: Icon(
-            task.status.needsReviewComparison
-                ? Icons.rate_review_outlined
-                : Icons.assignment_outlined,
-          ),
-        ),
-        title: Text(task.title, maxLines: 2, overflow: TextOverflow.ellipsis),
-        subtitle: Padding(
-          padding: const EdgeInsets.only(top: 6),
-          child: Wrap(
-            spacing: 8,
-            runSpacing: 8,
-            children: [
-              _MetaChip(
-                icon: Icons.category_outlined,
-                label: task.category.localizedLabel(context),
-              ),
-              _MetaChip(icon: Icons.place_outlined, label: task.locationLabel),
-              _MetaChip(
-                icon: Icons.person_outline,
-                label:
-                    task.assignedStaff?.fullName ??
-                    context.l10n.commonUnassigned,
-              ),
-              _MetaChip(
-                icon: Icons.trending_up,
-                label: context.l10n.priorityValue(task.priorityScore),
-              ),
-            ],
-          ),
-        ),
-        trailing: Chip(
-          visualDensity: VisualDensity.compact,
-          label: Text(task.status.localizedLabel(context)),
-          side: BorderSide(color: statusColor.withValues(alpha: 0.18)),
-          backgroundColor: statusColor.withValues(alpha: 0.1),
-          labelStyle: TextStyle(
-            color: statusColor,
-            fontWeight: FontWeight.w700,
-          ),
+        borderRadius: BorderRadius.circular(22),
+        child: Container(
+          padding: const EdgeInsets.all(18),
+          decoration: BoxDecoration(borderRadius: BorderRadius.circular(22), border: Border.all(color: const Color(0xFFDCE6E3))),
+          child: Row(crossAxisAlignment: CrossAxisAlignment.start, children: [
+            Container(width: 48, height: 48, decoration: BoxDecoration(color: statusColor.withValues(alpha: .10), borderRadius: BorderRadius.circular(15)), child: Icon(task.status.needsReviewComparison ? Icons.rate_review_outlined : Icons.assignment_outlined, color: statusColor)),
+            const SizedBox(width: 16),
+            Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+              Row(crossAxisAlignment: CrossAxisAlignment.start, children: [Expanded(child: Text(task.title, maxLines: 2, overflow: TextOverflow.ellipsis, style: Theme.of(context).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.w800))), const SizedBox(width: 10), _StatusBadge(label: task.status.localizedLabel(context), color: statusColor)]),
+              const Spacer(),
+              Wrap(spacing: 14, runSpacing: 8, children: [
+                _MetaChip(icon: Icons.category_outlined, label: task.category.localizedLabel(context)),
+                _MetaChip(icon: Icons.place_outlined, label: task.locationLabel),
+                _MetaChip(icon: Icons.person_outline, label: task.assignedStaff?.fullName ?? context.l10n.commonUnassigned),
+                _MetaChip(icon: Icons.trending_up, label: context.l10n.priorityValue(task.priorityScore)),
+              ]),
+            ])),
+            const SizedBox(width: 8), const Icon(Icons.chevron_right_rounded, color: Color(0xFF8CA09C)),
+          ]),
         ),
       ),
     );
   }
+}
+
+class _StatusBadge extends StatelessWidget {
+  const _StatusBadge({required this.label, required this.color});
+  final String label; final Color color;
+  @override
+  Widget build(BuildContext context) => Container(padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6), decoration: BoxDecoration(color: color.withValues(alpha: .10), borderRadius: BorderRadius.circular(99), border: Border.all(color: color.withValues(alpha: .18))), child: Text(label, style: TextStyle(color: color, fontWeight: FontWeight.w700, fontSize: 12)));
 }
 
 class _MetaChip extends StatelessWidget {
