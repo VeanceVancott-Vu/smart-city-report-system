@@ -50,6 +50,7 @@ extension TaskStatusLocalizations on TaskStatus {
       TaskStatus.inProgress => context.l10n.taskStatusInProgress,
       TaskStatus.done => context.l10n.taskStatusDone,
       TaskStatus.pendingReview => context.l10n.taskStatusPendingReview,
+      TaskStatus.denied => context.l10n.taskStatusDenied,
       TaskStatus.approved => context.l10n.taskStatusApproved,
       TaskStatus.closed => context.l10n.taskStatusClosed,
       TaskStatus.cancelled => context.l10n.taskStatusCancelled,
@@ -65,6 +66,7 @@ extension StaffTaskStatusLocalizations on StaffTaskStatus {
       StaffTaskStatus.inProgress => context.l10n.staffTaskStatusInProgress,
       StaffTaskStatus.awaitingReview =>
         context.l10n.staffTaskStatusAwaitingReview,
+      StaffTaskStatus.denied => context.l10n.staffTaskStatusDenied,
       StaffTaskStatus.approved => context.l10n.staffTaskStatusApproved,
     };
   }

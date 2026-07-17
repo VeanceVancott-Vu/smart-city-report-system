@@ -1594,6 +1594,7 @@ IconData _statusIcon(StaffTaskStatus status) {
     StaffTaskStatus.assigned => Icons.radio_button_checked,
     StaffTaskStatus.inProgress => Icons.play_circle_outline,
     StaffTaskStatus.awaitingReview => Icons.rate_review_outlined,
+    StaffTaskStatus.denied => Icons.assignment_return_outlined,
     StaffTaskStatus.approved => Icons.verified_outlined,
   };
 }
@@ -1604,6 +1605,7 @@ Color _statusColor(StaffTaskStatus status) {
     StaffTaskStatus.assigned => const Color(0xFF2563EB),
     StaffTaskStatus.inProgress => const Color(0xFF0F766E),
     StaffTaskStatus.awaitingReview => const Color(0xFFB45309),
+    StaffTaskStatus.denied => const Color(0xFFB91C1C),
     StaffTaskStatus.approved => const Color(0xFF15803D),
   };
 }

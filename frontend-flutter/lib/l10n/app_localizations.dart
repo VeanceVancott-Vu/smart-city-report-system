@@ -212,6 +212,12 @@ abstract class AppLocalizations {
   /// **'Approve'**
   String get commonApprove;
 
+  /// No description provided for @commonDeny.
+  ///
+  /// In en, this message translates to:
+  /// **'Deny'**
+  String get commonDeny;
+
   /// No description provided for @commonAssign.
   ///
   /// In en, this message translates to:
@@ -512,6 +518,12 @@ abstract class AppLocalizations {
   /// **'Pending review'**
   String get taskStatusPendingReview;
 
+  /// No description provided for @taskStatusDenied.
+  ///
+  /// In en, this message translates to:
+  /// **'Denied'**
+  String get taskStatusDenied;
+
   /// No description provided for @taskStatusApproved.
   ///
   /// In en, this message translates to:
@@ -553,6 +565,12 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Awaiting review'**
   String get staffTaskStatusAwaitingReview;
+
+  /// No description provided for @staffTaskStatusDenied.
+  ///
+  /// In en, this message translates to:
+  /// **'Denied'**
+  String get staffTaskStatusDenied;
 
   /// No description provided for @staffTaskStatusApproved.
   ///
@@ -1442,6 +1460,42 @@ abstract class AppLocalizations {
   /// **'Task approved'**
   String get taskApprovedTitle;
 
+  /// No description provided for @taskDeniedTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Task completion denied'**
+  String get taskDeniedTitle;
+
+  /// No description provided for @taskDenyTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Deny task completion'**
+  String get taskDenyTitle;
+
+  /// No description provided for @taskDenyPrompt.
+  ///
+  /// In en, this message translates to:
+  /// **'Write what the staff member must redo. This note will replace the task description.'**
+  String get taskDenyPrompt;
+
+  /// No description provided for @taskDenyNoteLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Rework note'**
+  String get taskDenyNoteLabel;
+
+  /// No description provided for @taskDenyNoteRequired.
+  ///
+  /// In en, this message translates to:
+  /// **'Enter a rework note'**
+  String get taskDenyNoteRequired;
+
+  /// No description provided for @taskReworkInstructions.
+  ///
+  /// In en, this message translates to:
+  /// **'Rework instructions'**
+  String get taskReworkInstructions;
+
   /// No description provided for @taskClosedTitle.
   ///
   /// In en, this message translates to:
@@ -1633,6 +1687,12 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Start task'**
   String get staffStartTask;
+
+  /// No description provided for @staffRedoTask.
+  ///
+  /// In en, this message translates to:
+  /// **'Start rework'**
+  String get staffRedoTask;
 
   /// No description provided for @staffRouteMap.
   ///

@@ -235,7 +235,8 @@ class _StaffSummaryCard extends StatelessWidget {
         .where(
           (t) =>
               t.status == TaskStatus.assigned ||
-              t.status == TaskStatus.inProgress,
+              t.status == TaskStatus.inProgress ||
+              t.status == TaskStatus.denied,
         )
         .toList();
     final completedTasks = member.tasks
@@ -536,6 +537,8 @@ class _TaskSubTile extends StatelessWidget {
         return Colors.teal;
       case TaskStatus.pendingReview:
         return Colors.amber.shade800;
+      case TaskStatus.denied:
+        return Colors.red.shade700;
       case TaskStatus.approved:
         return Colors.green.shade700;
       case TaskStatus.closed:

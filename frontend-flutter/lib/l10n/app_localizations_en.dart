@@ -66,6 +66,9 @@ class AppLocalizationsEn extends AppLocalizations {
   String get commonApprove => 'Approve';
 
   @override
+  String get commonDeny => 'Deny';
+
+  @override
   String get commonAssign => 'Assign';
 
   @override
@@ -249,6 +252,9 @@ class AppLocalizationsEn extends AppLocalizations {
   String get taskStatusPendingReview => 'Pending review';
 
   @override
+  String get taskStatusDenied => 'Denied';
+
+  @override
   String get taskStatusApproved => 'Approved';
 
   @override
@@ -268,6 +274,9 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get staffTaskStatusAwaitingReview => 'Awaiting review';
+
+  @override
+  String get staffTaskStatusDenied => 'Denied';
 
   @override
   String get staffTaskStatusApproved => 'Approved';
@@ -740,6 +749,25 @@ class AppLocalizationsEn extends AppLocalizations {
   String get taskApprovedTitle => 'Task approved';
 
   @override
+  String get taskDeniedTitle => 'Task completion denied';
+
+  @override
+  String get taskDenyTitle => 'Deny task completion';
+
+  @override
+  String get taskDenyPrompt =>
+      'Write what the staff member must redo. This note will replace the task description.';
+
+  @override
+  String get taskDenyNoteLabel => 'Rework note';
+
+  @override
+  String get taskDenyNoteRequired => 'Enter a rework note';
+
+  @override
+  String get taskReworkInstructions => 'Rework instructions';
+
+  @override
   String get taskClosedTitle => 'Task closed';
 
   @override
@@ -839,6 +867,9 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get staffStartTask => 'Start task';
+
+  @override
+  String get staffRedoTask => 'Start rework';
 
   @override
   String get staffRouteMap => 'Route map';

@@ -7,6 +7,7 @@ import com.smartcity.reports.report.persistence.ReportRepository;
 import com.smartcity.reports.task.api.AssignTaskRequest;
 import com.smartcity.reports.task.api.CompleteTaskRequest;
 import com.smartcity.reports.task.api.CreateTaskRequest;
+import com.smartcity.reports.task.api.DenyTaskRequest;
 import com.smartcity.reports.task.api.TaskListResponse;
 import com.smartcity.reports.task.api.TaskResponse;
 import com.smartcity.reports.task.api.UpdateTaskRequest;
@@ -103,6 +104,9 @@ public class TaskService {
     public TaskResponse updateTask(UUID id, UpdateTaskRequest request, User currentUser) {
         requireOverseer(currentUser);
         Task task = getTaskEntity(id);
+        if (!canEdit(task.getStatus())) {
+            throw new IllegalArgumentException("Only new or assigned tasks can be edited");
+        }
         task.updateDetails(
                 request.title(),
                 request.description(),
@@ -125,6 +129,9 @@ public class TaskService {
     public TaskResponse assignTask(UUID id, AssignTaskRequest request, User currentUser) {
         requireOverseer(currentUser);
         Task task = getTaskEntity(id);
+        if (task.getStatus() != TaskStatus.NEW) {
+            throw new IllegalArgumentException("Only new tasks can be assigned");
+        }
         task.assign(resolveStaff(request.assignedStaffId()));
         return taskMapper.toResponse(task);
     }
@@ -134,8 +141,8 @@ public class TaskService {
         requireStaff(currentUser);
         Task task = getTaskEntity(id);
         ensureAssignedStaff(task, currentUser);
-        if (task.getStatus() != TaskStatus.ASSIGNED) {
-            throw new IllegalArgumentException("Only assigned tasks can be started");
+        if (task.getStatus() != TaskStatus.ASSIGNED && task.getStatus() != TaskStatus.DENIED) {
+            throw new IllegalArgumentException("Only assigned or denied tasks can be started");
         }
 
         task.start(Instant.now(clock));
@@ -171,11 +178,24 @@ public class TaskService {
     }
 
     @Transactional
+    public TaskResponse denyTask(UUID id, DenyTaskRequest request, User currentUser) {
+        requireOverseer(currentUser);
+        Task task = getTaskEntity(id);
+        if (task.getStatus() != TaskStatus.DONE && task.getStatus() != TaskStatus.PENDING_REVIEW) {
+            throw new IllegalArgumentException("Only done or pending-review tasks can be denied");
+        }
+        task.deny(Instant.now(clock), request.note());
+        return taskMapper.toResponse(task);
+    }
+
+    @Transactional
     public TaskResponse closeTask(UUID id, User currentUser) {
         requireOverseer(currentUser);
         Task task = getTaskEntity(id);
+        if (task.getStatus() != TaskStatus.APPROVED) {
+            throw new IllegalArgumentException("Only approved tasks can be closed");
+        }
         task.close(Instant.now(clock));
-        task.getReports().forEach(Report::fix);
         return taskMapper.toResponse(task);
     }
 
@@ -191,6 +211,9 @@ public class TaskService {
     public void deleteTask(UUID id, User currentUser) {
         requireOverseer(currentUser);
         Task task = getTaskEntity(id);
+        if (!canDelete(task.getStatus())) {
+            throw new IllegalArgumentException("Only new, assigned, or in-progress tasks can be deleted");
+        }
         List<Report> linkedReports = List.copyOf(task.getReports());
         for (Report report : linkedReports) {
             task.unlinkReport(report);
@@ -289,6 +312,16 @@ public class TaskService {
     private boolean isAssignedTo(Task task, User currentUser) {
         return task.getAssignedStaff() != null
                 && task.getAssignedStaff().getId().equals(currentUser.getId());
+    }
+
+    private boolean canEdit(TaskStatus status) {
+        return status == TaskStatus.NEW || status == TaskStatus.ASSIGNED;
+    }
+
+    private boolean canDelete(TaskStatus status) {
+        return status == TaskStatus.NEW
+                || status == TaskStatus.ASSIGNED
+                || status == TaskStatus.IN_PROGRESS;
     }
 
     private void requireOverseer(User currentUser) {

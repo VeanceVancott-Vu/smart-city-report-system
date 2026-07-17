@@ -1,6 +1,13 @@
 import 'task.dart';
 
-enum StaffTaskStatus { queued, assigned, inProgress, awaitingReview, approved }
+enum StaffTaskStatus {
+  queued,
+  assigned,
+  inProgress,
+  awaitingReview,
+  denied,
+  approved,
+}
 
 extension StaffTaskStatusLabel on StaffTaskStatus {
   String get label {
@@ -9,6 +16,7 @@ extension StaffTaskStatusLabel on StaffTaskStatus {
       StaffTaskStatus.assigned => 'Assigned',
       StaffTaskStatus.inProgress => 'In progress',
       StaffTaskStatus.awaitingReview => 'Awaiting review',
+      StaffTaskStatus.denied => 'Denied',
       StaffTaskStatus.approved => 'Approved',
     };
   }
@@ -49,6 +57,7 @@ class StaffTask {
         TaskStatus.inProgress => StaffTaskStatus.inProgress,
         TaskStatus.done ||
         TaskStatus.pendingReview => StaffTaskStatus.awaitingReview,
+        TaskStatus.denied => StaffTaskStatus.denied,
         TaskStatus.approved => StaffTaskStatus.approved,
         _ => StaffTaskStatus.queued,
       },

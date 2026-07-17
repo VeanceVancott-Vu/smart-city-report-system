@@ -89,6 +89,78 @@ class _OverseerTaskDetailScreenState extends State<OverseerTaskDetailScreen> {
     );
   }
 
+  Future<void> _denyTask() async {
+    final noteController = TextEditingController();
+    final formKey = GlobalKey<FormState>();
+    final note = await showDialog<String>(
+      context: context,
+      builder: (dialogContext) => AlertDialog(
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+        icon: Icon(
+          Icons.assignment_return_outlined,
+          color: Theme.of(dialogContext).colorScheme.error,
+        ),
+        title: Text(context.l10n.taskDenyTitle),
+        content: Form(
+          key: formKey,
+          child: ConstrainedBox(
+            constraints: const BoxConstraints(maxWidth: 480),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(context.l10n.taskDenyPrompt),
+                const SizedBox(height: 16),
+                TextFormField(
+                  controller: noteController,
+                  autofocus: true,
+                  maxLength: 2000,
+                  maxLines: 5,
+                  minLines: 3,
+                  decoration: InputDecoration(
+                    labelText: context.l10n.taskDenyNoteLabel,
+                    alignLabelWithHint: true,
+                    border: const OutlineInputBorder(),
+                  ),
+                  validator: (value) => (value ?? '').trim().isEmpty
+                      ? context.l10n.taskDenyNoteRequired
+                      : null,
+                ),
+              ],
+            ),
+          ),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(dialogContext).pop(),
+            child: Text(context.l10n.commonCancel),
+          ),
+          FilledButton.icon(
+            onPressed: () {
+              if (formKey.currentState?.validate() == true) {
+                Navigator.of(dialogContext).pop(noteController.text.trim());
+              }
+            },
+            icon: const Icon(Icons.assignment_return_outlined),
+            label: Text(context.l10n.commonDeny),
+            style: FilledButton.styleFrom(
+              backgroundColor: Theme.of(dialogContext).colorScheme.error,
+            ),
+          ),
+        ],
+      ),
+    );
+    noteController.dispose();
+    if (note == null || note.isEmpty || !mounted) {
+      return;
+    }
+
+    await _changeTask(
+      () => widget.taskApiService.denyTask(_taskId, note),
+      successTitle: context.l10n.taskDeniedTitle,
+    );
+  }
+
   Future<void> _closeTask() async {
     await _changeTask(
       () => widget.taskApiService.closeTask(_taskId),
@@ -197,7 +269,7 @@ class _OverseerTaskDetailScreenState extends State<OverseerTaskDetailScreen> {
             scrolledUnderElevation: 1,
             title: Text(context.l10n.taskDetailsTitle),
             actions: [
-              if (task != null)
+              if (task != null && task.status.canEdit)
                 IconButton(
                   tooltip: context.l10n.commonEdit,
                   onPressed: _editTask,
@@ -215,6 +287,12 @@ class _OverseerTaskDetailScreenState extends State<OverseerTaskDetailScreen> {
                   tooltip: context.l10n.commonApprove,
                   onPressed: _approveTask,
                   icon: const Icon(Icons.verified_outlined),
+                ),
+              if (task != null && task.status.canDeny)
+                IconButton(
+                  tooltip: context.l10n.commonDeny,
+                  onPressed: _denyTask,
+                  icon: const Icon(Icons.assignment_return_outlined),
                 ),
               if (task != null && task.status.canClose)
                 IconButton(
@@ -364,21 +442,34 @@ class _OverseerTaskDetailScreenState extends State<OverseerTaskDetailScreen> {
                     spacing: 8,
                     runSpacing: 8,
                     children: [
-                      OutlinedButton.icon(
-                        onPressed: task.status.canAssign ? _assignTask : null,
-                        icon: const Icon(Icons.person_add_alt_1),
-                        label: Text(context.l10n.commonAssign),
-                      ),
-                      OutlinedButton.icon(
-                        onPressed: _editTask,
-                        icon: const Icon(Icons.edit_outlined),
-                        label: Text(context.l10n.commonEdit),
-                      ),
+                      if (task.status.canAssign)
+                        OutlinedButton.icon(
+                          onPressed: _assignTask,
+                          icon: const Icon(Icons.person_add_alt_1),
+                          label: Text(context.l10n.commonAssign),
+                        ),
+                      if (task.status.canEdit)
+                        OutlinedButton.icon(
+                          onPressed: _editTask,
+                          icon: const Icon(Icons.edit_outlined),
+                          label: Text(context.l10n.commonEdit),
+                        ),
                       if (task.status.canApprove)
                         FilledButton.icon(
                           onPressed: _approveTask,
                           icon: const Icon(Icons.verified_outlined),
                           label: Text(context.l10n.commonApprove),
+                        ),
+                      if (task.status.canDeny)
+                        FilledButton.icon(
+                          onPressed: _denyTask,
+                          icon: const Icon(Icons.assignment_return_outlined),
+                          label: Text(context.l10n.commonDeny),
+                          style: FilledButton.styleFrom(
+                            backgroundColor: Theme.of(
+                              context,
+                            ).colorScheme.error,
+                          ),
                         ),
                       if (task.status.canClose)
                         FilledButton.icon(
@@ -386,16 +477,17 @@ class _OverseerTaskDetailScreenState extends State<OverseerTaskDetailScreen> {
                           icon: const Icon(Icons.check_circle_outline),
                           label: Text(context.l10n.commonClose),
                         ),
-                      OutlinedButton.icon(
-                        onPressed: task.status.canDelete
-                            ? () => _deleteTask(task)
-                            : null,
-                        icon: const Icon(Icons.delete_outline),
-                        label: Text(context.l10n.commonDelete),
-                        style: OutlinedButton.styleFrom(
-                          foregroundColor: Theme.of(context).colorScheme.error,
+                      if (task.status.canDelete)
+                        OutlinedButton.icon(
+                          onPressed: () => _deleteTask(task),
+                          icon: const Icon(Icons.delete_outline),
+                          label: Text(context.l10n.commonDelete),
+                          style: OutlinedButton.styleFrom(
+                            foregroundColor: Theme.of(
+                              context,
+                            ).colorScheme.error,
+                          ),
                         ),
-                      ),
                     ],
                   ),
                 ],

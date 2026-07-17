@@ -255,7 +255,9 @@ class _StaffTaskDetailScreenState extends State<StaffTaskDetailScreen> {
             ],
           ),
           _Section(
-            title: context.l10n.commonDescription,
+            title: task.status == TaskStatus.denied
+                ? context.l10n.taskReworkInstructions
+                : context.l10n.commonDescription,
             child: Text(task.description),
           ),
           _Section(
@@ -443,7 +445,11 @@ class _TaskActions extends StatelessWidget {
                 child: CircularProgressIndicator(strokeWidth: 2),
               )
             : const Icon(Icons.play_arrow),
-        label: Text(context.l10n.staffStartTask),
+        label: Text(
+          task.status == TaskStatus.denied
+              ? context.l10n.staffRedoTask
+              : context.l10n.staffStartTask,
+        ),
       );
     }
 

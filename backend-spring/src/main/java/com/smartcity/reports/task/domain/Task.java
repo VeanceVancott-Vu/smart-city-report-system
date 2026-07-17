@@ -183,6 +183,8 @@ public class Task {
     public void start(Instant now) {
         status = TaskStatus.IN_PROGRESS;
         startedAt = now;
+        submittedAt = null;
+        reviewedAt = null;
     }
 
     public void complete(Instant now, String staffNote) {
@@ -197,6 +199,12 @@ public class Task {
 
     public void approve(Instant now) {
         status = TaskStatus.APPROVED;
+        reviewedAt = now;
+    }
+
+    public void deny(Instant now, String overseerNote) {
+        description = overseerNote.trim();
+        status = TaskStatus.DENIED;
         reviewedAt = now;
     }
 

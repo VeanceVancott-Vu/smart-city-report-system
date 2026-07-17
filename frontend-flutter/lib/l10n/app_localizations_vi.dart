@@ -66,6 +66,9 @@ class AppLocalizationsVi extends AppLocalizations {
   String get commonApprove => 'Phê duyệt';
 
   @override
+  String get commonDeny => 'Từ chối';
+
+  @override
   String get commonAssign => 'Phân công';
 
   @override
@@ -246,6 +249,9 @@ class AppLocalizationsVi extends AppLocalizations {
   String get taskStatusPendingReview => 'Chờ duyệt';
 
   @override
+  String get taskStatusDenied => 'Bị từ chối';
+
+  @override
   String get taskStatusApproved => 'Đã phê duyệt';
 
   @override
@@ -265,6 +271,9 @@ class AppLocalizationsVi extends AppLocalizations {
 
   @override
   String get staffTaskStatusAwaitingReview => 'Đang chờ duyệt';
+
+  @override
+  String get staffTaskStatusDenied => 'Bị từ chối';
 
   @override
   String get staffTaskStatusApproved => 'Đã phê duyệt';
@@ -732,6 +741,25 @@ class AppLocalizationsVi extends AppLocalizations {
   String get taskApprovedTitle => 'Đã phê duyệt công việc';
 
   @override
+  String get taskDeniedTitle => 'Đã từ chối hoàn thành công việc';
+
+  @override
+  String get taskDenyTitle => 'Từ chối hoàn thành công việc';
+
+  @override
+  String get taskDenyPrompt =>
+      'Ghi rõ nội dung nhân viên cần làm lại. Ghi chú này sẽ thay thế mô tả công việc.';
+
+  @override
+  String get taskDenyNoteLabel => 'Ghi chú làm lại';
+
+  @override
+  String get taskDenyNoteRequired => 'Vui lòng nhập ghi chú làm lại';
+
+  @override
+  String get taskReworkInstructions => 'Yêu cầu làm lại';
+
+  @override
   String get taskClosedTitle => 'Đã đóng công việc';
 
   @override
@@ -831,6 +859,9 @@ class AppLocalizationsVi extends AppLocalizations {
 
   @override
   String get staffStartTask => 'Bắt đầu công việc';
+
+  @override
+  String get staffRedoTask => 'Bắt đầu làm lại';
 
   @override
   String get staffRouteMap => 'Bản đồ lộ trình';

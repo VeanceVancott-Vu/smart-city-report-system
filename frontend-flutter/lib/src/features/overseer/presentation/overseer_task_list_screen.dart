@@ -308,6 +308,7 @@ Color _statusColor(TaskStatus status) {
     TaskStatus.inProgress => const Color(0xFF7C3AED),
     TaskStatus.done => const Color(0xFFE67E22),
     TaskStatus.pendingReview => const Color(0xFFD97706),
+    TaskStatus.denied => const Color(0xFFB91C1C),
     TaskStatus.approved => const Color(0xFF0F766E),
     TaskStatus.closed => const Color(0xFF475569),
     TaskStatus.cancelled => const Color(0xFF78909C),

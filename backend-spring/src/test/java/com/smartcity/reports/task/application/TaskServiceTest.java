@@ -5,6 +5,7 @@ import com.smartcity.reports.task.api.TaskListResponse;
 import com.smartcity.reports.task.api.AssignTaskRequest;
 import com.smartcity.reports.task.api.CompleteTaskRequest;
 import com.smartcity.reports.task.api.CreateTaskRequest;
+import com.smartcity.reports.task.api.DenyTaskRequest;
 import com.smartcity.reports.task.api.TaskResponse;
 import com.smartcity.reports.task.api.UpdateTaskRequest;
 import com.smartcity.reports.task.domain.Task;
@@ -265,6 +266,30 @@ class TaskServiceTest {
     }
 
     @Test
+    void staffCanRestartDeniedTask() {
+        User overseer = user(UserRole.OVERSEER);
+        User staff = user(UserRole.STAFF);
+        Task task = taskFor(overseer, staff);
+        UUID taskId = UUID.randomUUID();
+        task.setId(taskId);
+        task.setCreatedAt(NOW);
+        task.setUpdatedAt(NOW);
+        task.start(NOW.minusSeconds(180));
+        task.complete(NOW.minusSeconds(120), "First attempt");
+        task.deny(NOW.minusSeconds(60), "Repair the damaged edge too");
+
+        when(taskRepository.findById(taskId)).thenReturn(Optional.of(task));
+
+        TaskResponse response = taskService.startTask(taskId, staff);
+
+        assertThat(response.status()).isEqualTo(TaskStatus.IN_PROGRESS);
+        assertThat(response.description()).isEqualTo("Repair the damaged edge too");
+        assertThat(response.startedAt()).isEqualTo(NOW);
+        assertThat(response.submittedAt()).isNull();
+        assertThat(response.reviewedAt()).isNull();
+    }
+
+    @Test
     void staffCanCompleteOwnInProgressTask() {
         User staff = user(UserRole.STAFF);
         Task task = taskFor(user(UserRole.OVERSEER), staff);
@@ -341,7 +366,7 @@ class TaskServiceTest {
     }
 
     @Test
-    void closeTaskFixesRelatedReports() {
+    void closeApprovedTaskKeepsRelatedReportsFixed() {
         User overseer = user(UserRole.OVERSEER);
         User staff = user(UserRole.STAFF);
         Report report = reportFor(user(UserRole.CITIZEN));
@@ -354,6 +379,8 @@ class TaskServiceTest {
         report.setId(reportId);
         task.linkReport(report);
         report.linkToTask(taskId);
+        task.approve(NOW.minusSeconds(60));
+        report.fix();
 
         when(taskRepository.findById(taskId)).thenReturn(Optional.of(task));
 
@@ -380,6 +407,7 @@ class TaskServiceTest {
         report.linkToTask(taskId);
         task.start(NOW.minusSeconds(120));
         task.complete(NOW.minusSeconds(60), "Done");
+        assertThat(report.getStatus()).isEqualTo(ReportStatus.IN_PROGRESS);
 
         when(taskRepository.findById(taskId)).thenReturn(Optional.of(task));
 
@@ -389,6 +417,54 @@ class TaskServiceTest {
         assertThat(response.reviewedAt()).isEqualTo(NOW);
         assertThat(response.reportIds()).containsExactly(reportId);
         assertThat(report.getStatus()).isEqualTo(ReportStatus.FIXED);
+    }
+
+    @Test
+    void overseerCanDenyDoneTaskWithoutFixingLinkedReport() {
+        User overseer = user(UserRole.OVERSEER);
+        User staff = user(UserRole.STAFF);
+        Task task = taskFor(overseer, staff);
+        Report report = reportFor(user(UserRole.CITIZEN));
+        UUID taskId = UUID.randomUUID();
+        task.setId(taskId);
+        task.setCreatedAt(NOW);
+        task.setUpdatedAt(NOW);
+        report.setId(UUID.randomUUID());
+        task.linkReport(report);
+        report.linkToTask(taskId);
+        task.start(NOW.minusSeconds(120));
+        task.complete(NOW.minusSeconds(60), "Done");
+
+        when(taskRepository.findById(taskId)).thenReturn(Optional.of(task));
+
+        TaskResponse response = taskService.denyTask(
+                taskId,
+                new DenyTaskRequest("  Repair the damaged edge too  "),
+                overseer
+        );
+
+        assertThat(response.status()).isEqualTo(TaskStatus.DENIED);
+        assertThat(response.description()).isEqualTo("Repair the damaged edge too");
+        assertThat(response.reviewedAt()).isEqualTo(NOW);
+        assertThat(report.getStatus()).isEqualTo(ReportStatus.IN_PROGRESS);
+        assertThat(report.getLinkedTaskId()).isEqualTo(taskId);
+    }
+
+    @Test
+    void denyTaskRequiresDoneOrPendingReviewStatus() {
+        User overseer = user(UserRole.OVERSEER);
+        Task task = taskFor(overseer, null);
+        UUID taskId = UUID.randomUUID();
+
+        when(taskRepository.findById(taskId)).thenReturn(Optional.of(task));
+
+        assertThatThrownBy(() -> taskService.denyTask(
+                taskId,
+                new DenyTaskRequest("Needs more work"),
+                overseer
+        ))
+                .isInstanceOf(IllegalArgumentException.class)
+                .hasMessage("Only done or pending-review tasks can be denied");
     }
 
     @Test
@@ -424,6 +500,22 @@ class TaskServiceTest {
         assertThat(task.getReports()).isEmpty();
         assertThat(report.getLinkedTaskId()).isNull();
         verify(taskRepository).delete(task);
+    }
+
+    @Test
+    void overseerCannotDeleteTaskAwaitingReview() {
+        User overseer = user(UserRole.OVERSEER);
+        User staff = user(UserRole.STAFF);
+        Task task = taskFor(overseer, staff);
+        UUID taskId = UUID.randomUUID();
+        task.start(NOW.minusSeconds(120));
+        task.complete(NOW.minusSeconds(60), "Done");
+
+        when(taskRepository.findById(taskId)).thenReturn(Optional.of(task));
+
+        assertThatThrownBy(() -> taskService.deleteTask(taskId, overseer))
+                .isInstanceOf(IllegalArgumentException.class)
+                .hasMessage("Only new, assigned, or in-progress tasks can be deleted");
     }
 
     @Test

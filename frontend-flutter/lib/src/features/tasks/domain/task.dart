@@ -6,6 +6,7 @@ enum TaskStatus {
   inProgress('IN_PROGRESS', 'In progress'),
   done('DONE', 'Done'),
   pendingReview('PENDING_REVIEW', 'Pending review'),
+  denied('DENIED', 'Denied'),
   approved('APPROVED', 'Approved'),
   closed('CLOSED', 'Closed'),
   cancelled('CANCELLED', 'Cancelled');
@@ -15,15 +16,21 @@ enum TaskStatus {
   final String wireName;
   final String label;
 
-  bool get canAssign =>
-      this != TaskStatus.closed && this != TaskStatus.cancelled;
+  bool get canAssign => this == TaskStatus.newTask;
+
+  bool get canEdit => this == TaskStatus.newTask || this == TaskStatus.assigned;
 
   bool get canApprove =>
       this == TaskStatus.done || this == TaskStatus.pendingReview;
 
+  bool get canDeny => canApprove;
+
   bool get canClose => this == TaskStatus.approved;
 
-  bool get canDelete => true;
+  bool get canDelete =>
+      this == TaskStatus.newTask ||
+      this == TaskStatus.assigned ||
+      this == TaskStatus.inProgress;
 
   bool get needsReviewComparison =>
       this == TaskStatus.done || this == TaskStatus.pendingReview;
@@ -31,7 +38,7 @@ enum TaskStatus {
   bool get canCancel =>
       this != TaskStatus.closed && this != TaskStatus.cancelled;
 
-  bool get canStart => this == TaskStatus.assigned;
+  bool get canStart => this == TaskStatus.assigned || this == TaskStatus.denied;
 
   bool get canComplete => this == TaskStatus.inProgress;
 

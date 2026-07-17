@@ -15,6 +15,7 @@ import 'package:smart_city_report_frontend/src/features/overseer/presentation/ov
 import 'package:smart_city_report_frontend/src/features/reports/data/report_api_service.dart';
 import 'package:smart_city_report_frontend/src/features/reports/domain/report.dart';
 import 'package:smart_city_report_frontend/src/features/tasks/data/task_api_service.dart';
+import 'package:smart_city_report_frontend/src/features/tasks/domain/staff_task.dart';
 import 'package:smart_city_report_frontend/src/features/tasks/domain/task.dart';
 import 'package:smart_city_report_frontend/src/features/tasks/presentation/staff_task_route_map_screen.dart';
 import 'package:smart_city_report_frontend/src/features/users/data/user_api_service.dart';
@@ -212,24 +213,66 @@ void main() {
     expect(completed.staffNote, 'Done');
   });
 
-  test('mock task service approves and deletes a completed task', () async {
+  test(
+    'mock task service approves a completed task and blocks deletion',
+    () async {
+      final taskApiService = MockTaskApiService();
+      final taskId = (await taskApiService.fetchStaffTasks()).first.id;
+
+      await taskApiService.startTask(taskId);
+      final completed = await taskApiService.completeTask(
+        taskId,
+        const TaskCompletionDraft(staffNote: 'Done'),
+      );
+      expect(completed.status, TaskStatus.done);
+
+      final approved = await taskApiService.approveTask(taskId);
+      expect(approved.status, TaskStatus.approved);
+      expect(approved.reviewedAt, isNotNull);
+
+      await expectLater(
+        taskApiService.deleteTask(taskId),
+        throwsA(isA<TaskApiException>()),
+      );
+    },
+  );
+
+  test('mock task service denies completion and allows staff rework', () async {
     final taskApiService = MockTaskApiService();
     final taskId = (await taskApiService.fetchStaffTasks()).first.id;
 
     await taskApiService.startTask(taskId);
-    final completed = await taskApiService.completeTask(
+    await taskApiService.completeTask(
       taskId,
-      const TaskCompletionDraft(staffNote: 'Done'),
+      const TaskCompletionDraft(staffNote: 'First attempt'),
     );
-    expect(completed.status, TaskStatus.done);
+    final denied = await taskApiService.denyTask(
+      taskId,
+      ' Repair the damaged edge too ',
+    );
 
-    final approved = await taskApiService.approveTask(taskId);
-    expect(approved.status, TaskStatus.approved);
-    expect(approved.reviewedAt, isNotNull);
+    expect(denied.status, TaskStatus.denied);
+    expect(denied.description, 'Repair the damaged edge too');
+    expect(StaffTask.fromTask(denied).status, StaffTaskStatus.denied);
+    expect(denied.status.canStart, isTrue);
 
-    await taskApiService.deleteTask(taskId);
-    final remainingTasks = await taskApiService.fetchTasks();
-    expect(remainingTasks.any((task) => task.id == taskId), isFalse);
+    final restarted = await taskApiService.startTask(taskId);
+    expect(restarted.status, TaskStatus.inProgress);
+  });
+
+  test('task action rules follow the overseer workflow', () {
+    expect(TaskStatus.newTask.canAssign, isTrue);
+    expect(TaskStatus.newTask.canEdit, isTrue);
+    expect(TaskStatus.assigned.canAssign, isFalse);
+    expect(TaskStatus.assigned.canEdit, isTrue);
+    expect(TaskStatus.inProgress.canAssign, isFalse);
+    expect(TaskStatus.inProgress.canEdit, isFalse);
+    expect(TaskStatus.inProgress.canDelete, isTrue);
+    expect(TaskStatus.done.canAssign, isFalse);
+    expect(TaskStatus.done.canEdit, isFalse);
+    expect(TaskStatus.done.canDelete, isFalse);
+    expect(TaskStatus.done.canApprove, isTrue);
+    expect(TaskStatus.done.canDeny, isTrue);
   });
   test(
     'mock user service creates and returns staff dropdown options',

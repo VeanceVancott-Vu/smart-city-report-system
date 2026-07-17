@@ -224,6 +224,43 @@ class TaskControllerTest {
     }
 
     @Test
+    void denyTaskReturnsDeniedTask() throws Exception {
+        UUID taskId = UUID.randomUUID();
+        User overseer = user(UserRole.OVERSEER);
+
+        when(taskService.denyTask(eq(taskId), any(DenyTaskRequest.class), nullable(User.class)))
+                .thenReturn(response(taskId, TaskStatus.DENIED, null, List.of()));
+
+        mockMvc.perform(patch("/api/tasks/{id}/deny", taskId)
+                        .with(authentication(authenticationToken(overseer)))
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                {
+                                  "note": "Repair the damaged edge too"
+                                }
+                                """))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.status").value("DENIED"));
+    }
+
+    @Test
+    void denyTaskRequiresNote() throws Exception {
+        UUID taskId = UUID.randomUUID();
+        User overseer = user(UserRole.OVERSEER);
+
+        mockMvc.perform(patch("/api/tasks/{id}/deny", taskId)
+                        .with(authentication(authenticationToken(overseer)))
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                {
+                                  "note": " "
+                                }
+                                """))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.errors.note").value("Denial note is required"));
+    }
+
+    @Test
     void deleteTaskReturnsNoContent() throws Exception {
         UUID taskId = UUID.randomUUID();
         User overseer = user(UserRole.OVERSEER);

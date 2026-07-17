@@ -27,6 +27,8 @@ abstract class TaskApiService {
 
   Future<Task> approveTask(String id);
 
+  Future<Task> denyTask(String id, String note);
+
   Future<Task> closeTask(String id);
 
   Future<Task> cancelTask(String id);
@@ -129,6 +131,17 @@ class BackendTaskApiService extends ApiService implements TaskApiService {
   @override
   Future<Task> approveTask(String id) async {
     return _patchTask('/api/tasks/$id/approve');
+  }
+
+  @override
+  Future<Task> denyTask(String id, String note) async {
+    final response = await _client.patch(
+      _uri('/api/tasks/$id/deny'),
+      headers: await _headers(),
+      body: jsonEncode(<String, Object?>{'note': note}),
+    );
+    _ensureSuccess(response);
+    return Task.fromJson(_decodeMap(response.body));
   }
 
   @override
@@ -277,6 +290,9 @@ class MockTaskApiService extends ApiService implements TaskApiService {
     await Future<void>.delayed(const Duration(milliseconds: 100));
     final index = _taskIndex(id);
     final existing = _tasks[index];
+    if (!existing.status.canEdit) {
+      throw const TaskApiException('This task can no longer be edited.');
+    }
     final updated = existing.copyWith(
       title: draft.title,
       description: draft.description,
@@ -297,6 +313,9 @@ class MockTaskApiService extends ApiService implements TaskApiService {
   Future<Task> assignTask({required String id, required String staffId}) async {
     await Future<void>.delayed(const Duration(milliseconds: 100));
     final index = _taskIndex(id);
+    if (!_tasks[index].status.canAssign) {
+      throw const TaskApiException('Only new tasks can be assigned.');
+    }
     final updated = _tasks[index].copyWith(
       status: TaskStatus.assigned,
       assignedStaff: _staffSummary(staffId),
@@ -311,8 +330,10 @@ class MockTaskApiService extends ApiService implements TaskApiService {
     await Future<void>.delayed(const Duration(milliseconds: 100));
     final index = _taskIndex(id);
     final task = _tasks[index];
-    if (task.status != TaskStatus.assigned) {
-      throw const TaskApiException('Only assigned tasks can be started.');
+    if (!task.status.canStart) {
+      throw const TaskApiException(
+        'Only assigned or denied tasks can be started.',
+      );
     }
     final updated = task.copyWith(
       status: TaskStatus.inProgress,
@@ -361,9 +382,36 @@ class MockTaskApiService extends ApiService implements TaskApiService {
   }
 
   @override
+  Future<Task> denyTask(String id, String note) async {
+    await Future<void>.delayed(const Duration(milliseconds: 100));
+    final index = _taskIndex(id);
+    final task = _tasks[index];
+    if (!task.status.canDeny) {
+      throw const TaskApiException(
+        'Only done or pending-review tasks can be denied.',
+      );
+    }
+    final trimmedNote = note.trim();
+    if (trimmedNote.isEmpty) {
+      throw const TaskApiException('A denial note is required.');
+    }
+    final updated = task.copyWith(
+      description: trimmedNote,
+      status: TaskStatus.denied,
+      reviewedAt: DateTime.now(),
+      updatedAt: DateTime.now(),
+    );
+    _tasks[index] = updated;
+    return updated;
+  }
+
+  @override
   Future<Task> closeTask(String id) async {
     await Future<void>.delayed(const Duration(milliseconds: 100));
     final index = _taskIndex(id);
+    if (!_tasks[index].status.canClose) {
+      throw const TaskApiException('Only approved tasks can be closed.');
+    }
     final updated = _tasks[index].copyWith(
       status: TaskStatus.closed,
       closedAt: DateTime.now(),
@@ -388,7 +436,13 @@ class MockTaskApiService extends ApiService implements TaskApiService {
   @override
   Future<void> deleteTask(String id) async {
     await Future<void>.delayed(const Duration(milliseconds: 100));
-    _tasks.removeAt(_taskIndex(id));
+    final index = _taskIndex(id);
+    if (!_tasks[index].status.canDelete) {
+      throw const TaskApiException(
+        'Only new, assigned, or in-progress tasks can be deleted.',
+      );
+    }
+    _tasks.removeAt(index);
   }
 
   Task _findTask(String id) {

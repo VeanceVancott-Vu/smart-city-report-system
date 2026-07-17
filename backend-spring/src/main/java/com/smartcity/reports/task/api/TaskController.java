@@ -96,6 +96,15 @@ public class TaskController {
         return taskService.approveTask(id, currentUser);
     }
 
+    @PatchMapping("/{id}/deny")
+    public TaskResponse denyTask(
+            @PathVariable UUID id,
+            @Valid @RequestBody DenyTaskRequest request,
+            @AuthenticationPrincipal User currentUser
+    ) {
+        return taskService.denyTask(id, request, currentUser);
+    }
+
     @PatchMapping("/{id}/close")
     public TaskResponse closeTask(
             @PathVariable UUID id,

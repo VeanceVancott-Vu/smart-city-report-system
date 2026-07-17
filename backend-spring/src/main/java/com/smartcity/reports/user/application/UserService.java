@@ -63,7 +63,7 @@ public class UserService {
 
             for (Task task : tasks) {
                 TaskStatus status = task.getStatus();
-                if (status == TaskStatus.ASSIGNED || status == TaskStatus.IN_PROGRESS) {
+                if (status == TaskStatus.ASSIGNED || status == TaskStatus.IN_PROGRESS || status == TaskStatus.DENIED) {
                     activeTasksCount++;
                 } else if (status == TaskStatus.DONE || status == TaskStatus.CLOSED || status == TaskStatus.APPROVED || status == TaskStatus.PENDING_REVIEW) {
                     completedTasksCount++;

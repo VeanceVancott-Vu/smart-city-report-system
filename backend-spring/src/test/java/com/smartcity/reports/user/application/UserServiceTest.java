@@ -1,5 +1,6 @@
 package com.smartcity.reports.user.application;
 
+import com.smartcity.reports.issue.IssueCategory;
 import com.smartcity.reports.task.api.TaskResponse;
 import com.smartcity.reports.task.domain.Task;
 import com.smartcity.reports.task.domain.TaskStatus;
@@ -26,6 +27,7 @@ import com.smartcity.reports.task.application.TaskMapper;
 
 import java.util.List;
 import java.util.UUID;
+import java.time.Instant;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
@@ -206,6 +208,37 @@ class UserServiceTest {
         assertThat(response.staff()).hasSize(1);
         assertThat(response.staff().get(0).id()).isEqualTo(staff.getId());
         assertThat(response.staff().get(0).activeTasksCount()).isZero();
+        assertThat(response.staff().get(0).completedTasksCount()).isZero();
+    }
+
+    @Test
+    void deniedTaskCountsAsActiveStaffWork() {
+        User overseer = user(UserRole.OVERSEER);
+        User staff = user(UserRole.STAFF);
+        Task task = new Task(
+                "Fix pothole",
+                "Repair the pothole.",
+                IssueCategory.ROAD_DAMAGE,
+                10.762622,
+                106.660172,
+                "District 1",
+                4,
+                staff,
+                overseer
+        );
+        Instant now = Instant.parse("2026-07-17T04:00:00Z");
+        task.start(now.minusSeconds(120));
+        task.complete(now.minusSeconds(60), "First attempt");
+        task.deny(now, "Repair the damaged edge too");
+
+        when(userRepository.findByRoleOrderByFullNameAsc(UserRole.STAFF))
+                .thenReturn(List.of(staff));
+        when(taskRepository.findByAssignedStaff_IdOrderByCreatedAtDesc(staff.getId()))
+                .thenReturn(List.of(task));
+
+        StaffListResponse response = userService.getStaffSummary(overseer);
+
+        assertThat(response.staff().get(0).activeTasksCount()).isEqualTo(1);
         assertThat(response.staff().get(0).completedTasksCount()).isZero();
     }
 
