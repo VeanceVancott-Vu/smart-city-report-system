@@ -82,7 +82,7 @@ class _OverseerTaskDetailScreenState extends State<OverseerTaskDetailScreen> {
     final confirmed = await showDialog<bool>(
       context: context,
       builder: (context) => AlertDialog(
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
         icon: Icon(
           Icons.delete_outline,
           color: Theme.of(context).colorScheme.error,
@@ -171,7 +171,12 @@ class _OverseerTaskDetailScreenState extends State<OverseerTaskDetailScreen> {
         final task = snapshot.data;
 
         return Scaffold(
+          backgroundColor: const Color(0xFFF6F8F8),
           appBar: AppBar(
+            backgroundColor: Colors.white,
+            surfaceTintColor: Colors.transparent,
+            elevation: 0,
+            scrolledUnderElevation: 1,
             title: Text(context.l10n.taskDetailsTitle),
             actions: [
               if (task != null)
@@ -229,15 +234,20 @@ class _OverseerTaskDetailScreenState extends State<OverseerTaskDetailScreen> {
     return RefreshIndicator(
       onRefresh: _refresh,
       child: ListView(
-        padding: const EdgeInsets.all(16),
+        padding: const EdgeInsets.fromLTRB(20, 20, 20, 112),
         children: [
-          Text(
+          Center(child: ConstrainedBox(constraints: const BoxConstraints(maxWidth: 1180), child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+          Container(
+            width: double.infinity,
+            padding: const EdgeInsets.all(24),
+            decoration: BoxDecoration(color: const Color(0xFF123B38), borderRadius: BorderRadius.circular(24)),
+            child: Text(
             task.title,
             style: Theme.of(
               context,
-            ).textTheme.headlineSmall?.copyWith(fontWeight: FontWeight.w700),
-          ),
-          const SizedBox(height: 10),
+            ).textTheme.headlineSmall?.copyWith(fontWeight: FontWeight.w800, color: Colors.white),
+          )),
+          const SizedBox(height: 14),
           Wrap(
             spacing: 8,
             runSpacing: 8,
@@ -347,6 +357,7 @@ class _OverseerTaskDetailScreenState extends State<OverseerTaskDetailScreen> {
               ),
             ],
           ),
+          ]))),
         ],
       ),
     );
@@ -421,8 +432,8 @@ class _ReviewPhotoCard extends StatelessWidget {
     return Card(
       elevation: 0,
       shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(8),
-        side: const BorderSide(color: Color(0xFFDDE5E2)),
+        borderRadius: BorderRadius.circular(16),
+        side: const BorderSide(color: Color(0xFFDCE5E3)),
       ),
       child: Padding(
         padding: const EdgeInsets.all(12),
@@ -458,8 +469,10 @@ class _Section extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Padding(
-      padding: const EdgeInsets.only(top: 18),
+    return Container(
+      margin: const EdgeInsets.only(top: 16),
+      padding: const EdgeInsets.all(18),
+      decoration: BoxDecoration(color: Colors.white, borderRadius: BorderRadius.circular(20), border: Border.all(color: const Color(0xFFDCE6E3))),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
@@ -489,7 +502,7 @@ class _InfoChip extends StatelessWidget {
       visualDensity: VisualDensity.compact,
       avatar: Icon(icon, size: 16),
       label: Text(label),
-      side: const BorderSide(color: Color(0xFFDDE5E2)),
+      side: const BorderSide(color: Color(0xFFDCE5E3)),
       backgroundColor: Colors.white,
     );
   }
