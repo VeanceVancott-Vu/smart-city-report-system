@@ -106,38 +106,188 @@ class _StaffCompleteTaskScreenState extends State<StaffCompleteTaskScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final colors = theme.colorScheme;
+
     return Scaffold(
-      appBar: AppBar(title: Text(context.l10n.staffCompleteTask)),
+      backgroundColor: colors.surfaceContainerLowest,
+      appBar: AppBar(
+        title: Text(context.l10n.staffCompleteTask),
+        backgroundColor: colors.surface,
+        surfaceTintColor: Colors.transparent,
+        elevation: 0,
+        scrolledUnderElevation: 1,
+      ),
       body: SafeArea(
-        child: Form(
-          key: _formKey,
-          child: ListView(
-            padding: const EdgeInsets.all(16),
-            children: [
-              TextFormField(
-                controller: _staffNoteController,
-                decoration: InputDecoration(
-                  labelText: context.l10n.taskStaffNote,
-                  prefixIcon: const Icon(Icons.note_alt_outlined),
-                ),
-                minLines: 4,
-                maxLines: 8,
-                validator: (value) => _maxLength(value, 4000),
+        child: Center(
+          child: ConstrainedBox(
+            constraints: const BoxConstraints(maxWidth: 920),
+            child: Form(
+              key: _formKey,
+              child: ListView(
+                padding: const EdgeInsets.fromLTRB(20, 28, 20, 40),
+                children: [
+                  Container(
+                    padding: const EdgeInsets.fromLTRB(24, 24, 24, 22),
+                    decoration: BoxDecoration(
+                      color: const Color(0xFF123C3A),
+                      borderRadius: BorderRadius.circular(26),
+                    ),
+                    child: Row(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Container(
+                          width: 52,
+                          height: 52,
+                          decoration: BoxDecoration(
+                            color: Colors.white.withValues(alpha: .10),
+                            borderRadius: BorderRadius.circular(16),
+                          ),
+                          child: const Icon(Icons.task_alt_rounded, color: Color(0xFF82D5C5), size: 28),
+                        ),
+                        const SizedBox(width: 18),
+                        Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(
+                                context.l10n.staffCompleteTask,
+                                style: theme.textTheme.headlineSmall?.copyWith(
+                                  color: Colors.white,
+                                  fontWeight: FontWeight.w800,
+                                  letterSpacing: -0.5,
+                                ),
+                              ),
+                              const SizedBox(height: 7),
+                              const Text(
+                                'Review the work, leave a useful handover, and send it to the reviewer.',
+                                style: TextStyle(color: Color(0xFFB7D5D0), height: 1.5),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                  const SizedBox(height: 26),
+                  Container(
+                    padding: const EdgeInsets.all(18),
+                    decoration: BoxDecoration(
+                      color: const Color(0xFFEAF4F1),
+                      borderRadius: BorderRadius.circular(20),
+                    ),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Row(
+                          children: [
+                            Icon(Icons.fact_check_outlined, color: colors.primary),
+                            const SizedBox(width: 10),
+                            Text(
+                              'Before submitting',
+                              style: theme.textTheme.titleMedium?.copyWith(
+                                fontWeight: FontWeight.w700,
+                              ),
+                            ),
+                          ],
+                        ),
+                        const SizedBox(height: 14),
+                        const _ChecklistItem(text: 'The assigned work has been completed.'),
+                        const _ChecklistItem(text: 'After photos were added to every linked report.'),
+                        const _ChecklistItem(text: 'The note below is clear for the reviewer.'),
+                      ],
+                    ),
+                  ),
+                  const SizedBox(height: 16),
+                  Container(
+                    padding: const EdgeInsets.all(18),
+                    decoration: BoxDecoration(
+                      color: const Color(0xFFEAF4F1),
+                      borderRadius: BorderRadius.circular(20),
+                    ),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          context.l10n.taskStaffNote,
+                          style: theme.textTheme.titleMedium?.copyWith(
+                            fontWeight: FontWeight.w700,
+                          ),
+                        ),
+                        const SizedBox(height: 6),
+                        Text(
+                          'Mention what was done, any remaining concern, or information the reviewer should know.',
+                          style: theme.textTheme.bodySmall?.copyWith(
+                            color: colors.onSurfaceVariant,
+                            height: 1.45,
+                          ),
+                        ),
+                        const SizedBox(height: 14),
+                        TextFormField(
+                          controller: _staffNoteController,
+                          minLines: 5,
+                          maxLines: 9,
+                          maxLength: 4000,
+                          validator: (value) => _maxLength(value, 4000),
+                          decoration: InputDecoration(
+                            hintText: 'Example: Replaced the damaged cover and cleared the surrounding area.',
+                            alignLabelWithHint: true,
+                            filled: true,
+                            fillColor: Colors.white,
+                            border: OutlineInputBorder(
+                              borderRadius: BorderRadius.circular(16),
+                              borderSide: BorderSide(color: colors.outlineVariant),
+                            ),
+                            enabledBorder: OutlineInputBorder(
+                              borderRadius: BorderRadius.circular(16),
+                              borderSide: BorderSide(color: colors.outlineVariant),
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                  const SizedBox(height: 20),
+                  SizedBox(
+                    height: 56,
+                    child: FilledButton.icon(
+                      onPressed: _isSaving ? null : _completeTask,
+                      icon: _isSaving
+                          ? const SizedBox.square(
+                              dimension: 18,
+                              child: CircularProgressIndicator(strokeWidth: 2),
+                            )
+                          : const Icon(Icons.task_alt_outlined),
+                      label: Text(context.l10n.staffCompleteTask),
+                    ),
+                  ),
+                ],
               ),
-              const SizedBox(height: 20),
-              FilledButton.icon(
-                onPressed: _isSaving ? null : _completeTask,
-                icon: _isSaving
-                    ? const SizedBox.square(
-                        dimension: 18,
-                        child: CircularProgressIndicator(strokeWidth: 2),
-                      )
-                    : const Icon(Icons.task_alt),
-                label: Text(context.l10n.staffCompleteTask),
-              ),
-            ],
+            ),
           ),
         ),
+      ),
+    );
+  }
+}
+
+class _ChecklistItem extends StatelessWidget {
+  const _ChecklistItem({required this.text});
+
+  final String text;
+
+  @override
+  Widget build(BuildContext context) {
+    final colors = Theme.of(context).colorScheme;
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 10),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Icon(Icons.check_circle_outline, size: 19, color: colors.primary),
+          const SizedBox(width: 10),
+          Expanded(child: Text(text, style: const TextStyle(height: 1.4))),
+        ],
       ),
     );
   }

@@ -180,13 +180,14 @@ class _StaffTaskDetailScreenState extends State<StaffTaskDetailScreen> {
         final task = snapshot.data?.task;
 
         return Scaffold(
+          backgroundColor: Theme.of(context).colorScheme.surfaceContainerLowest,
           appBar: AppBar(
             title: Text(context.l10n.taskDetailsTitle),
             actions: [
               IconButton(
                 tooltip: context.l10n.commonRefresh,
                 onPressed: _refresh,
-                icon: const Icon(Icons.refresh),
+                icon: const Icon(Icons.refresh_rounded),
               ),
             ],
           ),
@@ -226,60 +227,157 @@ class _StaffTaskDetailScreenState extends State<StaffTaskDetailScreen> {
     final task = detail.task;
     return RefreshIndicator(
       onRefresh: _refresh,
-      child: ListView(
-        padding: const EdgeInsets.all(16),
-        children: [
-          Text(
-            task.title,
-            style: Theme.of(
-              context,
-            ).textTheme.headlineSmall?.copyWith(fontWeight: FontWeight.w700),
-          ),
-          const SizedBox(height: 10),
-          Wrap(
-            spacing: 8,
-            runSpacing: 8,
+      child: Center(
+        child: ConstrainedBox(
+          constraints: const BoxConstraints(maxWidth: 1080),
+          child: ListView(
+            padding: const EdgeInsets.fromLTRB(16, 20, 16, 120),
             children: [
-              _InfoChip(
-                icon: Icons.flag_outlined,
-                label: task.status.localizedLabel(context),
+              _TaskHero(task: task),
+              const SizedBox(height: 28),
+              _Section(
+                icon: task.status == TaskStatus.denied
+                    ? Icons.replay_circle_filled_rounded
+                    : Icons.notes_rounded,
+                title: task.status == TaskStatus.denied
+                    ? context.l10n.taskReworkInstructions
+                    : context.l10n.commonDescription,
+                child: Text(task.description, style: const TextStyle(height: 1.65)),
               ),
-              _InfoChip(
-                icon: Icons.category_outlined,
-                label: task.category.localizedLabel(context),
+              _Section(
+                icon: Icons.location_on_rounded,
+                title: context.l10n.commonLocation,
+                child: Text(task.locationLabel, style: const TextStyle(height: 1.55)),
               ),
-              _InfoChip(
-                icon: Icons.trending_up,
-                label: context.l10n.priorityValue(task.priorityScore),
+              if ((task.staffNote ?? '').trim().isNotEmpty)
+                _Section(
+                  icon: Icons.chat_bubble_outline_rounded,
+                  title: context.l10n.taskStaffNote,
+                  child: Text(task.staffNote!, style: const TextStyle(height: 1.55)),
+                ),
+              const SizedBox(height: 10),
+              Row(
+                children: [
+                  Expanded(
+                    child: Text(
+                      context.l10n.taskLinkedReports,
+                      style: Theme.of(context).textTheme.titleLarge?.copyWith(
+                        fontWeight: FontWeight.w800,
+                        letterSpacing: -0.3,
+                      ),
+                    ),
+                  ),
+                  Text(
+                    '${detail.reports.length}',
+                    style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                      color: const Color(0xFF0F766E),
+                      fontWeight: FontWeight.w800,
+                    ),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 12),
+              _LinkedReportsList(
+                reports: detail.reports,
+                reportIds: task.reportIds,
+                onOpenReport: _openReport,
+              ),
+              const SizedBox(height: 24),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class _TaskHero extends StatelessWidget {
+  const _TaskHero({required this.task});
+  final Task task;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.fromLTRB(24, 24, 24, 22),
+      decoration: BoxDecoration(
+        color: const Color(0xFF123C3A),
+        borderRadius: BorderRadius.circular(26),
+      ),
+      child: Stack(
+        children: [
+          Positioned(
+            right: -28,
+            top: -36,
+            child: Container(
+              width: 150,
+              height: 150,
+              decoration: BoxDecoration(
+                shape: BoxShape.circle,
+                color: Colors.white.withValues(alpha: .05),
+              ),
+            ),
+          ),
+          Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Row(
+                children: [
+                  Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                    decoration: BoxDecoration(
+                      color: Colors.white.withValues(alpha: .10),
+                      borderRadius: BorderRadius.circular(999),
+                    ),
+                    child: Text(
+                      task.status.localizedLabel(context),
+                      style: const TextStyle(color: Color(0xFFD6F3EC), fontWeight: FontWeight.w700, fontSize: 12),
+                    ),
+                  ),
+                  const Spacer(),
+                  Icon(Icons.assignment_turned_in_outlined, color: Colors.white.withValues(alpha: .75)),
+                ],
+              ),
+              const SizedBox(height: 22),
+              Text(
+                task.title,
+                style: Theme.of(context).textTheme.headlineMedium?.copyWith(
+                  color: Colors.white,
+                  fontWeight: FontWeight.w800,
+                  letterSpacing: -0.8,
+                  height: 1.12,
+                ),
+              ),
+              const SizedBox(height: 18),
+              Wrap(
+                spacing: 18,
+                runSpacing: 10,
+                children: [
+                  _HeroMeta(icon: Icons.category_outlined, text: task.category.localizedLabel(context)),
+                  _HeroMeta(icon: Icons.trending_up_rounded, text: context.l10n.priorityValue(task.priorityScore)),
+                ],
               ),
             ],
           ),
-          _Section(
-            title: task.status == TaskStatus.denied
-                ? context.l10n.taskReworkInstructions
-                : context.l10n.commonDescription,
-            child: Text(task.description),
-          ),
-          _Section(
-            title: context.l10n.commonLocation,
-            child: Text(task.locationLabel),
-          ),
-          if ((task.staffNote ?? '').trim().isNotEmpty)
-            _Section(
-              title: context.l10n.taskStaffNote,
-              child: Text(task.staffNote!),
-            ),
-          _Section(
-            title: context.l10n.taskLinkedReports,
-            child: _LinkedReportsList(
-              reports: detail.reports,
-              reportIds: task.reportIds,
-              onOpenReport: _openReport,
-            ),
-          ),
-          const SizedBox(height: 96),
         ],
       ),
+    );
+  }
+}
+
+class _HeroMeta extends StatelessWidget {
+  const _HeroMeta({required this.icon, required this.text});
+  final IconData icon;
+  final String text;
+
+  @override
+  Widget build(BuildContext context) {
+    return Row(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        Icon(icon, size: 17, color: const Color(0xFF82D5C5)),
+        const SizedBox(width: 7),
+        Text(text, style: const TextStyle(color: Color(0xFFD6E7E3), fontWeight: FontWeight.w600)),
+      ],
     );
   }
 }
@@ -340,11 +438,12 @@ class _LinkedReportTile extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Card(
-      elevation: 0,
-      shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(8),
-        side: const BorderSide(color: Color(0xFFDDE5E2)),
+    return Container(
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(18),
+        border: const Border(left: BorderSide(color: Color(0xFF0F766E), width: 4)),
+        boxShadow: const [BoxShadow(color: Color(0x0D000000), blurRadius: 16, offset: Offset(0, 7))],
       ),
       child: ListTile(
         contentPadding: const EdgeInsets.fromLTRB(12, 8, 8, 8),
@@ -489,26 +588,43 @@ class _TaskActions extends StatelessWidget {
 }
 
 class _Section extends StatelessWidget {
-  const _Section({required this.title, required this.child});
+  const _Section({required this.icon, required this.title, required this.child});
 
+  final IconData icon;
   final String title;
   final Widget child;
 
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
     return Padding(
-      padding: const EdgeInsets.only(top: 18),
-      child: Column(
+      padding: const EdgeInsets.only(bottom: 28),
+      child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text(
-            title,
-            style: Theme.of(
-              context,
-            ).textTheme.titleSmall?.copyWith(fontWeight: FontWeight.w700),
+          Container(
+            width: 42,
+            height: 42,
+            decoration: BoxDecoration(
+              color: const Color(0xFFE3F1ED),
+              borderRadius: BorderRadius.circular(13),
+            ),
+            child: Icon(icon, color: const Color(0xFF0F766E), size: 21),
           ),
-          const SizedBox(height: 6),
-          child,
+          const SizedBox(width: 16),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(title, style: theme.textTheme.titleMedium?.copyWith(fontWeight: FontWeight.w800)),
+                const SizedBox(height: 8),
+                DefaultTextStyle.merge(
+                  style: theme.textTheme.bodyMedium?.copyWith(color: theme.colorScheme.onSurfaceVariant),
+                  child: child,
+                ),
+              ],
+            ),
+          ),
         ],
       ),
     );
@@ -528,7 +644,8 @@ class _InfoChip extends StatelessWidget {
       avatar: Icon(icon, size: 16),
       label: Text(label),
       side: const BorderSide(color: Color(0xFFDDE5E2)),
-      backgroundColor: Colors.white,
+      backgroundColor: Theme.of(context).colorScheme.surface,
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(999)),
     );
   }
 }
@@ -551,7 +668,7 @@ class _ErrorState extends StatelessWidget {
             const SizedBox(height: 12),
             OutlinedButton.icon(
               onPressed: onRetry,
-              icon: const Icon(Icons.refresh),
+              icon: const Icon(Icons.refresh_rounded),
               label: Text(context.l10n.commonRetry),
             ),
           ],

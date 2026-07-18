@@ -134,13 +134,14 @@ class _StaffTaskRouteMapScreenState extends State<StaffTaskRouteMapScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      backgroundColor: Theme.of(context).colorScheme.surfaceContainerLowest,
       appBar: AppBar(
         title: Text(context.l10n.routeMapTitle),
         actions: [
           IconButton(
             tooltip: context.l10n.commonRefresh,
             onPressed: _refresh,
-            icon: const Icon(Icons.refresh),
+            icon: const Icon(Icons.refresh_rounded),
           ),
         ],
       ),
@@ -206,9 +207,9 @@ class _RouteMapBody extends StatelessWidget {
       children: [
         Positioned.fill(child: _RouteMap(plan: plan)),
         Positioned(
-          left: 12,
-          right: 12,
-          top: 12,
+          left: 16,
+          right: 16,
+          top: 16,
           child: _RouteStartPanel(
             plan: plan,
             controller: addressController,
@@ -218,9 +219,9 @@ class _RouteMapBody extends StatelessWidget {
           ),
         ),
         Positioned(
-          left: 12,
-          right: 12,
-          bottom: 12,
+          left: 16,
+          right: 16,
+          bottom: 16,
           child: _RouteStopPanel(plan: plan, onOpenReport: onOpenReport),
         ),
       ],
@@ -654,7 +655,7 @@ class _RouteErrorState extends StatelessWidget {
             const SizedBox(height: 12),
             OutlinedButton.icon(
               onPressed: onRetry,
-              icon: const Icon(Icons.refresh),
+              icon: const Icon(Icons.refresh_rounded),
               label: Text(context.l10n.commonRetry),
             ),
           ],

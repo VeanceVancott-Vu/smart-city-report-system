@@ -110,13 +110,14 @@ class _StaffReportDetailScreenState extends State<StaffReportDetailScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      backgroundColor: Theme.of(context).colorScheme.surfaceContainerLowest,
       appBar: AppBar(
         title: Text(context.l10n.reportDetailsTitle),
         actions: [
           IconButton(
             tooltip: context.l10n.commonRefresh,
             onPressed: _refresh,
-            icon: const Icon(Icons.refresh),
+            icon: const Icon(Icons.refresh_rounded),
           ),
         ],
       ),
@@ -138,9 +139,12 @@ class _StaffReportDetailScreenState extends State<StaffReportDetailScreen> {
             final report = snapshot.requireData;
             return RefreshIndicator(
               onRefresh: _refresh,
-              child: ListView(
-                padding: const EdgeInsets.all(16),
-                children: [
+              child: Center(
+                child: ConstrainedBox(
+                  constraints: const BoxConstraints(maxWidth: 1100),
+                  child: ListView(
+                    padding: const EdgeInsets.fromLTRB(16, 20, 16, 32),
+                    children: [
                   Text(
                     report.title,
                     style: Theme.of(context).textTheme.headlineSmall?.copyWith(
@@ -213,7 +217,9 @@ class _StaffReportDetailScreenState extends State<StaffReportDetailScreen> {
                     title: context.l10n.reportId,
                     child: SelectableText(report.id),
                   ),
-                ],
+                    ],
+                  ),
+                ),
               ),
             );
           },
@@ -289,19 +295,31 @@ class _Section extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Padding(
-      padding: const EdgeInsets.only(top: 18),
+    final theme = Theme.of(context);
+    final colors = theme.colorScheme;
+    return Container(
+      width: double.infinity,
+      margin: const EdgeInsets.only(top: 14),
+      padding: const EdgeInsets.all(18),
+      decoration: BoxDecoration(
+        color: colors.surface,
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: colors.outlineVariant),
+      ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Text(
             title,
-            style: Theme.of(
-              context,
-            ).textTheme.titleSmall?.copyWith(fontWeight: FontWeight.w700),
+            style: theme.textTheme.titleSmall?.copyWith(
+              fontWeight: FontWeight.w700,
+            ),
           ),
-          const SizedBox(height: 6),
-          child,
+          const SizedBox(height: 10),
+          DefaultTextStyle.merge(
+            style: theme.textTheme.bodyMedium?.copyWith(height: 1.5),
+            child: child,
+          ),
         ],
       ),
     );
@@ -321,7 +339,8 @@ class _InfoChip extends StatelessWidget {
       avatar: Icon(icon, size: 16),
       label: Text(label),
       side: const BorderSide(color: Color(0xFFDDE5E2)),
-      backgroundColor: Colors.white,
+      backgroundColor: Theme.of(context).colorScheme.surface,
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(999)),
     );
   }
 }
@@ -344,7 +363,7 @@ class _ErrorState extends StatelessWidget {
             const SizedBox(height: 12),
             OutlinedButton.icon(
               onPressed: onRetry,
-              icon: const Icon(Icons.refresh),
+              icon: const Icon(Icons.refresh_rounded),
               label: Text(context.l10n.commonRetry),
             ),
           ],
