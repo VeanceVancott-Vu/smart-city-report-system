@@ -1202,7 +1202,7 @@ class _PinTile extends StatelessWidget {
                   ),
                 ],
               ),
-              const Spacer(),
+              const SizedBox(height: 16),
               Row(
                 children: [
                   Expanded(
@@ -1219,18 +1219,19 @@ class _PinTile extends StatelessWidget {
                 ],
               ),
               const SizedBox(height: 12),
-              Row(
+              Wrap(
+                spacing: 8,
+                runSpacing: 4,
+                crossAxisAlignment: WrapCrossAlignment.center,
                 children: [
                   _MetaChip(
                     icon: Icons.thumb_up_alt_outlined,
                     label: '${pin.upvoteCount} upvotes',
                   ),
-                  const SizedBox(width: 8),
                   _MetaChip(
                     icon: Icons.trending_up,
                     label: 'Priority ${pin.priorityScore}',
                   ),
-                  const Spacer(),
                   if (showUpvote)
                     TextButton.icon(
                       onPressed: onUpvote,

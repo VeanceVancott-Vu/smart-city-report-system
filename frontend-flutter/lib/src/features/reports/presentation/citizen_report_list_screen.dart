@@ -427,7 +427,8 @@ class _Toolbar extends StatelessWidget {
                     child: ChoiceChip(
                       label: Text(status.localizedLabel(context)),
                       selected: selectedStatus == status,
-                      onSelected: (_) => onStatusChanged(status),
+                      onSelected: (selected) =>
+                          onStatusChanged(selected ? status : null),
                     ),
                   ),
                 ),

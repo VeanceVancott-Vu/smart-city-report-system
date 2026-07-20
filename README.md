@@ -57,7 +57,11 @@ For Android emulator, keep the backend running on your host machine and use:
 
 ```bash
 cd frontend-flutter
-flutter run -d emulator --dart-define-from-file=config/android_emulator.json
+flutter emulators --launch smart_city_pixel_7_api_35
+
+"Wait until the Android home screen is completely visible, then:"
+
+flutter run -d emulator-5554 --no-pub --dart-define-from-file=config/android_emulator.json
 ```
 
 The Flutter config files set:
