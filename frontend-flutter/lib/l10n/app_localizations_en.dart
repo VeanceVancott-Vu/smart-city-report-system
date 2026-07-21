@@ -929,6 +929,13 @@ class AppLocalizationsEn extends AppLocalizations {
   String get routeUseTaskAddress => 'Use task address';
 
   @override
+  String get routePickOnMap => 'Pick on map';
+
+  @override
+  String get routeTapMapToChooseStart =>
+      'Tap the map to choose the route start.';
+
+  @override
   String get routeKnownAddressesHelp =>
       'Known task/report addresses and latitude,longitude are supported.';
 

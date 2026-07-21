@@ -922,6 +922,13 @@ class AppLocalizationsVi extends AppLocalizations {
   String get routeUseTaskAddress => 'Dùng địa chỉ công việc';
 
   @override
+  String get routePickOnMap => 'Chọn trên bản đồ';
+
+  @override
+  String get routeTapMapToChooseStart =>
+      'Chạm vào bản đồ để chọn điểm bắt đầu lộ trình.';
+
+  @override
   String get routeKnownAddressesHelp =>
       'Hỗ trợ địa chỉ công việc, báo cáo và vĩ độ,kinh độ đã biết.';
 

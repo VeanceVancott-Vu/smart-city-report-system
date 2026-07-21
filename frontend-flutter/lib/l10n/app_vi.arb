@@ -275,6 +275,8 @@
   "routeAddressHint": "Nhập địa chỉ hiện tại, ví dụ: trạm xe buýt gần Lê Lợi",
   "routeFromAddress": "Tạo lộ trình từ địa chỉ",
   "routeUseTaskAddress": "Dùng địa chỉ công việc",
+  "routePickOnMap": "Chọn trên bản đồ",
+  "routeTapMapToChooseStart": "Chạm vào bản đồ để chọn điểm bắt đầu lộ trình.",
   "routeKnownAddressesHelp": "Hỗ trợ địa chỉ công việc, báo cáo và vĩ độ,kinh độ đã biết.",
   "routeVisitOrder": "Thứ tự ghé thăm",
   "routeNoStops": "Không có điểm dừng từ báo cáo liên kết.",

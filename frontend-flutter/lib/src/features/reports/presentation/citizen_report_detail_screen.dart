@@ -84,7 +84,10 @@ class _CitizenReportDetailScreenState extends State<CitizenReportDetailScreen> {
 
   Future<void> _openFullPhoto(String url) async {
     await Navigator.of(context).push(
-      MaterialPageRoute(builder: (context) => UploadedPhotoView(fileUrl: url)),
+      MaterialPageRoute<void>(
+        fullscreenDialog: true,
+        builder: (context) => UploadedPhotoFullscreenView(fileUrl: url),
+      ),
     );
   }
 

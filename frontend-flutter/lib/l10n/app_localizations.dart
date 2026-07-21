@@ -1790,6 +1790,18 @@ abstract class AppLocalizations {
   /// **'Use task address'**
   String get routeUseTaskAddress;
 
+  /// No description provided for @routePickOnMap.
+  ///
+  /// In en, this message translates to:
+  /// **'Pick on map'**
+  String get routePickOnMap;
+
+  /// No description provided for @routeTapMapToChooseStart.
+  ///
+  /// In en, this message translates to:
+  /// **'Tap the map to choose the route start.'**
+  String get routeTapMapToChooseStart;
+
   /// No description provided for @routeKnownAddressesHelp.
   ///
   /// In en, this message translates to:

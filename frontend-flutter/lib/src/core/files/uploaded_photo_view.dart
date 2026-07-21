@@ -191,6 +191,57 @@ bool _isFlutterTestBinding() {
   return WidgetsBinding.instance.runtimeType.toString().contains('Test');
 }
 
+class UploadedPhotoFullscreenView extends StatelessWidget {
+  const UploadedPhotoFullscreenView({
+    super.key,
+    required this.fileUrl,
+  });
+
+  final String fileUrl;
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      backgroundColor: Colors.black,
+      body: SafeArea(
+        child: Stack(
+          fit: StackFit.expand,
+          children: [
+            InteractiveViewer(
+              minScale: 1,
+              maxScale: 4,
+              child: Center(
+                child: UploadedPhotoImage(
+                  fileUrl: fileUrl,
+                  fit: BoxFit.contain,
+                  errorWidget: const Icon(
+                    Icons.broken_image_outlined,
+                    color: Colors.white70,
+                    size: 48,
+                  ),
+                ),
+              ),
+            ),
+            Positioned(
+              top: 12,
+              left: 12,
+              child: IconButton(
+                tooltip: 'Close photo',
+                onPressed: () => Navigator.of(context).maybePop(),
+                style: IconButton.styleFrom(
+                  backgroundColor: Colors.black54,
+                  foregroundColor: Colors.white,
+                ),
+                icon: const Icon(Icons.close),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
 class _ImagePreview extends StatelessWidget {
   const _ImagePreview({required this.imageUrl, required this.headers});
 

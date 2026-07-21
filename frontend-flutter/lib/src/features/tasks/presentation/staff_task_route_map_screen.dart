@@ -39,6 +39,7 @@ class _StaffTaskRouteMapScreenState extends State<StaffTaskRouteMapScreen> {
   String? _roadRouteKey;
   Future<RoadRouteResult?>? _roadRouteFuture;
   bool _didReadArgs = false;
+  bool _isPickingStart = false;
 
   @override
   void didChangeDependencies() {
@@ -93,6 +94,7 @@ class _StaffTaskRouteMapScreenState extends State<StaffTaskRouteMapScreen> {
       setState(() {
         _customStart = null;
         _addressMessage = context.l10n.routeUsingTaskAddress;
+        _isPickingStart = false;
         _roadRouteKey = null;
         _roadRouteFuture = null;
       });
@@ -104,6 +106,7 @@ class _StaffTaskRouteMapScreenState extends State<StaffTaskRouteMapScreen> {
       _customStart = resolved;
       _roadRouteKey = null;
       _roadRouteFuture = null;
+      _isPickingStart = false;
       _addressMessage = resolved == null
           ? context.l10n.routeAddressNotFound
           : context.l10n.routeStartsFrom(resolved.label);
@@ -115,6 +118,27 @@ class _StaffTaskRouteMapScreenState extends State<StaffTaskRouteMapScreen> {
     setState(() {
       _customStart = null;
       _addressMessage = context.l10n.routeUsingTaskAddress;
+      _isPickingStart = false;
+    });
+  }
+
+  void _toggleStartPicker() {
+    setState(() {
+      _isPickingStart = !_isPickingStart;
+    });
+  }
+
+  void _pickStartOnMap(LatLng point) {
+    final label =
+        '${point.latitude.toStringAsFixed(6)}, '
+        '${point.longitude.toStringAsFixed(6)}';
+    _startAddressController.text = label;
+    setState(() {
+      _customStart = _ResolvedStart(label: label, point: point);
+      _addressMessage = context.l10n.routeStartsFrom(label);
+      _roadRouteKey = null;
+      _roadRouteFuture = null;
+      _isPickingStart = false;
     });
   }
 
@@ -173,6 +197,9 @@ class _StaffTaskRouteMapScreenState extends State<StaffTaskRouteMapScreen> {
                   addressMessage: _addressMessage,
                   onRouteFromAddress: () => _routeFromAddress(data),
                   onUseTaskAddress: () => _useTaskAddress(data),
+                  isPickingStart: _isPickingStart,
+                  onToggleStartPicker: _toggleStartPicker,
+                  onPickStart: _pickStartOnMap,
                   onOpenReport: _openReport,
                 );
               },
@@ -191,6 +218,9 @@ class _RouteMapBody extends StatelessWidget {
     required this.addressMessage,
     required this.onRouteFromAddress,
     required this.onUseTaskAddress,
+    required this.isPickingStart,
+    required this.onToggleStartPicker,
+    required this.onPickStart,
     required this.onOpenReport,
   });
 
@@ -199,13 +229,22 @@ class _RouteMapBody extends StatelessWidget {
   final String? addressMessage;
   final VoidCallback onRouteFromAddress;
   final VoidCallback onUseTaskAddress;
+  final bool isPickingStart;
+  final VoidCallback onToggleStartPicker;
+  final ValueChanged<LatLng> onPickStart;
   final ValueChanged<String> onOpenReport;
 
   @override
   Widget build(BuildContext context) {
     return Stack(
       children: [
-        Positioned.fill(child: _RouteMap(plan: plan)),
+        Positioned.fill(
+          child: _RouteMap(
+            plan: plan,
+            isPickingStart: isPickingStart,
+            onPickStart: onPickStart,
+          ),
+        ),
         Positioned(
           left: 16,
           right: 16,
@@ -216,6 +255,8 @@ class _RouteMapBody extends StatelessWidget {
             message: addressMessage,
             onRouteFromAddress: onRouteFromAddress,
             onUseTaskAddress: onUseTaskAddress,
+            isPickingStart: isPickingStart,
+            onToggleStartPicker: onToggleStartPicker,
           ),
         ),
         Positioned(
@@ -230,9 +271,15 @@ class _RouteMapBody extends StatelessWidget {
 }
 
 class _RouteMap extends StatelessWidget {
-  const _RouteMap({required this.plan});
+  const _RouteMap({
+    required this.plan,
+    required this.isPickingStart,
+    required this.onPickStart,
+  });
 
   final _RoutePlan plan;
+  final bool isPickingStart;
+  final ValueChanged<LatLng> onPickStart;
 
   @override
   Widget build(BuildContext context) {
@@ -245,6 +292,7 @@ class _RouteMap extends StatelessWidget {
         initialZoom: _initialZoom(plan.displayRoutePoints),
         minZoom: 4,
         maxZoom: 18,
+        onTap: isPickingStart ? (_, point) => onPickStart(point) : null,
       ),
       children: [
         TileLayer(
@@ -274,6 +322,8 @@ class _RouteStartPanel extends StatelessWidget {
     required this.message,
     required this.onRouteFromAddress,
     required this.onUseTaskAddress,
+    required this.isPickingStart,
+    required this.onToggleStartPicker,
   });
 
   final _RoutePlan plan;
@@ -281,6 +331,8 @@ class _RouteStartPanel extends StatelessWidget {
   final String? message;
   final VoidCallback onRouteFromAddress;
   final VoidCallback onUseTaskAddress;
+  final bool isPickingStart;
+  final VoidCallback onToggleStartPicker;
 
   @override
   Widget build(BuildContext context) {
@@ -359,26 +411,48 @@ class _RouteStartPanel extends StatelessWidget {
               ),
             ),
             const SizedBox(height: 8),
-            Row(
+            Wrap(
+              spacing: 8,
+              runSpacing: 4,
               children: [
                 TextButton.icon(
                   onPressed: onUseTaskAddress,
                   icon: const Icon(Icons.assignment_return_outlined, size: 18),
                   label: Text(context.l10n.routeUseTaskAddress),
                 ),
-                const SizedBox(width: 8),
-                Expanded(
-                  child: Text(
-                    message ?? context.l10n.routeKnownAddressesHelp,
-                    maxLines: 2,
-                    overflow: TextOverflow.ellipsis,
-                    textAlign: TextAlign.right,
-                    style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                      color: Colors.grey.shade700,
-                    ),
+                OutlinedButton.icon(
+                  key: const Key('staffRoutePickOnMapButton'),
+                  onPressed: onToggleStartPicker,
+                  icon: Icon(
+                    isPickingStart
+                        ? Icons.close
+                        : Icons.add_location_alt_outlined,
+                    size: 18,
+                  ),
+                  label: Text(
+                    isPickingStart
+                        ? context.l10n.commonCancel
+                        : context.l10n.routePickOnMap,
                   ),
                 ),
               ],
+            ),
+            const SizedBox(height: 4),
+            Text(
+              isPickingStart
+                  ? context.l10n.routeTapMapToChooseStart
+                  : message ?? context.l10n.routeKnownAddressesHelp,
+              key: isPickingStart
+                  ? const Key('staffRouteMapPickHint')
+                  : null,
+              maxLines: 2,
+              overflow: TextOverflow.ellipsis,
+              style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                color: isPickingStart
+                    ? const Color(0xFF0F766E)
+                    : Colors.grey.shade700,
+                fontWeight: isPickingStart ? FontWeight.w700 : null,
+              ),
             ),
           ],
         ),

@@ -520,7 +520,7 @@ class _CitizenReportMapPickerState extends State<CitizenReportMapPicker>
                 bottom: 0,
                 top: isDesktop ? 0 : null,
                 left: isDesktop ? null : 0,
-                width: panelWidth,
+                width: isDesktop ? panelWidth : null,
                 child: Align(
                   alignment: isDesktop
                       ? Alignment.centerRight

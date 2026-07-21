@@ -583,6 +583,9 @@ class _OverseerMapScreenState extends State<OverseerMapScreen> {
                                         width: 80,
                                         height: 80,
                                         child: GestureDetector(
+                                          key: ValueKey<String>(
+                                            'overseerMapPin-${pin.id}',
+                                          ),
                                           behavior: HitTestBehavior.opaque,
                                           onTap: () {
                                             if (_multiSelectMode) {
@@ -2163,8 +2166,10 @@ class _SelectedPinDetailsCard extends StatelessWidget {
 
             const SizedBox(height: 12),
             // Actions
-            Row(
-              mainAxisAlignment: MainAxisAlignment.end,
+            Wrap(
+              alignment: WrapAlignment.end,
+              spacing: 8,
+              runSpacing: 8,
               children: [
                 OutlinedButton(
                   onPressed: onViewDetails,
@@ -2176,7 +2181,6 @@ class _SelectedPinDetailsCard extends StatelessWidget {
                   ),
                   child: Text(context.l10n.mapViewFullDetails),
                 ),
-                const SizedBox(width: 8),
                 if (pin.status == ReportStatus.submitted) ...[
                   OutlinedButton.icon(
                     onPressed: onQuickFix,
@@ -2191,7 +2195,6 @@ class _SelectedPinDetailsCard extends StatelessWidget {
                       ),
                     ),
                   ),
-                  const SizedBox(width: 8),
                   FilledButton.icon(
                     onPressed: onCreateTask,
                     icon: const Icon(Icons.add_task_outlined, size: 14),

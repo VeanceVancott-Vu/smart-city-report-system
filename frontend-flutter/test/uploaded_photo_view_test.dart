@@ -35,4 +35,50 @@ void main() {
 
     expect(find.text(photoUrl), findsNothing);
   });
+
+  testWidgets('full-screen viewer closes with its button and system back', (
+    tester,
+  ) async {
+    await tester.pumpWidget(
+      MaterialApp(
+        home: Builder(
+          builder: (context) => Scaffold(
+            body: Center(
+              child: FilledButton(
+                key: const Key('openPhoto'),
+                onPressed: () {
+                  Navigator.of(context).push(
+                    MaterialPageRoute<void>(
+                      fullscreenDialog: true,
+                      builder: (_) => const UploadedPhotoFullscreenView(
+                        fileUrl: 'https://example.test/photo.jpg',
+                      ),
+                    ),
+                  );
+                },
+                child: const Text('Open photo'),
+              ),
+            ),
+          ),
+        ),
+      ),
+    );
+
+    await tester.tap(find.byKey(const Key('openPhoto')));
+    await tester.pumpAndSettle();
+    expect(find.byTooltip('Close photo'), findsOneWidget);
+
+    await tester.tap(find.byTooltip('Close photo'));
+    await tester.pumpAndSettle();
+    expect(find.byTooltip('Close photo'), findsNothing);
+    expect(find.text('Open photo'), findsOneWidget);
+
+    await tester.tap(find.byKey(const Key('openPhoto')));
+    await tester.pumpAndSettle();
+    await tester.binding.handlePopRoute();
+    await tester.pumpAndSettle();
+
+    expect(find.byTooltip('Close photo'), findsNothing);
+    expect(find.text('Open photo'), findsOneWidget);
+  });
 }

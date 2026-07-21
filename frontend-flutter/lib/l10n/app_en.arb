@@ -282,6 +282,8 @@
   "routeAddressHint": "Enter current address, e.g. bus stop near Lê Lợi",
   "routeFromAddress": "Route from address",
   "routeUseTaskAddress": "Use task address",
+  "routePickOnMap": "Pick on map",
+  "routeTapMapToChooseStart": "Tap the map to choose the route start.",
   "routeKnownAddressesHelp": "Known task/report addresses and latitude,longitude are supported.",
   "routeVisitOrder": "Visit order",
   "routeNoStops": "No linked report stops.",

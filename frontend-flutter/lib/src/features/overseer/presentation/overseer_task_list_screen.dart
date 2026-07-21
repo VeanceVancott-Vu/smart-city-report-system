@@ -184,15 +184,30 @@ class OverseerTaskListScreenState extends State<OverseerTaskListScreen> {
                 onRefresh: reload,
                 child: LayoutBuilder(
                   builder: (context, constraints) {
-                    final columns = constraints.maxWidth >= 1080 ? 2 : 1;
+                    final isDesktop = constraints.maxWidth >= 1080;
+                    if (!isDesktop) {
+                      return ListView.separated(
+                        physics: const AlwaysScrollableScrollPhysics(),
+                        padding: const EdgeInsets.fromLTRB(20, 8, 20, 112),
+                        itemCount: filteredTasks.length,
+                        separatorBuilder: (_, __) =>
+                            const SizedBox(height: 14),
+                        itemBuilder: (context, index) => _TaskTile(
+                          task: filteredTasks[index],
+                          onTap: () => _openTask(filteredTasks[index].id),
+                        ),
+                      );
+                    }
+
                     return GridView.builder(
                       physics: const AlwaysScrollableScrollPhysics(),
                       padding: const EdgeInsets.fromLTRB(20, 8, 20, 112),
-                      gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
-                        crossAxisCount: columns,
+                      gridDelegate:
+                          const SliverGridDelegateWithFixedCrossAxisCount(
+                        crossAxisCount: 2,
                         crossAxisSpacing: 14,
                         mainAxisSpacing: 14,
-                        childAspectRatio: columns == 1 ? 3.15 : 2.35,
+                        childAspectRatio: 2.35,
                       ),
                       itemCount: filteredTasks.length,
                       itemBuilder: (context, index) => _TaskTile(
@@ -233,9 +248,9 @@ class _TaskTile extends StatelessWidget {
           child: Row(crossAxisAlignment: CrossAxisAlignment.start, children: [
             Container(width: 48, height: 48, decoration: BoxDecoration(color: statusColor.withValues(alpha: .10), borderRadius: BorderRadius.circular(15)), child: Icon(task.status.needsReviewComparison ? Icons.rate_review_outlined : Icons.assignment_outlined, color: statusColor)),
             const SizedBox(width: 16),
-            Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+            Expanded(child: Column(mainAxisSize: MainAxisSize.min, crossAxisAlignment: CrossAxisAlignment.start, children: [
               Row(crossAxisAlignment: CrossAxisAlignment.start, children: [Expanded(child: Text(task.title, maxLines: 2, overflow: TextOverflow.ellipsis, style: Theme.of(context).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.w800))), const SizedBox(width: 10), _StatusBadge(label: task.status.localizedLabel(context), color: statusColor)]),
-              const Spacer(),
+              const SizedBox(height: 12),
               Wrap(spacing: 14, runSpacing: 8, children: [
                 _MetaChip(icon: Icons.category_outlined, label: task.category.localizedLabel(context)),
                 _MetaChip(icon: Icons.place_outlined, label: task.locationLabel),
@@ -268,7 +283,13 @@ class _MetaChip extends StatelessWidget {
   Widget build(BuildContext context) {
     return Row(
       mainAxisSize: MainAxisSize.min,
-      children: [Icon(icon, size: 16), const SizedBox(width: 4), Text(label)],
+      children: [
+        Icon(icon, size: 16),
+        const SizedBox(width: 4),
+        Flexible(
+          child: Text(label, maxLines: 2, overflow: TextOverflow.ellipsis),
+        ),
+      ],
     );
   }
 }
