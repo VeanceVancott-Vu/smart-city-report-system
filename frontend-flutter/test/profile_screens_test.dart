@@ -106,7 +106,7 @@ void main() {
     expect(find.text('Demo Overseer'), findsOneWidget);
     expect(
       find.text(
-        'A complete overseer analytics dashboard will be available on its own page.',
+        'Review city operations, staff workload, response times and attention queues on the analytics dashboard.',
       ),
       findsOneWidget,
     );

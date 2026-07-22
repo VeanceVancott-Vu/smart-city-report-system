@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 
 import '../../../core/localization/app_localizations_extension.dart';
 import '../../../core/localization/domain_localizations.dart';
+import '../../../core/routing/app_routes.dart';
 import '../../auth/domain/current_user.dart';
 import '../../reports/domain/report.dart';
 import '../../tasks/domain/task.dart';
@@ -218,11 +219,25 @@ class _OverseerProfileNote extends StatelessWidget {
       margin: EdgeInsets.zero,
       child: Padding(
         padding: const EdgeInsets.all(24),
-        child: Row(
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            const Icon(Icons.analytics_outlined, size: 30),
-            const SizedBox(width: 16),
-            Expanded(child: Text(context.l10n.profileOverseerAnalyticsNote)),
+            Row(
+              children: [
+                const Icon(Icons.analytics_outlined, size: 30),
+                const SizedBox(width: 16),
+                Expanded(
+                  child: Text(context.l10n.profileOverseerAnalyticsNote),
+                ),
+              ],
+            ),
+            const SizedBox(height: 16),
+            FilledButton.icon(
+              onPressed: () =>
+                  Navigator.of(context).pushNamed(AppRoutes.overseerAnalytics),
+              icon: const Icon(Icons.open_in_new),
+              label: Text(context.l10n.analyticsOpenDashboard),
+            ),
           ],
         ),
       ),

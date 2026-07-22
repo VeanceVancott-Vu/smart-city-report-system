@@ -3,6 +3,8 @@ import 'package:flutter/material.dart';
 import '../../../core/localization/app_localizations_extension.dart';
 import '../../../core/localization/language_menu_button.dart';
 import '../../../core/routing/app_routes.dart';
+import '../../analytics/data/analytics_api_service.dart';
+import '../../analytics/presentation/overseer_analytics_screen.dart';
 import '../../auth/data/auth_api_service.dart';
 import '../../overseer/presentation/overseer_report_dashboard_screen.dart';
 import '../../overseer/presentation/overseer_task_list_screen.dart';
@@ -19,12 +21,14 @@ class OverseerHomeScreen extends StatefulWidget {
     required this.reportApiService,
     required this.taskApiService,
     required this.userApiService,
+    required this.analyticsApiService,
   });
 
   final AuthApiService authApiService;
   final ReportApiService reportApiService;
   final TaskApiService taskApiService;
   final UserApiService userApiService;
+  final AnalyticsApiService analyticsApiService;
 
   @override
   State<OverseerHomeScreen> createState() => _OverseerHomeScreenState();
@@ -32,12 +36,14 @@ class OverseerHomeScreen extends StatefulWidget {
 
 class _OverseerHomeScreenState extends State<OverseerHomeScreen> {
   final _taskListKey = GlobalKey<OverseerTaskListScreenState>();
+  final Set<int> _visitedTabs = {0};
   int _selectedIndex = 0;
 
   @override
   Widget build(BuildContext context) {
     final titles = [
       context.l10n.homeReportDashboard,
+      context.l10n.analyticsTitle,
       context.l10n.homeCityMap,
       context.l10n.commonTasks,
       context.l10n.commonStaff,
@@ -71,25 +77,47 @@ class _OverseerHomeScreenState extends State<OverseerHomeScreen> {
       body: IndexedStack(
         index: _selectedIndex,
         children: [
-          OverseerReportDashboardScreen(
-            reportApiService: widget.reportApiService,
-          ),
-          OverseerMapScreen(
-            reportApiService: widget.reportApiService,
-            authApiService: widget.authApiService,
-          ),
-          OverseerTaskListScreen(
-            key: _taskListKey,
-            taskApiService: widget.taskApiService,
-          ),
-          OverseerStaffListScreen(userApiService: widget.userApiService),
+          if (_visitedTabs.contains(0))
+            OverseerReportDashboardScreen(
+              reportApiService: widget.reportApiService,
+            )
+          else
+            const SizedBox.shrink(),
+          if (_visitedTabs.contains(1))
+            OverseerAnalyticsScreen(
+              analyticsApiService: widget.analyticsApiService,
+              userApiService: widget.userApiService,
+            )
+          else
+            const SizedBox.shrink(),
+          if (_visitedTabs.contains(2))
+            OverseerMapScreen(
+              reportApiService: widget.reportApiService,
+              authApiService: widget.authApiService,
+            )
+          else
+            const SizedBox.shrink(),
+          if (_visitedTabs.contains(3))
+            OverseerTaskListScreen(
+              key: _taskListKey,
+              taskApiService: widget.taskApiService,
+            )
+          else
+            const SizedBox.shrink(),
+          if (_visitedTabs.contains(4))
+            OverseerStaffListScreen(userApiService: widget.userApiService)
+          else
+            const SizedBox.shrink(),
         ],
       ),
       bottomNavigationBar: NavigationBar(
         selectedIndex: _selectedIndex,
         onDestinationSelected: (index) {
-          setState(() => _selectedIndex = index);
-          if (index == 2) {
+          setState(() {
+            _selectedIndex = index;
+            _visitedTabs.add(index);
+          });
+          if (index == 3) {
             _taskListKey.currentState?.reload();
           }
         },
@@ -98,6 +126,11 @@ class _OverseerHomeScreenState extends State<OverseerHomeScreen> {
             icon: const Icon(Icons.dashboard_outlined),
             selectedIcon: const Icon(Icons.dashboard),
             label: context.l10n.commonReports,
+          ),
+          NavigationDestination(
+            icon: const Icon(Icons.analytics_outlined),
+            selectedIcon: const Icon(Icons.analytics),
+            label: context.l10n.analyticsTitle,
           ),
           NavigationDestination(
             icon: const Icon(Icons.map_outlined),

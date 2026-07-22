@@ -1535,11 +1535,208 @@ class AppLocalizationsVi extends AppLocalizations {
 
   @override
   String get profileOverseerAnalyticsNote =>
-      'Bảng phân tích đầy đủ cho giám sát viên sẽ nằm trên một trang riêng.';
+      'Xem hoạt động đô thị, khối lượng nhân viên, thời gian xử lý và các mục cần chú ý trên bảng phân tích.';
 
   @override
   String get staffProfileTitle => 'Hồ sơ nhân viên';
 
   @override
   String get staffProfileLoadFailed => 'Không thể tải hồ sơ nhân viên này.';
+
+  @override
+  String get analyticsTitle => 'Phân tích đô thị';
+
+  @override
+  String get analyticsSubtitle =>
+      'Hiệu quả vận hành, khối lượng công việc và các vấn đề cần chú ý.';
+
+  @override
+  String get analyticsOpenDashboard => 'Mở bảng phân tích';
+
+  @override
+  String get analyticsLoadFailed => 'Không thể tải dữ liệu phân tích đô thị.';
+
+  @override
+  String get analyticsFilters => 'Bộ lọc';
+
+  @override
+  String get analyticsRange7Days => '7 ngày gần đây';
+
+  @override
+  String get analyticsRange30Days => '30 ngày gần đây';
+
+  @override
+  String get analyticsRange90Days => '90 ngày gần đây';
+
+  @override
+  String get analyticsRangeAllTime => 'Toàn bộ thời gian';
+
+  @override
+  String get analyticsAllCategories => 'Tất cả danh mục';
+
+  @override
+  String get analyticsAllStaff => 'Tất cả nhân viên';
+
+  @override
+  String get analyticsArea => 'Khu vực hoặc địa chỉ';
+
+  @override
+  String get analyticsAreaHint => 'Ví dụ: Quận 1';
+
+  @override
+  String get analyticsApplyFilters => 'Áp dụng bộ lọc';
+
+  @override
+  String get analyticsClearFilters => 'Xóa bộ lọc';
+
+  @override
+  String get analyticsLastUpdated => 'Cập nhật lần cuối';
+
+  @override
+  String get analyticsTotalReports => 'Tổng báo cáo';
+
+  @override
+  String get analyticsSubmittedReports => 'Báo cáo đã gửi';
+
+  @override
+  String get analyticsReportsInProgress => 'Báo cáo đang xử lý';
+
+  @override
+  String get analyticsFixedReports => 'Báo cáo đã khắc phục';
+
+  @override
+  String get analyticsUnassignedTasks => 'Công việc chưa giao';
+
+  @override
+  String get analyticsActiveTasks => 'Công việc đang hoạt động';
+
+  @override
+  String get analyticsPendingReview => 'Đang chờ duyệt';
+
+  @override
+  String get analyticsCompletedTasks => 'Công việc đã hoàn thành';
+
+  @override
+  String get analyticsOperationalTrend => 'Xu hướng vận hành';
+
+  @override
+  String get analyticsReportsCreated => 'Báo cáo được tạo';
+
+  @override
+  String get analyticsReportsFixed => 'Báo cáo được khắc phục';
+
+  @override
+  String get analyticsTasksCreated => 'Công việc được tạo';
+
+  @override
+  String get analyticsTasksClosed => 'Công việc đã đóng';
+
+  @override
+  String get analyticsReportStatus => 'Trạng thái báo cáo';
+
+  @override
+  String get analyticsTaskWorkflow => 'Quy trình công việc';
+
+  @override
+  String get analyticsCategoryBreakdown => 'Phân tích theo danh mục';
+
+  @override
+  String get analyticsCycleTimes => 'Thời gian quy trình';
+
+  @override
+  String get analyticsAverageWorkTime => 'Thời gian xử lý trung bình';
+
+  @override
+  String get analyticsAverageReviewTime => 'Thời gian duyệt trung bình';
+
+  @override
+  String get analyticsAverageResolutionTime =>
+      'Thời gian giải quyết trung bình';
+
+  @override
+  String get analyticsHours => 'giờ';
+
+  @override
+  String get analyticsCompletionRate => 'Tỷ lệ hoàn thành';
+
+  @override
+  String get analyticsFixedRate => 'Tỷ lệ khắc phục';
+
+  @override
+  String get analyticsTotalUpvotes => 'Tổng lượt ủng hộ';
+
+  @override
+  String get analyticsAveragePriority => 'Mức ưu tiên trung bình';
+
+  @override
+  String get analyticsStaffWorkload => 'Khối lượng và hiệu quả nhân viên';
+
+  @override
+  String get analyticsAccount => 'Tài khoản';
+
+  @override
+  String get analyticsActiveColumn => 'Đang làm';
+
+  @override
+  String get analyticsReviewColumn => 'Chờ duyệt';
+
+  @override
+  String get analyticsCompletedColumn => 'Hoàn thành';
+
+  @override
+  String get analyticsDeniedColumn => 'Bị từ chối';
+
+  @override
+  String get analyticsAverageCompletionColumn => 'TG hoàn thành TB';
+
+  @override
+  String get analyticsAttentionRequired => 'Cần chú ý';
+
+  @override
+  String get analyticsNoAttention =>
+      'Không có mục nào theo bộ lọc hiện tại cần chú ý.';
+
+  @override
+  String get analyticsReasonHighPriorityReport =>
+      'Báo cáo ưu tiên cao chưa có công việc';
+
+  @override
+  String get analyticsReasonUnassignedReport =>
+      'Báo cáo đã gửi chưa có công việc';
+
+  @override
+  String get analyticsReasonUnassignedTask =>
+      'Công việc chưa được giao nhân viên';
+
+  @override
+  String get analyticsReasonPendingReview => 'Kết quả đang chờ xét duyệt';
+
+  @override
+  String get analyticsReasonDeniedRework => 'Công việc bị từ chối cần làm lại';
+
+  @override
+  String get analyticsReasonStaleTask =>
+      'Công việc đang hoạt động chưa cập nhật trong 7 ngày';
+
+  @override
+  String get analyticsReasonInactiveStaff =>
+      'Công việc đang giao cho tài khoản ngừng hoạt động';
+
+  @override
+  String get analyticsGeographicDistribution => 'Phân bố sự cố theo địa lý';
+
+  @override
+  String get analyticsNoMapPoints => 'Không có vị trí báo cáo phù hợp bộ lọc.';
+
+  @override
+  String get analyticsReportsColumn => 'Báo cáo';
+
+  @override
+  String get analyticsFixedColumn => 'Đã sửa';
+
+  @override
+  String get analyticsTasksColumn => 'Công việc';
+
+  @override
+  String get analyticsClosedColumn => 'Đã đóng';
 }

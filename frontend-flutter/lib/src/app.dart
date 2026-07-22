@@ -6,6 +6,8 @@ import 'core/localization/locale_controller.dart';
 import 'core/localization/locale_scope.dart';
 import 'core/localization/locale_storage.dart';
 import 'core/routing/app_routes.dart';
+import 'features/analytics/data/analytics_api_service.dart';
+import 'features/analytics/presentation/overseer_analytics_screen.dart';
 import 'features/auth/data/auth_api_service.dart';
 import 'features/auth/presentation/login_screen.dart';
 import 'features/auth/presentation/register_screen.dart';
@@ -40,12 +42,15 @@ class SmartCityReportApp extends StatelessWidget {
     ReportApiService? reportApiService,
     TaskApiService? taskApiService,
     UserApiService? userApiService,
+    AnalyticsApiService? analyticsApiService,
     RoadRouteService? roadRouteService,
     LocaleController? localeController,
   }) : authApiService = authApiService ?? BackendAuthApiService(),
        reportApiService = reportApiService ?? BackendReportApiService(),
        taskApiService = taskApiService ?? BackendTaskApiService(),
        userApiService = userApiService ?? BackendUserApiService(),
+       analyticsApiService =
+           analyticsApiService ?? BackendAnalyticsApiService(),
        roadRouteService = roadRouteService ?? OsrmRoadRouteService(),
        localeController =
            localeController ?? LocaleController(storage: MemoryLocaleStorage());
@@ -54,6 +59,7 @@ class SmartCityReportApp extends StatelessWidget {
   final ReportApiService reportApiService;
   final TaskApiService taskApiService;
   final UserApiService userApiService;
+  final AnalyticsApiService analyticsApiService;
   final RoadRouteService roadRouteService;
   final LocaleController localeController;
 
@@ -103,6 +109,12 @@ class SmartCityReportApp extends StatelessWidget {
               reportApiService: reportApiService,
               taskApiService: taskApiService,
               userApiService: userApiService,
+              analyticsApiService: analyticsApiService,
+            ),
+            AppRoutes.overseerAnalytics: (_) => OverseerAnalyticsScreen(
+              analyticsApiService: analyticsApiService,
+              userApiService: userApiService,
+              standalone: true,
             ),
             AppRoutes.overseerCreateUser: (_) =>
                 OverseerCreateUserScreen(userApiService: userApiService),

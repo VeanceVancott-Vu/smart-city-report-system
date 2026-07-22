@@ -1545,11 +1545,206 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get profileOverseerAnalyticsNote =>
-      'A complete overseer analytics dashboard will be available on its own page.';
+      'Review city operations, staff workload, response times and attention queues on the analytics dashboard.';
 
   @override
   String get staffProfileTitle => 'Staff profile';
 
   @override
   String get staffProfileLoadFailed => 'Unable to load this staff profile.';
+
+  @override
+  String get analyticsTitle => 'City analytics';
+
+  @override
+  String get analyticsSubtitle =>
+      'Operational performance, workload and issues requiring attention.';
+
+  @override
+  String get analyticsOpenDashboard => 'Open analytics dashboard';
+
+  @override
+  String get analyticsLoadFailed => 'Unable to load city analytics.';
+
+  @override
+  String get analyticsFilters => 'Filters';
+
+  @override
+  String get analyticsRange7Days => 'Last 7 days';
+
+  @override
+  String get analyticsRange30Days => 'Last 30 days';
+
+  @override
+  String get analyticsRange90Days => 'Last 90 days';
+
+  @override
+  String get analyticsRangeAllTime => 'All time';
+
+  @override
+  String get analyticsAllCategories => 'All categories';
+
+  @override
+  String get analyticsAllStaff => 'All staff';
+
+  @override
+  String get analyticsArea => 'Area or address';
+
+  @override
+  String get analyticsAreaHint => 'Example: District 1';
+
+  @override
+  String get analyticsApplyFilters => 'Apply filters';
+
+  @override
+  String get analyticsClearFilters => 'Clear filters';
+
+  @override
+  String get analyticsLastUpdated => 'Last updated';
+
+  @override
+  String get analyticsTotalReports => 'Total reports';
+
+  @override
+  String get analyticsSubmittedReports => 'Submitted reports';
+
+  @override
+  String get analyticsReportsInProgress => 'Reports in progress';
+
+  @override
+  String get analyticsFixedReports => 'Fixed reports';
+
+  @override
+  String get analyticsUnassignedTasks => 'Unassigned tasks';
+
+  @override
+  String get analyticsActiveTasks => 'Active tasks';
+
+  @override
+  String get analyticsPendingReview => 'Pending review';
+
+  @override
+  String get analyticsCompletedTasks => 'Completed tasks';
+
+  @override
+  String get analyticsOperationalTrend => 'Operational trend';
+
+  @override
+  String get analyticsReportsCreated => 'Reports created';
+
+  @override
+  String get analyticsReportsFixed => 'Reports fixed';
+
+  @override
+  String get analyticsTasksCreated => 'Tasks created';
+
+  @override
+  String get analyticsTasksClosed => 'Tasks closed';
+
+  @override
+  String get analyticsReportStatus => 'Report status';
+
+  @override
+  String get analyticsTaskWorkflow => 'Task workflow';
+
+  @override
+  String get analyticsCategoryBreakdown => 'Category breakdown';
+
+  @override
+  String get analyticsCycleTimes => 'Workflow timing';
+
+  @override
+  String get analyticsAverageWorkTime => 'Average work time';
+
+  @override
+  String get analyticsAverageReviewTime => 'Average review time';
+
+  @override
+  String get analyticsAverageResolutionTime => 'Average resolution time';
+
+  @override
+  String get analyticsHours => 'hours';
+
+  @override
+  String get analyticsCompletionRate => 'Completion rate';
+
+  @override
+  String get analyticsFixedRate => 'Fixed rate';
+
+  @override
+  String get analyticsTotalUpvotes => 'Total upvotes';
+
+  @override
+  String get analyticsAveragePriority => 'Average priority';
+
+  @override
+  String get analyticsStaffWorkload => 'Staff workload and performance';
+
+  @override
+  String get analyticsAccount => 'Account';
+
+  @override
+  String get analyticsActiveColumn => 'Active';
+
+  @override
+  String get analyticsReviewColumn => 'Review';
+
+  @override
+  String get analyticsCompletedColumn => 'Completed';
+
+  @override
+  String get analyticsDeniedColumn => 'Denied';
+
+  @override
+  String get analyticsAverageCompletionColumn => 'Avg. completion';
+
+  @override
+  String get analyticsAttentionRequired => 'Attention required';
+
+  @override
+  String get analyticsNoAttention =>
+      'No filtered items currently require attention.';
+
+  @override
+  String get analyticsReasonHighPriorityReport =>
+      'High-priority report has no task';
+
+  @override
+  String get analyticsReasonUnassignedReport => 'Submitted report has no task';
+
+  @override
+  String get analyticsReasonUnassignedTask => 'Task has no assigned staff';
+
+  @override
+  String get analyticsReasonPendingReview => 'Completion is waiting for review';
+
+  @override
+  String get analyticsReasonDeniedRework => 'Denied task requires staff rework';
+
+  @override
+  String get analyticsReasonStaleTask =>
+      'Active task has not been updated for 7 days';
+
+  @override
+  String get analyticsReasonInactiveStaff =>
+      'Active work is assigned to an inactive account';
+
+  @override
+  String get analyticsGeographicDistribution => 'Geographic issue distribution';
+
+  @override
+  String get analyticsNoMapPoints =>
+      'No report locations match the selected filters.';
+
+  @override
+  String get analyticsReportsColumn => 'Reports';
+
+  @override
+  String get analyticsFixedColumn => 'Fixed';
+
+  @override
+  String get analyticsTasksColumn => 'Tasks';
+
+  @override
+  String get analyticsClosedColumn => 'Closed';
 }

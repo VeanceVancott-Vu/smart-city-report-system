@@ -2843,7 +2843,7 @@ abstract class AppLocalizations {
   /// No description provided for @profileOverseerAnalyticsNote.
   ///
   /// In en, this message translates to:
-  /// **'A complete overseer analytics dashboard will be available on its own page.'**
+  /// **'Review city operations, staff workload, response times and attention queues on the analytics dashboard.'**
   String get profileOverseerAnalyticsNote;
 
   /// No description provided for @staffProfileTitle.
@@ -2857,6 +2857,384 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Unable to load this staff profile.'**
   String get staffProfileLoadFailed;
+
+  /// No description provided for @analyticsTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'City analytics'**
+  String get analyticsTitle;
+
+  /// No description provided for @analyticsSubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Operational performance, workload and issues requiring attention.'**
+  String get analyticsSubtitle;
+
+  /// No description provided for @analyticsOpenDashboard.
+  ///
+  /// In en, this message translates to:
+  /// **'Open analytics dashboard'**
+  String get analyticsOpenDashboard;
+
+  /// No description provided for @analyticsLoadFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'Unable to load city analytics.'**
+  String get analyticsLoadFailed;
+
+  /// No description provided for @analyticsFilters.
+  ///
+  /// In en, this message translates to:
+  /// **'Filters'**
+  String get analyticsFilters;
+
+  /// No description provided for @analyticsRange7Days.
+  ///
+  /// In en, this message translates to:
+  /// **'Last 7 days'**
+  String get analyticsRange7Days;
+
+  /// No description provided for @analyticsRange30Days.
+  ///
+  /// In en, this message translates to:
+  /// **'Last 30 days'**
+  String get analyticsRange30Days;
+
+  /// No description provided for @analyticsRange90Days.
+  ///
+  /// In en, this message translates to:
+  /// **'Last 90 days'**
+  String get analyticsRange90Days;
+
+  /// No description provided for @analyticsRangeAllTime.
+  ///
+  /// In en, this message translates to:
+  /// **'All time'**
+  String get analyticsRangeAllTime;
+
+  /// No description provided for @analyticsAllCategories.
+  ///
+  /// In en, this message translates to:
+  /// **'All categories'**
+  String get analyticsAllCategories;
+
+  /// No description provided for @analyticsAllStaff.
+  ///
+  /// In en, this message translates to:
+  /// **'All staff'**
+  String get analyticsAllStaff;
+
+  /// No description provided for @analyticsArea.
+  ///
+  /// In en, this message translates to:
+  /// **'Area or address'**
+  String get analyticsArea;
+
+  /// No description provided for @analyticsAreaHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Example: District 1'**
+  String get analyticsAreaHint;
+
+  /// No description provided for @analyticsApplyFilters.
+  ///
+  /// In en, this message translates to:
+  /// **'Apply filters'**
+  String get analyticsApplyFilters;
+
+  /// No description provided for @analyticsClearFilters.
+  ///
+  /// In en, this message translates to:
+  /// **'Clear filters'**
+  String get analyticsClearFilters;
+
+  /// No description provided for @analyticsLastUpdated.
+  ///
+  /// In en, this message translates to:
+  /// **'Last updated'**
+  String get analyticsLastUpdated;
+
+  /// No description provided for @analyticsTotalReports.
+  ///
+  /// In en, this message translates to:
+  /// **'Total reports'**
+  String get analyticsTotalReports;
+
+  /// No description provided for @analyticsSubmittedReports.
+  ///
+  /// In en, this message translates to:
+  /// **'Submitted reports'**
+  String get analyticsSubmittedReports;
+
+  /// No description provided for @analyticsReportsInProgress.
+  ///
+  /// In en, this message translates to:
+  /// **'Reports in progress'**
+  String get analyticsReportsInProgress;
+
+  /// No description provided for @analyticsFixedReports.
+  ///
+  /// In en, this message translates to:
+  /// **'Fixed reports'**
+  String get analyticsFixedReports;
+
+  /// No description provided for @analyticsUnassignedTasks.
+  ///
+  /// In en, this message translates to:
+  /// **'Unassigned tasks'**
+  String get analyticsUnassignedTasks;
+
+  /// No description provided for @analyticsActiveTasks.
+  ///
+  /// In en, this message translates to:
+  /// **'Active tasks'**
+  String get analyticsActiveTasks;
+
+  /// No description provided for @analyticsPendingReview.
+  ///
+  /// In en, this message translates to:
+  /// **'Pending review'**
+  String get analyticsPendingReview;
+
+  /// No description provided for @analyticsCompletedTasks.
+  ///
+  /// In en, this message translates to:
+  /// **'Completed tasks'**
+  String get analyticsCompletedTasks;
+
+  /// No description provided for @analyticsOperationalTrend.
+  ///
+  /// In en, this message translates to:
+  /// **'Operational trend'**
+  String get analyticsOperationalTrend;
+
+  /// No description provided for @analyticsReportsCreated.
+  ///
+  /// In en, this message translates to:
+  /// **'Reports created'**
+  String get analyticsReportsCreated;
+
+  /// No description provided for @analyticsReportsFixed.
+  ///
+  /// In en, this message translates to:
+  /// **'Reports fixed'**
+  String get analyticsReportsFixed;
+
+  /// No description provided for @analyticsTasksCreated.
+  ///
+  /// In en, this message translates to:
+  /// **'Tasks created'**
+  String get analyticsTasksCreated;
+
+  /// No description provided for @analyticsTasksClosed.
+  ///
+  /// In en, this message translates to:
+  /// **'Tasks closed'**
+  String get analyticsTasksClosed;
+
+  /// No description provided for @analyticsReportStatus.
+  ///
+  /// In en, this message translates to:
+  /// **'Report status'**
+  String get analyticsReportStatus;
+
+  /// No description provided for @analyticsTaskWorkflow.
+  ///
+  /// In en, this message translates to:
+  /// **'Task workflow'**
+  String get analyticsTaskWorkflow;
+
+  /// No description provided for @analyticsCategoryBreakdown.
+  ///
+  /// In en, this message translates to:
+  /// **'Category breakdown'**
+  String get analyticsCategoryBreakdown;
+
+  /// No description provided for @analyticsCycleTimes.
+  ///
+  /// In en, this message translates to:
+  /// **'Workflow timing'**
+  String get analyticsCycleTimes;
+
+  /// No description provided for @analyticsAverageWorkTime.
+  ///
+  /// In en, this message translates to:
+  /// **'Average work time'**
+  String get analyticsAverageWorkTime;
+
+  /// No description provided for @analyticsAverageReviewTime.
+  ///
+  /// In en, this message translates to:
+  /// **'Average review time'**
+  String get analyticsAverageReviewTime;
+
+  /// No description provided for @analyticsAverageResolutionTime.
+  ///
+  /// In en, this message translates to:
+  /// **'Average resolution time'**
+  String get analyticsAverageResolutionTime;
+
+  /// No description provided for @analyticsHours.
+  ///
+  /// In en, this message translates to:
+  /// **'hours'**
+  String get analyticsHours;
+
+  /// No description provided for @analyticsCompletionRate.
+  ///
+  /// In en, this message translates to:
+  /// **'Completion rate'**
+  String get analyticsCompletionRate;
+
+  /// No description provided for @analyticsFixedRate.
+  ///
+  /// In en, this message translates to:
+  /// **'Fixed rate'**
+  String get analyticsFixedRate;
+
+  /// No description provided for @analyticsTotalUpvotes.
+  ///
+  /// In en, this message translates to:
+  /// **'Total upvotes'**
+  String get analyticsTotalUpvotes;
+
+  /// No description provided for @analyticsAveragePriority.
+  ///
+  /// In en, this message translates to:
+  /// **'Average priority'**
+  String get analyticsAveragePriority;
+
+  /// No description provided for @analyticsStaffWorkload.
+  ///
+  /// In en, this message translates to:
+  /// **'Staff workload and performance'**
+  String get analyticsStaffWorkload;
+
+  /// No description provided for @analyticsAccount.
+  ///
+  /// In en, this message translates to:
+  /// **'Account'**
+  String get analyticsAccount;
+
+  /// No description provided for @analyticsActiveColumn.
+  ///
+  /// In en, this message translates to:
+  /// **'Active'**
+  String get analyticsActiveColumn;
+
+  /// No description provided for @analyticsReviewColumn.
+  ///
+  /// In en, this message translates to:
+  /// **'Review'**
+  String get analyticsReviewColumn;
+
+  /// No description provided for @analyticsCompletedColumn.
+  ///
+  /// In en, this message translates to:
+  /// **'Completed'**
+  String get analyticsCompletedColumn;
+
+  /// No description provided for @analyticsDeniedColumn.
+  ///
+  /// In en, this message translates to:
+  /// **'Denied'**
+  String get analyticsDeniedColumn;
+
+  /// No description provided for @analyticsAverageCompletionColumn.
+  ///
+  /// In en, this message translates to:
+  /// **'Avg. completion'**
+  String get analyticsAverageCompletionColumn;
+
+  /// No description provided for @analyticsAttentionRequired.
+  ///
+  /// In en, this message translates to:
+  /// **'Attention required'**
+  String get analyticsAttentionRequired;
+
+  /// No description provided for @analyticsNoAttention.
+  ///
+  /// In en, this message translates to:
+  /// **'No filtered items currently require attention.'**
+  String get analyticsNoAttention;
+
+  /// No description provided for @analyticsReasonHighPriorityReport.
+  ///
+  /// In en, this message translates to:
+  /// **'High-priority report has no task'**
+  String get analyticsReasonHighPriorityReport;
+
+  /// No description provided for @analyticsReasonUnassignedReport.
+  ///
+  /// In en, this message translates to:
+  /// **'Submitted report has no task'**
+  String get analyticsReasonUnassignedReport;
+
+  /// No description provided for @analyticsReasonUnassignedTask.
+  ///
+  /// In en, this message translates to:
+  /// **'Task has no assigned staff'**
+  String get analyticsReasonUnassignedTask;
+
+  /// No description provided for @analyticsReasonPendingReview.
+  ///
+  /// In en, this message translates to:
+  /// **'Completion is waiting for review'**
+  String get analyticsReasonPendingReview;
+
+  /// No description provided for @analyticsReasonDeniedRework.
+  ///
+  /// In en, this message translates to:
+  /// **'Denied task requires staff rework'**
+  String get analyticsReasonDeniedRework;
+
+  /// No description provided for @analyticsReasonStaleTask.
+  ///
+  /// In en, this message translates to:
+  /// **'Active task has not been updated for 7 days'**
+  String get analyticsReasonStaleTask;
+
+  /// No description provided for @analyticsReasonInactiveStaff.
+  ///
+  /// In en, this message translates to:
+  /// **'Active work is assigned to an inactive account'**
+  String get analyticsReasonInactiveStaff;
+
+  /// No description provided for @analyticsGeographicDistribution.
+  ///
+  /// In en, this message translates to:
+  /// **'Geographic issue distribution'**
+  String get analyticsGeographicDistribution;
+
+  /// No description provided for @analyticsNoMapPoints.
+  ///
+  /// In en, this message translates to:
+  /// **'No report locations match the selected filters.'**
+  String get analyticsNoMapPoints;
+
+  /// No description provided for @analyticsReportsColumn.
+  ///
+  /// In en, this message translates to:
+  /// **'Reports'**
+  String get analyticsReportsColumn;
+
+  /// No description provided for @analyticsFixedColumn.
+  ///
+  /// In en, this message translates to:
+  /// **'Fixed'**
+  String get analyticsFixedColumn;
+
+  /// No description provided for @analyticsTasksColumn.
+  ///
+  /// In en, this message translates to:
+  /// **'Tasks'**
+  String get analyticsTasksColumn;
+
+  /// No description provided for @analyticsClosedColumn.
+  ///
+  /// In en, this message translates to:
+  /// **'Closed'**
+  String get analyticsClosedColumn;
 }
 
 class _AppLocalizationsDelegate

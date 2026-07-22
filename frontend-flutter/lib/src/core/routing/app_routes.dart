@@ -6,6 +6,7 @@ class AppRoutes {
   static const citizenHome = '/citizen';
   static const staffHome = '/staff';
   static const overseerHome = '/overseer';
+  static const overseerAnalytics = '/overseer/analytics';
   static const citizenReports = '/citizen/reports';
   static const citizenCreateReport = '/citizen/reports/create';
   static const citizenReportDetail = '/citizen/reports/detail';
