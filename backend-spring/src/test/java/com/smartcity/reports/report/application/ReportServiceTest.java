@@ -13,6 +13,8 @@ import com.smartcity.reports.report.domain.ReportStatus;
 import com.smartcity.reports.report.domain.ReportUpvote;
 import com.smartcity.reports.report.persistence.ReportRepository;
 import com.smartcity.reports.report.persistence.ReportUpvoteRepository;
+import com.smartcity.reports.task.domain.Task;
+import com.smartcity.reports.task.persistence.TaskRepository;
 import com.smartcity.reports.user.domain.User;
 import com.smartcity.reports.user.domain.UserRole;
 import org.junit.jupiter.api.BeforeEach;
@@ -47,13 +49,23 @@ class ReportServiceTest {
     @Mock
     private FileReferenceCleanupService fileReferenceCleanupService;
 
+    @Mock
+    private TaskRepository taskRepository;
+
     private final ReportMapper reportMapper = new ReportMapper();
 
     private ReportService reportService;
 
     @BeforeEach
     void setUp() {
-        reportService = new ReportService(reportRepository, reportUpvoteRepository, reportMapper, fileReferenceCleanupService);
+        reportService = new ReportService(
+                reportRepository,
+                reportUpvoteRepository,
+                reportMapper,
+                fileReferenceCleanupService,
+                taskRepository,
+                null
+        );
     }
 
     @Test
@@ -438,6 +450,46 @@ class ReportServiceTest {
         assertThatThrownBy(() -> reportService.removeUpvote(UUID.randomUUID(), user(UserRole.OVERSEER)))
                 .isInstanceOf(AccessDeniedException.class)
                 .hasMessage("Only citizens can remove report upvotes");
+    }
+
+    @Test
+    void fixedReportIncludesStaffAssignedToItsLinkedTask() {
+        User citizen = user(UserRole.CITIZEN);
+        User staff = user(UserRole.STAFF);
+        User overseer = user(UserRole.OVERSEER);
+        UUID reportId = UUID.randomUUID();
+        UUID taskId = UUID.randomUUID();
+        Instant timestamp = Instant.parse("2026-07-21T08:00:00Z");
+
+        Report report = reportFor(citizen);
+        report.setId(reportId);
+        report.setCreatedAt(timestamp);
+        report.setUpdatedAt(timestamp);
+        report.linkToTask(taskId);
+        report.fix();
+
+        Task task = new Task(
+                "Repair pothole",
+                "Repair the linked report",
+                IssueCategory.ROAD_DAMAGE,
+                10.762622,
+                106.660172,
+                "Near the park",
+                2,
+                staff,
+                overseer
+        );
+
+        when(reportRepository.findById(reportId)).thenReturn(Optional.of(report));
+        when(taskRepository.findById(taskId)).thenReturn(Optional.of(task));
+
+        ReportResponse response = reportService.getReport(reportId, citizen);
+
+        assertThat(response.status()).isEqualTo(ReportStatus.FIXED);
+        assertThat(response.assignedStaff()).isNotNull();
+        assertThat(response.assignedStaff().id()).isEqualTo(staff.getId());
+        assertThat(response.assignedStaff().displayName()).isEqualTo(staff.getDisplayName());
+        assertThat(response.assignedStaff().role()).isEqualTo(UserRole.STAFF);
     }
 
     @Test

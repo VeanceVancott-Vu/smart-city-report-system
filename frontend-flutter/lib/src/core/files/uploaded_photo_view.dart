@@ -1,17 +1,14 @@
 import 'package:flutter/material.dart';
 
 import '../config/api_config.dart';
+import '../localization/app_localizations_extension.dart';
 import '../../features/auth/data/token_storage.dart';
 
 class UploadedPhotoView extends StatefulWidget {
-  const UploadedPhotoView({
-    super.key,
-    required this.fileUrl,
-    this.emptyLabel = 'No photo uploaded',
-  });
+  const UploadedPhotoView({super.key, required this.fileUrl, this.emptyLabel});
 
   final String? fileUrl;
-  final String emptyLabel;
+  final String? emptyLabel;
 
   @override
   State<UploadedPhotoView> createState() => _UploadedPhotoViewState();
@@ -35,7 +32,7 @@ class _UploadedPhotoViewState extends State<UploadedPhotoView> {
   Widget build(BuildContext context) {
     final rawUrl = widget.fileUrl?.trim() ?? '';
     if (rawUrl.isEmpty) {
-      return Text(widget.emptyLabel);
+      return Text(widget.emptyLabel ?? context.l10n.photoNotAvailable);
     }
 
     if (_isFlutterTestBinding()) {
@@ -192,10 +189,7 @@ bool _isFlutterTestBinding() {
 }
 
 class UploadedPhotoFullscreenView extends StatelessWidget {
-  const UploadedPhotoFullscreenView({
-    super.key,
-    required this.fileUrl,
-  });
+  const UploadedPhotoFullscreenView({super.key, required this.fileUrl});
 
   final String fileUrl;
 
@@ -226,7 +220,7 @@ class UploadedPhotoFullscreenView extends StatelessWidget {
               top: 12,
               left: 12,
               child: IconButton(
-                tooltip: 'Close photo',
+                tooltip: context.l10n.photoCloseTooltip,
                 onPressed: () => Navigator.of(context).maybePop(),
                 style: IconButton.styleFrom(
                   backgroundColor: Colors.black54,
@@ -327,7 +321,7 @@ class _ImagePreview extends StatelessWidget {
                 top: 8,
                 right: 8,
                 child: IconButton.filledTonal(
-                  tooltip: 'Close',
+                  tooltip: context.l10n.commonClose,
                   onPressed: () => Navigator.of(context).pop(),
                   icon: const Icon(Icons.close),
                 ),

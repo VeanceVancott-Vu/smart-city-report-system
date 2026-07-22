@@ -402,7 +402,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get mapConfirmLocationTooltip => 'Confirm location';
 
   @override
-  String get mapPickerSearchHint => 'Search address or open reports…';
+  String get mapPickerSearchHint => 'Search address or place…';
 
   @override
   String get mapActiveReportsHeader => 'ACTIVE REPORTS';
@@ -417,7 +417,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get mapLoadingAddress => 'Loading address…';
 
   @override
-  String get mapConfirmPinnedLocation => 'Confirm pinned location';
+  String get mapConfirmPinnedLocation => 'Use this location';
 
   @override
   String get reportCreateTitle => 'Create report';
@@ -1114,4 +1114,399 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get routeDirectionSharpLeft => 'sharp left';
+
+  @override
+  String get commonShowPassword => 'Show password';
+
+  @override
+  String get commonHidePassword => 'Hide password';
+
+  @override
+  String get commonOk => 'OK';
+
+  @override
+  String get commonBack => 'Back';
+
+  @override
+  String get commonGoBack => 'Go back';
+
+  @override
+  String get commonClearSearch => 'Clear search';
+
+  @override
+  String get commonAll => 'All';
+
+  @override
+  String get commonAddressUnavailable => 'Address not available';
+
+  @override
+  String get commonPriorityScore => 'Priority score';
+
+  @override
+  String get commonConfirmations => 'Confirmations';
+
+  @override
+  String get commonClearFilters => 'Clear filters';
+
+  @override
+  String confirmationCount(num count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count confirmations',
+      one: '1 confirmation',
+      zero: 'No confirmations',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get brandSmartCityLabel => 'SMART CITY';
+
+  @override
+  String get photoCloseTooltip => 'Close photo';
+
+  @override
+  String get photoRemove => 'Remove photo';
+
+  @override
+  String get photoUploading => 'Uploading photo…';
+
+  @override
+  String get photoAdd => 'Add a photo';
+
+  @override
+  String get authLoginHeroDescription =>
+      'Report local issues and follow their progress from one place.';
+
+  @override
+  String get authFeatureIncidentMap => 'Incident map';
+
+  @override
+  String get authFeatureResolutionTracking => 'Resolution tracking';
+
+  @override
+  String get authFeatureGuidedReporting => 'Guided reporting';
+
+  @override
+  String get authRegisterHeroDescription =>
+      'Join your community and help make city services more responsive.';
+
+  @override
+  String get authBenefitQuickReportTitle => 'Report issues quickly';
+
+  @override
+  String get authBenefitQuickReportDescription =>
+      'Add a photo and location so the right team can respond.';
+
+  @override
+  String get authBenefitStatusTrackingTitle => 'Track every update';
+
+  @override
+  String get authBenefitStatusTrackingDescription =>
+      'Follow your report from submission through resolution.';
+
+  @override
+  String get authBenefitProtectedInfoTitle => 'Control your privacy';
+
+  @override
+  String get authBenefitProtectedInfoDescription =>
+      'Choose whether to show your identity on public reports.';
+
+  @override
+  String get reportCreateIntroTitle => 'Report a city issue';
+
+  @override
+  String get reportCreateIntroDescription =>
+      'Share the issue, add a clear photo and confirm the location so the city team can respond faster.';
+
+  @override
+  String get reportCreateStepCategoryTitle => 'Choose the issue type';
+
+  @override
+  String get reportCreateStepCategoryDescription =>
+      'Select the category that best matches the problem.';
+
+  @override
+  String get reportCreateStepPhotoTitle => 'Add a clear photo';
+
+  @override
+  String get reportCreateStepPhotoDescription =>
+      'Use a photo that clearly shows the issue.';
+
+  @override
+  String get reportCreateStepLocationTitle => 'Confirm the location';
+
+  @override
+  String get reportCreateStepLocationDescription =>
+      'Pin the exact position before submitting.';
+
+  @override
+  String get reportEditIntroTitle => 'Update your report';
+
+  @override
+  String get reportEditIntroDescription =>
+      'Review the existing information and update only what has changed before saving.';
+
+  @override
+  String get reportEditPhotoHintTitle => 'Keep the photo clear';
+
+  @override
+  String get reportEditPhotoHintDescription =>
+      'Replace the image only when a better view is available.';
+
+  @override
+  String get reportEditLocationHintTitle => 'Check the location';
+
+  @override
+  String get reportEditLocationHintDescription =>
+      'Confirm that the pin still matches the reported issue.';
+
+  @override
+  String get reportEditDetailsHintTitle => 'Save accurate details';
+
+  @override
+  String get reportEditDetailsHintDescription =>
+      'Clear information helps the city team respond correctly.';
+
+  @override
+  String get reportLoadingTitle => 'Loading report';
+
+  @override
+  String get reportLoadingMessage =>
+      'Please wait while the latest information is prepared.';
+
+  @override
+  String get reportEditingUnavailable => 'Editing is unavailable';
+
+  @override
+  String get reportFormCreateHeading => 'Tell us what happened';
+
+  @override
+  String get reportFormEditHeading => 'Update report information';
+
+  @override
+  String get reportFormDescription =>
+      'Complete each section below. Clear information helps the city team respond faster.';
+
+  @override
+  String get reportFormCategoryTitle => 'Issue category';
+
+  @override
+  String get reportFormCategoryDescription =>
+      'Choose the option that best matches the problem.';
+
+  @override
+  String get reportFormPhotoTitle => 'Photo evidence';
+
+  @override
+  String get reportFormPhotoDescription =>
+      'Add one clear photo showing the issue.';
+
+  @override
+  String reportPhotoAddedCount(Object added, Object total) {
+    return '$added of $total added';
+  }
+
+  @override
+  String get reportBeforePhotoHelp =>
+      'Upload a picture before any actions are taken';
+
+  @override
+  String get reportFormLocationDescription =>
+      'Confirm the exact position of the issue.';
+
+  @override
+  String get reportStreetAddress => 'Street address';
+
+  @override
+  String get reportStreetAddressHint => 'Add a nearby landmark or street name';
+
+  @override
+  String get reportFormDetailsDescription =>
+      'Use a short title and describe what you observed.';
+
+  @override
+  String get reportFormTitleLabel => 'Report title';
+
+  @override
+  String get reportFormTitleHint => 'Example: Broken street light';
+
+  @override
+  String get reportFormDescriptionHint =>
+      'Describe the issue, when you noticed it and any useful details.';
+
+  @override
+  String get reportPrivacyTitle => 'Privacy';
+
+  @override
+  String get reportPrivacyDescription =>
+      'Choose whether your identity is shown publicly.';
+
+  @override
+  String get reportAnonymousHelp =>
+      'Your personal information will be hidden from the public report.';
+
+  @override
+  String get reportReviewBeforeSubmit =>
+      'Please review the information before submitting.';
+
+  @override
+  String get reportNew => 'New report';
+
+  @override
+  String get reportsTrackProgressDescription =>
+      'Track the progress of issues you have submitted.';
+
+  @override
+  String get reportsSearchHint => 'Search reports';
+
+  @override
+  String get reportsSortTooltip => 'Sort reports';
+
+  @override
+  String get reportsSortNewest => 'Newest first';
+
+  @override
+  String get reportsSortOldest => 'Oldest first';
+
+  @override
+  String get reportsSortPriority => 'Highest priority';
+
+  @override
+  String get reportsLoading => 'Loading your reports…';
+
+  @override
+  String get reportsNoMatches => 'No matching reports';
+
+  @override
+  String get reportsNoMatchesHelp => 'Try changing your search or filters.';
+
+  @override
+  String get reportsEmptyHelp =>
+      'Create your first report to start tracking an issue.';
+
+  @override
+  String get reportViewPhoto => 'View photo';
+
+  @override
+  String get reportCurrentStatusTitle => 'Current status';
+
+  @override
+  String get reportCurrentStatusDescription =>
+      'See how the city team is progressing with this issue.';
+
+  @override
+  String get reportStaffAssignment => 'Staff assignment';
+
+  @override
+  String get reportStaffUnassigned => 'No staff assigned yet';
+
+  @override
+  String get reportDescriptionSectionHelp =>
+      'Details provided with this report.';
+
+  @override
+  String get reportNoDescription => 'No description provided.';
+
+  @override
+  String get reportSubmittedAnonymously => 'Submitted anonymously';
+
+  @override
+  String get reportSubmittedPublicly => 'Submitted publicly';
+
+  @override
+  String get reportLocationSectionHelp => 'Where the issue was reported.';
+
+  @override
+  String mapSelectedLocationCoordinates(Object latitude, Object longitude) {
+    return 'Selected coordinates: $latitude, $longitude';
+  }
+
+  @override
+  String get reportOverviewTitle => 'Report overview';
+
+  @override
+  String get reportOverviewDescription => 'Key information about this issue.';
+
+  @override
+  String get mapExploreCityIssuesTitle => 'Explore city issues';
+
+  @override
+  String get mapExploreCityIssuesDescription =>
+      'Search the map and see reports near you.';
+
+  @override
+  String get mapNearbyReportsTitle => 'Nearby reports';
+
+  @override
+  String get mapNearbyReportsDescription =>
+      'Review open issues in the visible area.';
+
+  @override
+  String get mapShowMyReports => 'Show my reports';
+
+  @override
+  String get mapLoadingNearbyReports => 'Loading nearby reports…';
+
+  @override
+  String get mapNoReportsHelp =>
+      'Move the map or change your filters to explore another area.';
+
+  @override
+  String get mapUnavailableTitle => 'Map unavailable';
+
+  @override
+  String get mapCheckNearbyReportsTooltip => 'Check nearby reports';
+
+  @override
+  String get mapUseCurrentLocationTooltip => 'Use current location';
+
+  @override
+  String get mapMovePinInstruction =>
+      'Move the map until the pin is directly over the issue.';
+
+  @override
+  String mapNearbyReportCount(num count, Object distance) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count existing reports were found within $distance metres.',
+      one: '1 existing report was found within $distance metres.',
+      zero: 'No nearby reports were found within $distance metres.',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get mapCloseTooltip => 'Close map';
+
+  @override
+  String get staffCompleteIntro =>
+      'Add clear evidence so the overseer can review the completed work.';
+
+  @override
+  String get staffCompleteChecklistTitle => 'Before submitting';
+
+  @override
+  String get staffCompleteChecklistWorkDone =>
+      'Confirm the assigned work is complete.';
+
+  @override
+  String get staffCompleteChecklistPhotosAdded => 'Upload a clear after photo.';
+
+  @override
+  String get staffCompleteChecklistNoteClear =>
+      'Add a concise completion note.';
+
+  @override
+  String get staffCompleteNoteHelp =>
+      'Describe what was completed and mention anything the reviewer should know.';
+
+  @override
+  String get staffCompleteNoteHint =>
+      'Example: Replaced the damaged light and tested it.';
+
+  @override
+  String get overseerReportOperations => 'Report operations';
 }

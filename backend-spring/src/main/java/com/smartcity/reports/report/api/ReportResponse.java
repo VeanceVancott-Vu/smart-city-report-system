@@ -23,8 +23,48 @@ public record ReportResponse(
         int priorityScore,
         Instant createdAt,
         Instant updatedAt,
-        UserSummaryResponse createdBy
+        UserSummaryResponse createdBy,
+        UserSummaryResponse assignedStaff
 ) {
+
+    public ReportResponse(
+            UUID id,
+            String title,
+            String description,
+            IssueCategory category,
+            ReportStatus status,
+            double latitude,
+            double longitude,
+            String addressText,
+            String beforePhotoUrl,
+            String afterPhotoUrl,
+            boolean anonymous,
+            int upvoteCount,
+            int priorityScore,
+            Instant createdAt,
+            Instant updatedAt,
+            UserSummaryResponse createdBy
+    ) {
+        this(
+                id,
+                title,
+                description,
+                category,
+                status,
+                latitude,
+                longitude,
+                addressText,
+                beforePhotoUrl,
+                afterPhotoUrl,
+                anonymous,
+                upvoteCount,
+                priorityScore,
+                createdAt,
+                updatedAt,
+                createdBy,
+                null
+        );
+    }
 
     public ReportResponse(
             UUID id,
@@ -59,7 +99,8 @@ public record ReportResponse(
                 priorityScore,
                 createdAt,
                 updatedAt,
-                createdBy
+                createdBy,
+                null
         );
     }
 }

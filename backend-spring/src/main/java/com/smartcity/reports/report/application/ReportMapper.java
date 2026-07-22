@@ -12,6 +12,10 @@ import org.springframework.stereotype.Component;
 public class ReportMapper {
 
     ReportResponse toResponse(Report report) {
+        return toResponse(report, null);
+    }
+
+    ReportResponse toResponse(Report report, User assignedStaff) {
         User creator = report.getCreatedBy();
         return new ReportResponse(
                 report.getId(),
@@ -29,8 +33,15 @@ public class ReportMapper {
                 report.getPriorityScore(),
                 report.getCreatedAt(),
                 report.getUpdatedAt(),
-                new UserSummaryResponse(creator.getId(), creator.getDisplayName(), creator.getRole())
+                toUserSummary(creator),
+                toUserSummary(assignedStaff)
         );
+    }
+
+    private UserSummaryResponse toUserSummary(User user) {
+        return user == null
+                ? null
+                : new UserSummaryResponse(user.getId(), user.getDisplayName(), user.getRole());
     }
 
     ReportMapPinResponse toMapPinResponse(Report report) {

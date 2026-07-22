@@ -367,7 +367,7 @@ class _CitizenReportMapPickerState extends State<CitizenReportMapPicker>
                           child: Row(
                             children: [
                               IconButton(
-                                tooltip: 'Back',
+                                tooltip: context.l10n.commonBack,
                                 onPressed: () => Navigator.of(context).pop(),
                                 icon: const Icon(Icons.arrow_back),
                               ),
@@ -376,8 +376,8 @@ class _CitizenReportMapPickerState extends State<CitizenReportMapPicker>
                                   controller: _searchController,
                                   focusNode: _searchFocusNode,
                                   onChanged: _onSearchQueryChanged,
-                                  decoration: const InputDecoration(
-                                    hintText: 'Search address or place',
+                                  decoration: InputDecoration(
+                                    hintText: context.l10n.mapPickerSearchHint,
                                     border: InputBorder.none,
                                   ),
                                 ),
@@ -394,7 +394,7 @@ class _CitizenReportMapPickerState extends State<CitizenReportMapPicker>
                                 )
                               else if (_searchController.text.isNotEmpty)
                                 IconButton(
-                                  tooltip: 'Clear search',
+                                  tooltip: context.l10n.commonClearSearch,
                                   onPressed: () {
                                     setState(() {
                                       _searchController.clear();
@@ -480,7 +480,7 @@ class _CitizenReportMapPickerState extends State<CitizenReportMapPicker>
                   children: [
                     FloatingActionButton.small(
                       heroTag: 'radar_btn',
-                      tooltip: 'Check nearby reports',
+                      tooltip: context.l10n.mapCheckNearbyReportsTooltip,
                       backgroundColor: _radarActive
                           ? colorScheme.primaryContainer
                           : colorScheme.surface,
@@ -501,7 +501,7 @@ class _CitizenReportMapPickerState extends State<CitizenReportMapPicker>
                     const SizedBox(height: 10),
                     FloatingActionButton.small(
                       heroTag: 'my_location_btn',
-                      tooltip: 'Use current location',
+                      tooltip: context.l10n.mapUseCurrentLocationTooltip,
                       backgroundColor: colorScheme.surface,
                       foregroundColor: colorScheme.primary,
                       onPressed: () {
@@ -557,14 +557,14 @@ class _CitizenReportMapPickerState extends State<CitizenReportMapPicker>
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
                           Text(
-                            'Confirm location',
+                            context.l10n.mapConfirmLocationTooltip,
                             style: theme.textTheme.headlineSmall?.copyWith(
                               fontWeight: FontWeight.w800,
                             ),
                           ),
                           const SizedBox(height: 6),
                           Text(
-                            'Move the map until the pin is directly over the issue.',
+                            context.l10n.mapMovePinInstruction,
                             style: theme.textTheme.bodyMedium?.copyWith(
                               color: colorScheme.onSurfaceVariant,
                             ),
@@ -587,10 +587,12 @@ class _CitizenReportMapPickerState extends State<CitizenReportMapPicker>
                                 Expanded(
                                   child: Text(
                                     _isGeocoding
-                                        ? 'Finding the address…'
+                                        ? context.l10n.mapLoadingAddress
                                         : (_addressText.isEmpty
-                                            ? 'Address not available'
-                                            : _addressText),
+                                              ? context
+                                                    .l10n
+                                                    .commonAddressUnavailable
+                                              : _addressText),
                                     maxLines: 3,
                                     overflow: TextOverflow.ellipsis,
                                     style: theme.textTheme.bodyMedium?.copyWith(
@@ -626,9 +628,10 @@ class _CitizenReportMapPickerState extends State<CitizenReportMapPicker>
                                 const SizedBox(width: 10),
                                 Expanded(
                                   child: Text(
-                                    _nearbyDuplicatesCount > 0
-                                        ? '$_nearbyDuplicatesCount existing report(s) were found within 100 metres.'
-                                        : 'No nearby reports were found within 100 metres.',
+                                    context.l10n.mapNearbyReportCount(
+                                      _nearbyDuplicatesCount,
+                                      100,
+                                    ),
                                     style: theme.textTheme.bodySmall?.copyWith(
                                       color: _nearbyDuplicatesCount > 0
                                           ? colorScheme.onErrorContainer
@@ -646,7 +649,7 @@ class _CitizenReportMapPickerState extends State<CitizenReportMapPicker>
                               Expanded(
                                 child: OutlinedButton(
                                   onPressed: () => Navigator.of(context).pop(),
-                                  child: const Text('Cancel'),
+                                  child: Text(context.l10n.commonCancel),
                                 ),
                               ),
                               const SizedBox(width: 10),
@@ -654,17 +657,19 @@ class _CitizenReportMapPickerState extends State<CitizenReportMapPicker>
                                 child: FilledButton.icon(
                                   onPressed:
                                       _isGeocoding || _pinnedLocation == null
-                                          ? null
-                                          : () {
-                                              Navigator.of(context).pop(
-                                                MapPickerResult(
-                                                  location: _pinnedLocation!,
-                                                  address: _addressText,
-                                                ),
-                                              );
-                                            },
+                                      ? null
+                                      : () {
+                                          Navigator.of(context).pop(
+                                            MapPickerResult(
+                                              location: _pinnedLocation!,
+                                              address: _addressText,
+                                            ),
+                                          );
+                                        },
                                   icon: const Icon(Icons.check),
-                                  label: const Text('Use this location'),
+                                  label: Text(
+                                    context.l10n.mapConfirmPinnedLocation,
+                                  ),
                                 ),
                               ),
                             ],

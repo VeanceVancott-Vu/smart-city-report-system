@@ -230,7 +230,7 @@ class _EditReportIntro extends StatelessWidget {
           ),
           SizedBox(height: compact ? 16 : 24),
           Text(
-            'Update your report',
+            context.l10n.reportEditIntroTitle,
             style: theme.textTheme.headlineSmall?.copyWith(
               fontWeight: FontWeight.w800,
               color: colorScheme.onSecondaryContainer,
@@ -250,32 +250,29 @@ class _EditReportIntro extends StatelessWidget {
           ),
           const SizedBox(height: 8),
           Text(
-            'Review the existing information and update only what has changed before saving.',
+            context.l10n.reportEditIntroDescription,
             style: theme.textTheme.bodyLarge?.copyWith(
               color: colorScheme.onSecondaryContainer.withOpacity(0.76),
               height: 1.5,
             ),
           ),
           SizedBox(height: compact ? 18 : 28),
-          const _EditHint(
+          _EditHint(
             icon: Icons.photo_camera_outlined,
-            title: 'Keep the photo clear',
-            description:
-                'Replace the image only when a better view is available.',
+            title: context.l10n.reportEditPhotoHintTitle,
+            description: context.l10n.reportEditPhotoHintDescription,
           ),
           const SizedBox(height: 16),
-          const _EditHint(
+          _EditHint(
             icon: Icons.location_on_outlined,
-            title: 'Check the location',
-            description:
-                'Confirm that the pin still matches the reported issue.',
+            title: context.l10n.reportEditLocationHintTitle,
+            description: context.l10n.reportEditLocationHintDescription,
           ),
           const SizedBox(height: 16),
-          const _EditHint(
+          _EditHint(
             icon: Icons.fact_check_outlined,
-            title: 'Save accurate details',
-            description:
-                'Clear information helps the city team respond correctly.',
+            title: context.l10n.reportEditDetailsHintTitle,
+            description: context.l10n.reportEditDetailsHintDescription,
           ),
         ],
       ),
@@ -367,14 +364,14 @@ class _LoadingState extends StatelessWidget {
                 const CircularProgressIndicator(),
                 const SizedBox(height: 20),
                 Text(
-                  'Loading report',
+                  context.l10n.reportLoadingTitle,
                   style: theme.textTheme.titleMedium?.copyWith(
                     fontWeight: FontWeight.w700,
                   ),
                 ),
                 const SizedBox(height: 6),
                 Text(
-                  'Please wait while the latest information is prepared.',
+                  context.l10n.reportLoadingMessage,
                   textAlign: TextAlign.center,
                   style: theme.textTheme.bodyMedium?.copyWith(
                     color: colorScheme.onSurfaceVariant,
@@ -431,7 +428,7 @@ class _ErrorState extends StatelessWidget {
                 ),
                 const SizedBox(height: 18),
                 Text(
-                  'Unable to load report',
+                  context.l10n.reportLoadFailed,
                   style: theme.textTheme.titleLarge?.copyWith(
                     fontWeight: FontWeight.w800,
                   ),
@@ -500,7 +497,7 @@ class _InfoState extends StatelessWidget {
                 ),
                 const SizedBox(height: 18),
                 Text(
-                  'Editing is unavailable',
+                  context.l10n.reportEditingUnavailable,
                   style: theme.textTheme.titleLarge?.copyWith(
                     fontWeight: FontWeight.w800,
                   ),
@@ -518,7 +515,7 @@ class _InfoState extends StatelessWidget {
                 OutlinedButton.icon(
                   onPressed: () => Navigator.of(context).pop(),
                   icon: const Icon(Icons.arrow_back),
-                  label: const Text('Go back'),
+                  label: Text(context.l10n.commonGoBack),
                 ),
               ],
             ),

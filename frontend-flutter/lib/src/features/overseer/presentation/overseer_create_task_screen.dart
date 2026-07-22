@@ -124,8 +124,8 @@ class _OverseerCreateTaskScreenState extends State<OverseerCreateTaskScreen> {
       _reportIdsController.text = task.reportIds.join('\n');
       _loadedTask = task;
       _selectedStaffId = task.assignedStaff?.id;
-    } on TaskApiException catch (error) {
-      _showError(error.message);
+    } on TaskApiException catch (_) {
+      _showError(context.l10n.taskLoadFailed);
     } catch (_) {
       _showError(context.l10n.taskLoadFailed);
     } finally {
@@ -169,9 +169,11 @@ class _OverseerCreateTaskScreenState extends State<OverseerCreateTaskScreen> {
           _applyReportDefaults(reports);
         }
       });
-    } on ReportApiException catch (error) {
+    } on ReportApiException catch (_) {
       if (mounted) {
-        setState(() => _linkedReportsError = error.message);
+        setState(
+          () => _linkedReportsError = context.l10n.taskLinkedReportsLoadFailed,
+        );
       }
     } catch (_) {
       if (mounted) {
@@ -256,13 +258,13 @@ class _OverseerCreateTaskScreenState extends State<OverseerCreateTaskScreen> {
         message: task.title,
       );
       Navigator.of(context).pop(true);
-    } on TaskApiException catch (error) {
+    } on TaskApiException catch (_) {
       await AppFeedback.showErrorDialog(
         context,
         title: _isEditing
             ? context.l10n.taskUpdateFailedTitle
             : context.l10n.taskCreateFailedTitle,
-        message: error.message,
+        message: context.l10n.taskSaveFailed,
       );
     } catch (_) {
       await AppFeedback.showErrorDialog(

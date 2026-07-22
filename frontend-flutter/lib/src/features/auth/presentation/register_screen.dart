@@ -296,10 +296,11 @@ class _RegisterScreenState extends State<RegisterScreen> {
                   label: context.l10n.commonPassword,
                   icon: Icons.lock_outline_rounded,
                   suffixIcon: IconButton(
-                    tooltip: _obscurePassword ? 'Show password' : 'Hide password',
-                    onPressed: () => setState(
-                      () => _obscurePassword = !_obscurePassword,
-                    ),
+                    tooltip: _obscurePassword
+                        ? context.l10n.commonShowPassword
+                        : context.l10n.commonHidePassword,
+                    onPressed: () =>
+                        setState(() => _obscurePassword = !_obscurePassword),
                     icon: Icon(
                       _obscurePassword
                           ? Icons.visibility_outlined
@@ -454,7 +455,7 @@ class _RegistrationInfoPanel extends StatelessWidget {
                 ),
                 const SizedBox(width: 8),
                 Text(
-                  'SMART CITY',
+                  context.l10n.brandSmartCityLabel,
                   style: theme.textTheme.labelLarge?.copyWith(
                     color: colorScheme.onPrimaryContainer,
                     fontWeight: FontWeight.w800,
@@ -475,7 +476,7 @@ class _RegistrationInfoPanel extends StatelessWidget {
           ),
           const SizedBox(height: 18),
           Text(
-            'Tạo tài khoản để gửi phản ánh, theo dõi tiến độ xử lý và cùng xây dựng thành phố tốt hơn mỗi ngày.',
+            context.l10n.authRegisterHeroDescription,
             style: theme.textTheme.titleMedium?.copyWith(
               color: colorScheme.onSurfaceVariant,
               height: 1.6,
@@ -483,22 +484,22 @@ class _RegistrationInfoPanel extends StatelessWidget {
             ),
           ),
           const SizedBox(height: 34),
-          const _BenefitItem(
+          _BenefitItem(
             icon: Icons.add_location_alt_outlined,
-            title: 'Gửi phản ánh nhanh chóng',
-            description: 'Đính kèm vị trí, hình ảnh và mô tả sự cố.',
+            title: context.l10n.authBenefitQuickReportTitle,
+            description: context.l10n.authBenefitQuickReportDescription,
           ),
           const SizedBox(height: 18),
-          const _BenefitItem(
+          _BenefitItem(
             icon: Icons.notifications_active_outlined,
-            title: 'Theo dõi trạng thái',
-            description: 'Nhận thông tin cập nhật trong suốt quá trình xử lý.',
+            title: context.l10n.authBenefitStatusTrackingTitle,
+            description: context.l10n.authBenefitStatusTrackingDescription,
           ),
           const SizedBox(height: 18),
-          const _BenefitItem(
+          _BenefitItem(
             icon: Icons.verified_user_outlined,
-            title: 'Thông tin được bảo vệ',
-            description: 'Tài khoản giúp quản lý lịch sử phản ánh an toàn.',
+            title: context.l10n.authBenefitProtectedInfoTitle,
+            description: context.l10n.authBenefitProtectedInfoDescription,
           ),
         ],
       ),

@@ -246,9 +246,7 @@ class _LoginScreenState extends State<LoginScreen> {
                   padding: const EdgeInsets.symmetric(vertical: 52),
                   child: Column(
                     children: [
-                      CircularProgressIndicator(
-                        color: colorScheme.primary,
-                      ),
+                      CircularProgressIndicator(color: colorScheme.primary),
                       const SizedBox(height: 18),
                       Text(
                         context.l10n.appTitle,
@@ -273,9 +271,7 @@ class _LoginScreenState extends State<LoginScreen> {
                     ),
                     enabledBorder: OutlineInputBorder(
                       borderRadius: BorderRadius.circular(16),
-                      borderSide: BorderSide(
-                        color: colorScheme.outlineVariant,
-                      ),
+                      borderSide: BorderSide(color: colorScheme.outlineVariant),
                     ),
                   ),
                   keyboardType: TextInputType.emailAddress,
@@ -299,10 +295,11 @@ class _LoginScreenState extends State<LoginScreen> {
                     labelText: context.l10n.commonPassword,
                     prefixIcon: const Icon(Icons.lock_outline_rounded),
                     suffixIcon: IconButton(
-                      tooltip: _obscurePassword ? 'Show password' : 'Hide password',
-                      onPressed: () => setState(
-                        () => _obscurePassword = !_obscurePassword,
-                      ),
+                      tooltip: _obscurePassword
+                          ? context.l10n.commonShowPassword
+                          : context.l10n.commonHidePassword,
+                      onPressed: () =>
+                          setState(() => _obscurePassword = !_obscurePassword),
                       icon: Icon(
                         _obscurePassword
                             ? Icons.visibility_outlined
@@ -317,9 +314,7 @@ class _LoginScreenState extends State<LoginScreen> {
                     ),
                     enabledBorder: OutlineInputBorder(
                       borderRadius: BorderRadius.circular(16),
-                      borderSide: BorderSide(
-                        color: colorScheme.outlineVariant,
-                      ),
+                      borderSide: BorderSide(color: colorScheme.outlineVariant),
                     ),
                   ),
                   obscureText: _obscurePassword,
@@ -380,9 +375,7 @@ class _LoginScreenState extends State<LoginScreen> {
                     icon: _isSubmitting
                         ? const SizedBox.square(
                             dimension: 19,
-                            child: CircularProgressIndicator(
-                              strokeWidth: 2,
-                            ),
+                            child: CircularProgressIndicator(strokeWidth: 2),
                           )
                         : const Icon(Icons.login_rounded),
                     label: Text(
@@ -395,9 +388,8 @@ class _LoginScreenState extends State<LoginScreen> {
                 TextButton(
                   onPressed: _isSubmitting
                       ? null
-                      : () => Navigator.of(
-                          context,
-                        ).pushNamed(AppRoutes.register),
+                      : () =>
+                            Navigator.of(context).pushNamed(AppRoutes.register),
                   style: TextButton.styleFrom(
                     padding: const EdgeInsets.symmetric(vertical: 14),
                     shape: RoundedRectangleBorder(
@@ -449,7 +441,7 @@ class _BrandPanel extends StatelessWidget {
                 ),
                 const SizedBox(width: 8),
                 Text(
-                  'SMART CITY',
+                  context.l10n.brandSmartCityLabel,
                   style: theme.textTheme.labelLarge?.copyWith(
                     color: colorScheme.onPrimaryContainer,
                     fontWeight: FontWeight.w800,
@@ -470,7 +462,7 @@ class _BrandPanel extends StatelessWidget {
           ),
           const SizedBox(height: 18),
           Text(
-            'Kết nối người dân, nhân viên hiện trường và cơ quan quản lý trong một nền tảng đô thị thống nhất.',
+            context.l10n.authLoginHeroDescription,
             style: theme.textTheme.titleMedium?.copyWith(
               color: colorScheme.onSurfaceVariant,
               height: 1.6,
@@ -481,18 +473,18 @@ class _BrandPanel extends StatelessWidget {
           Wrap(
             spacing: 12,
             runSpacing: 12,
-            children: const [
+            children: [
               _FeatureChip(
                 icon: Icons.map_outlined,
-                label: 'Bản đồ sự cố',
+                label: context.l10n.authFeatureIncidentMap,
               ),
               _FeatureChip(
                 icon: Icons.task_alt_rounded,
-                label: 'Theo dõi xử lý',
+                label: context.l10n.authFeatureResolutionTracking,
               ),
               _FeatureChip(
                 icon: Icons.auto_awesome_outlined,
-                label: 'Hỗ trợ AI',
+                label: context.l10n.authFeatureGuidedReporting,
               ),
             ],
           ),

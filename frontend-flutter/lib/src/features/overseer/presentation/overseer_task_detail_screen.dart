@@ -207,8 +207,8 @@ class _OverseerTaskDetailScreenState extends State<OverseerTaskDetailScreen> {
         message: task.title,
       );
       Navigator.of(context).pop(true);
-    } on TaskApiException catch (error) {
-      _showError(error.message);
+    } on TaskApiException catch (_) {
+      _showError(context.l10n.taskDeleteFailed);
     } catch (_) {
       if (!mounted) {
         return;
@@ -232,8 +232,8 @@ class _OverseerTaskDetailScreenState extends State<OverseerTaskDetailScreen> {
         message: task.title,
       );
       setState(_loadTask);
-    } on TaskApiException catch (error) {
-      _showError(error.message);
+    } on TaskApiException catch (_) {
+      _showError(context.l10n.taskUpdateFailed);
     } catch (_) {
       if (!mounted) {
         return;
@@ -627,7 +627,7 @@ class _LinkedReportCard extends StatelessWidget {
             _DetailRow(
               label: context.l10n.taskCreatedBy,
               value: report.anonymous
-                  ? 'Anonymous'
+                  ? context.l10n.commonAnonymous
                   : report.createdBy?.fullName ?? context.l10n.commonNone,
             ),
             _DetailRow(
@@ -635,7 +635,7 @@ class _LinkedReportCard extends StatelessWidget {
               value: _formatTimestamp(report.createdAt),
             ),
             _DetailRow(
-              label: 'Updated at',
+              label: context.l10n.reportLastUpdated,
               value: _formatTimestamp(report.updatedAt),
             ),
             const SizedBox(height: 12),

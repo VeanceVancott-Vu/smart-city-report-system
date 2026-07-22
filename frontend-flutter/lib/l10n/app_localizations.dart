@@ -809,7 +809,7 @@ abstract class AppLocalizations {
   /// No description provided for @mapPickerSearchHint.
   ///
   /// In en, this message translates to:
-  /// **'Search address or open reports…'**
+  /// **'Search address or place…'**
   String get mapPickerSearchHint;
 
   /// No description provided for @mapActiveReportsHeader.
@@ -839,7 +839,7 @@ abstract class AppLocalizations {
   /// No description provided for @mapConfirmPinnedLocation.
   ///
   /// In en, this message translates to:
-  /// **'Confirm pinned location'**
+  /// **'Use this location'**
   String get mapConfirmPinnedLocation;
 
   /// No description provided for @reportCreateTitle.
@@ -2101,6 +2101,678 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'sharp left'**
   String get routeDirectionSharpLeft;
+
+  /// No description provided for @commonShowPassword.
+  ///
+  /// In en, this message translates to:
+  /// **'Show password'**
+  String get commonShowPassword;
+
+  /// No description provided for @commonHidePassword.
+  ///
+  /// In en, this message translates to:
+  /// **'Hide password'**
+  String get commonHidePassword;
+
+  /// No description provided for @commonOk.
+  ///
+  /// In en, this message translates to:
+  /// **'OK'**
+  String get commonOk;
+
+  /// No description provided for @commonBack.
+  ///
+  /// In en, this message translates to:
+  /// **'Back'**
+  String get commonBack;
+
+  /// No description provided for @commonGoBack.
+  ///
+  /// In en, this message translates to:
+  /// **'Go back'**
+  String get commonGoBack;
+
+  /// No description provided for @commonClearSearch.
+  ///
+  /// In en, this message translates to:
+  /// **'Clear search'**
+  String get commonClearSearch;
+
+  /// No description provided for @commonAll.
+  ///
+  /// In en, this message translates to:
+  /// **'All'**
+  String get commonAll;
+
+  /// No description provided for @commonAddressUnavailable.
+  ///
+  /// In en, this message translates to:
+  /// **'Address not available'**
+  String get commonAddressUnavailable;
+
+  /// No description provided for @commonPriorityScore.
+  ///
+  /// In en, this message translates to:
+  /// **'Priority score'**
+  String get commonPriorityScore;
+
+  /// No description provided for @commonConfirmations.
+  ///
+  /// In en, this message translates to:
+  /// **'Confirmations'**
+  String get commonConfirmations;
+
+  /// No description provided for @commonClearFilters.
+  ///
+  /// In en, this message translates to:
+  /// **'Clear filters'**
+  String get commonClearFilters;
+
+  /// No description provided for @confirmationCount.
+  ///
+  /// In en, this message translates to:
+  /// **'{count, plural, =0{No confirmations} =1{1 confirmation} other{{count} confirmations}}'**
+  String confirmationCount(num count);
+
+  /// No description provided for @brandSmartCityLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'SMART CITY'**
+  String get brandSmartCityLabel;
+
+  /// No description provided for @photoCloseTooltip.
+  ///
+  /// In en, this message translates to:
+  /// **'Close photo'**
+  String get photoCloseTooltip;
+
+  /// No description provided for @photoRemove.
+  ///
+  /// In en, this message translates to:
+  /// **'Remove photo'**
+  String get photoRemove;
+
+  /// No description provided for @photoUploading.
+  ///
+  /// In en, this message translates to:
+  /// **'Uploading photo…'**
+  String get photoUploading;
+
+  /// No description provided for @photoAdd.
+  ///
+  /// In en, this message translates to:
+  /// **'Add a photo'**
+  String get photoAdd;
+
+  /// No description provided for @authLoginHeroDescription.
+  ///
+  /// In en, this message translates to:
+  /// **'Report local issues and follow their progress from one place.'**
+  String get authLoginHeroDescription;
+
+  /// No description provided for @authFeatureIncidentMap.
+  ///
+  /// In en, this message translates to:
+  /// **'Incident map'**
+  String get authFeatureIncidentMap;
+
+  /// No description provided for @authFeatureResolutionTracking.
+  ///
+  /// In en, this message translates to:
+  /// **'Resolution tracking'**
+  String get authFeatureResolutionTracking;
+
+  /// No description provided for @authFeatureGuidedReporting.
+  ///
+  /// In en, this message translates to:
+  /// **'Guided reporting'**
+  String get authFeatureGuidedReporting;
+
+  /// No description provided for @authRegisterHeroDescription.
+  ///
+  /// In en, this message translates to:
+  /// **'Join your community and help make city services more responsive.'**
+  String get authRegisterHeroDescription;
+
+  /// No description provided for @authBenefitQuickReportTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Report issues quickly'**
+  String get authBenefitQuickReportTitle;
+
+  /// No description provided for @authBenefitQuickReportDescription.
+  ///
+  /// In en, this message translates to:
+  /// **'Add a photo and location so the right team can respond.'**
+  String get authBenefitQuickReportDescription;
+
+  /// No description provided for @authBenefitStatusTrackingTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Track every update'**
+  String get authBenefitStatusTrackingTitle;
+
+  /// No description provided for @authBenefitStatusTrackingDescription.
+  ///
+  /// In en, this message translates to:
+  /// **'Follow your report from submission through resolution.'**
+  String get authBenefitStatusTrackingDescription;
+
+  /// No description provided for @authBenefitProtectedInfoTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Control your privacy'**
+  String get authBenefitProtectedInfoTitle;
+
+  /// No description provided for @authBenefitProtectedInfoDescription.
+  ///
+  /// In en, this message translates to:
+  /// **'Choose whether to show your identity on public reports.'**
+  String get authBenefitProtectedInfoDescription;
+
+  /// No description provided for @reportCreateIntroTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Report a city issue'**
+  String get reportCreateIntroTitle;
+
+  /// No description provided for @reportCreateIntroDescription.
+  ///
+  /// In en, this message translates to:
+  /// **'Share the issue, add a clear photo and confirm the location so the city team can respond faster.'**
+  String get reportCreateIntroDescription;
+
+  /// No description provided for @reportCreateStepCategoryTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Choose the issue type'**
+  String get reportCreateStepCategoryTitle;
+
+  /// No description provided for @reportCreateStepCategoryDescription.
+  ///
+  /// In en, this message translates to:
+  /// **'Select the category that best matches the problem.'**
+  String get reportCreateStepCategoryDescription;
+
+  /// No description provided for @reportCreateStepPhotoTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Add a clear photo'**
+  String get reportCreateStepPhotoTitle;
+
+  /// No description provided for @reportCreateStepPhotoDescription.
+  ///
+  /// In en, this message translates to:
+  /// **'Use a photo that clearly shows the issue.'**
+  String get reportCreateStepPhotoDescription;
+
+  /// No description provided for @reportCreateStepLocationTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Confirm the location'**
+  String get reportCreateStepLocationTitle;
+
+  /// No description provided for @reportCreateStepLocationDescription.
+  ///
+  /// In en, this message translates to:
+  /// **'Pin the exact position before submitting.'**
+  String get reportCreateStepLocationDescription;
+
+  /// No description provided for @reportEditIntroTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Update your report'**
+  String get reportEditIntroTitle;
+
+  /// No description provided for @reportEditIntroDescription.
+  ///
+  /// In en, this message translates to:
+  /// **'Review the existing information and update only what has changed before saving.'**
+  String get reportEditIntroDescription;
+
+  /// No description provided for @reportEditPhotoHintTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Keep the photo clear'**
+  String get reportEditPhotoHintTitle;
+
+  /// No description provided for @reportEditPhotoHintDescription.
+  ///
+  /// In en, this message translates to:
+  /// **'Replace the image only when a better view is available.'**
+  String get reportEditPhotoHintDescription;
+
+  /// No description provided for @reportEditLocationHintTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Check the location'**
+  String get reportEditLocationHintTitle;
+
+  /// No description provided for @reportEditLocationHintDescription.
+  ///
+  /// In en, this message translates to:
+  /// **'Confirm that the pin still matches the reported issue.'**
+  String get reportEditLocationHintDescription;
+
+  /// No description provided for @reportEditDetailsHintTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Save accurate details'**
+  String get reportEditDetailsHintTitle;
+
+  /// No description provided for @reportEditDetailsHintDescription.
+  ///
+  /// In en, this message translates to:
+  /// **'Clear information helps the city team respond correctly.'**
+  String get reportEditDetailsHintDescription;
+
+  /// No description provided for @reportLoadingTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Loading report'**
+  String get reportLoadingTitle;
+
+  /// No description provided for @reportLoadingMessage.
+  ///
+  /// In en, this message translates to:
+  /// **'Please wait while the latest information is prepared.'**
+  String get reportLoadingMessage;
+
+  /// No description provided for @reportEditingUnavailable.
+  ///
+  /// In en, this message translates to:
+  /// **'Editing is unavailable'**
+  String get reportEditingUnavailable;
+
+  /// No description provided for @reportFormCreateHeading.
+  ///
+  /// In en, this message translates to:
+  /// **'Tell us what happened'**
+  String get reportFormCreateHeading;
+
+  /// No description provided for @reportFormEditHeading.
+  ///
+  /// In en, this message translates to:
+  /// **'Update report information'**
+  String get reportFormEditHeading;
+
+  /// No description provided for @reportFormDescription.
+  ///
+  /// In en, this message translates to:
+  /// **'Complete each section below. Clear information helps the city team respond faster.'**
+  String get reportFormDescription;
+
+  /// No description provided for @reportFormCategoryTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Issue category'**
+  String get reportFormCategoryTitle;
+
+  /// No description provided for @reportFormCategoryDescription.
+  ///
+  /// In en, this message translates to:
+  /// **'Choose the option that best matches the problem.'**
+  String get reportFormCategoryDescription;
+
+  /// No description provided for @reportFormPhotoTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Photo evidence'**
+  String get reportFormPhotoTitle;
+
+  /// No description provided for @reportFormPhotoDescription.
+  ///
+  /// In en, this message translates to:
+  /// **'Add one clear photo showing the issue.'**
+  String get reportFormPhotoDescription;
+
+  /// No description provided for @reportPhotoAddedCount.
+  ///
+  /// In en, this message translates to:
+  /// **'{added} of {total} added'**
+  String reportPhotoAddedCount(Object added, Object total);
+
+  /// No description provided for @reportBeforePhotoHelp.
+  ///
+  /// In en, this message translates to:
+  /// **'Upload a picture before any actions are taken'**
+  String get reportBeforePhotoHelp;
+
+  /// No description provided for @reportFormLocationDescription.
+  ///
+  /// In en, this message translates to:
+  /// **'Confirm the exact position of the issue.'**
+  String get reportFormLocationDescription;
+
+  /// No description provided for @reportStreetAddress.
+  ///
+  /// In en, this message translates to:
+  /// **'Street address'**
+  String get reportStreetAddress;
+
+  /// No description provided for @reportStreetAddressHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Add a nearby landmark or street name'**
+  String get reportStreetAddressHint;
+
+  /// No description provided for @reportFormDetailsDescription.
+  ///
+  /// In en, this message translates to:
+  /// **'Use a short title and describe what you observed.'**
+  String get reportFormDetailsDescription;
+
+  /// No description provided for @reportFormTitleLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Report title'**
+  String get reportFormTitleLabel;
+
+  /// No description provided for @reportFormTitleHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Example: Broken street light'**
+  String get reportFormTitleHint;
+
+  /// No description provided for @reportFormDescriptionHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Describe the issue, when you noticed it and any useful details.'**
+  String get reportFormDescriptionHint;
+
+  /// No description provided for @reportPrivacyTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Privacy'**
+  String get reportPrivacyTitle;
+
+  /// No description provided for @reportPrivacyDescription.
+  ///
+  /// In en, this message translates to:
+  /// **'Choose whether your identity is shown publicly.'**
+  String get reportPrivacyDescription;
+
+  /// No description provided for @reportAnonymousHelp.
+  ///
+  /// In en, this message translates to:
+  /// **'Your personal information will be hidden from the public report.'**
+  String get reportAnonymousHelp;
+
+  /// No description provided for @reportReviewBeforeSubmit.
+  ///
+  /// In en, this message translates to:
+  /// **'Please review the information before submitting.'**
+  String get reportReviewBeforeSubmit;
+
+  /// No description provided for @reportNew.
+  ///
+  /// In en, this message translates to:
+  /// **'New report'**
+  String get reportNew;
+
+  /// No description provided for @reportsTrackProgressDescription.
+  ///
+  /// In en, this message translates to:
+  /// **'Track the progress of issues you have submitted.'**
+  String get reportsTrackProgressDescription;
+
+  /// No description provided for @reportsSearchHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Search reports'**
+  String get reportsSearchHint;
+
+  /// No description provided for @reportsSortTooltip.
+  ///
+  /// In en, this message translates to:
+  /// **'Sort reports'**
+  String get reportsSortTooltip;
+
+  /// No description provided for @reportsSortNewest.
+  ///
+  /// In en, this message translates to:
+  /// **'Newest first'**
+  String get reportsSortNewest;
+
+  /// No description provided for @reportsSortOldest.
+  ///
+  /// In en, this message translates to:
+  /// **'Oldest first'**
+  String get reportsSortOldest;
+
+  /// No description provided for @reportsSortPriority.
+  ///
+  /// In en, this message translates to:
+  /// **'Highest priority'**
+  String get reportsSortPriority;
+
+  /// No description provided for @reportsLoading.
+  ///
+  /// In en, this message translates to:
+  /// **'Loading your reports…'**
+  String get reportsLoading;
+
+  /// No description provided for @reportsNoMatches.
+  ///
+  /// In en, this message translates to:
+  /// **'No matching reports'**
+  String get reportsNoMatches;
+
+  /// No description provided for @reportsNoMatchesHelp.
+  ///
+  /// In en, this message translates to:
+  /// **'Try changing your search or filters.'**
+  String get reportsNoMatchesHelp;
+
+  /// No description provided for @reportsEmptyHelp.
+  ///
+  /// In en, this message translates to:
+  /// **'Create your first report to start tracking an issue.'**
+  String get reportsEmptyHelp;
+
+  /// No description provided for @reportViewPhoto.
+  ///
+  /// In en, this message translates to:
+  /// **'View photo'**
+  String get reportViewPhoto;
+
+  /// No description provided for @reportCurrentStatusTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Current status'**
+  String get reportCurrentStatusTitle;
+
+  /// No description provided for @reportCurrentStatusDescription.
+  ///
+  /// In en, this message translates to:
+  /// **'See how the city team is progressing with this issue.'**
+  String get reportCurrentStatusDescription;
+
+  /// No description provided for @reportStaffAssignment.
+  ///
+  /// In en, this message translates to:
+  /// **'Staff assignment'**
+  String get reportStaffAssignment;
+
+  /// No description provided for @reportStaffUnassigned.
+  ///
+  /// In en, this message translates to:
+  /// **'No staff assigned yet'**
+  String get reportStaffUnassigned;
+
+  /// No description provided for @reportDescriptionSectionHelp.
+  ///
+  /// In en, this message translates to:
+  /// **'Details provided with this report.'**
+  String get reportDescriptionSectionHelp;
+
+  /// No description provided for @reportNoDescription.
+  ///
+  /// In en, this message translates to:
+  /// **'No description provided.'**
+  String get reportNoDescription;
+
+  /// No description provided for @reportSubmittedAnonymously.
+  ///
+  /// In en, this message translates to:
+  /// **'Submitted anonymously'**
+  String get reportSubmittedAnonymously;
+
+  /// No description provided for @reportSubmittedPublicly.
+  ///
+  /// In en, this message translates to:
+  /// **'Submitted publicly'**
+  String get reportSubmittedPublicly;
+
+  /// No description provided for @reportLocationSectionHelp.
+  ///
+  /// In en, this message translates to:
+  /// **'Where the issue was reported.'**
+  String get reportLocationSectionHelp;
+
+  /// No description provided for @mapSelectedLocationCoordinates.
+  ///
+  /// In en, this message translates to:
+  /// **'Selected coordinates: {latitude}, {longitude}'**
+  String mapSelectedLocationCoordinates(Object latitude, Object longitude);
+
+  /// No description provided for @reportOverviewTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Report overview'**
+  String get reportOverviewTitle;
+
+  /// No description provided for @reportOverviewDescription.
+  ///
+  /// In en, this message translates to:
+  /// **'Key information about this issue.'**
+  String get reportOverviewDescription;
+
+  /// No description provided for @mapExploreCityIssuesTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Explore city issues'**
+  String get mapExploreCityIssuesTitle;
+
+  /// No description provided for @mapExploreCityIssuesDescription.
+  ///
+  /// In en, this message translates to:
+  /// **'Search the map and see reports near you.'**
+  String get mapExploreCityIssuesDescription;
+
+  /// No description provided for @mapNearbyReportsTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Nearby reports'**
+  String get mapNearbyReportsTitle;
+
+  /// No description provided for @mapNearbyReportsDescription.
+  ///
+  /// In en, this message translates to:
+  /// **'Review open issues in the visible area.'**
+  String get mapNearbyReportsDescription;
+
+  /// No description provided for @mapShowMyReports.
+  ///
+  /// In en, this message translates to:
+  /// **'Show my reports'**
+  String get mapShowMyReports;
+
+  /// No description provided for @mapLoadingNearbyReports.
+  ///
+  /// In en, this message translates to:
+  /// **'Loading nearby reports…'**
+  String get mapLoadingNearbyReports;
+
+  /// No description provided for @mapNoReportsHelp.
+  ///
+  /// In en, this message translates to:
+  /// **'Move the map or change your filters to explore another area.'**
+  String get mapNoReportsHelp;
+
+  /// No description provided for @mapUnavailableTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Map unavailable'**
+  String get mapUnavailableTitle;
+
+  /// No description provided for @mapCheckNearbyReportsTooltip.
+  ///
+  /// In en, this message translates to:
+  /// **'Check nearby reports'**
+  String get mapCheckNearbyReportsTooltip;
+
+  /// No description provided for @mapUseCurrentLocationTooltip.
+  ///
+  /// In en, this message translates to:
+  /// **'Use current location'**
+  String get mapUseCurrentLocationTooltip;
+
+  /// No description provided for @mapMovePinInstruction.
+  ///
+  /// In en, this message translates to:
+  /// **'Move the map until the pin is directly over the issue.'**
+  String get mapMovePinInstruction;
+
+  /// No description provided for @mapNearbyReportCount.
+  ///
+  /// In en, this message translates to:
+  /// **'{count, plural, =0{No nearby reports were found within {distance} metres.} =1{1 existing report was found within {distance} metres.} other{{count} existing reports were found within {distance} metres.}}'**
+  String mapNearbyReportCount(num count, Object distance);
+
+  /// No description provided for @mapCloseTooltip.
+  ///
+  /// In en, this message translates to:
+  /// **'Close map'**
+  String get mapCloseTooltip;
+
+  /// No description provided for @staffCompleteIntro.
+  ///
+  /// In en, this message translates to:
+  /// **'Add clear evidence so the overseer can review the completed work.'**
+  String get staffCompleteIntro;
+
+  /// No description provided for @staffCompleteChecklistTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Before submitting'**
+  String get staffCompleteChecklistTitle;
+
+  /// No description provided for @staffCompleteChecklistWorkDone.
+  ///
+  /// In en, this message translates to:
+  /// **'Confirm the assigned work is complete.'**
+  String get staffCompleteChecklistWorkDone;
+
+  /// No description provided for @staffCompleteChecklistPhotosAdded.
+  ///
+  /// In en, this message translates to:
+  /// **'Upload a clear after photo.'**
+  String get staffCompleteChecklistPhotosAdded;
+
+  /// No description provided for @staffCompleteChecklistNoteClear.
+  ///
+  /// In en, this message translates to:
+  /// **'Add a concise completion note.'**
+  String get staffCompleteChecklistNoteClear;
+
+  /// No description provided for @staffCompleteNoteHelp.
+  ///
+  /// In en, this message translates to:
+  /// **'Describe what was completed and mention anything the reviewer should know.'**
+  String get staffCompleteNoteHelp;
+
+  /// No description provided for @staffCompleteNoteHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Example: Replaced the damaged light and tested it.'**
+  String get staffCompleteNoteHint;
+
+  /// No description provided for @overseerReportOperations.
+  ///
+  /// In en, this message translates to:
+  /// **'Report operations'**
+  String get overseerReportOperations;
 }
 
 class _AppLocalizationsDelegate

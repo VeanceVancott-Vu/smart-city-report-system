@@ -442,9 +442,7 @@ class _RouteStartPanel extends StatelessWidget {
               isPickingStart
                   ? context.l10n.routeTapMapToChooseStart
                   : message ?? context.l10n.routeKnownAddressesHelp,
-              key: isPickingStart
-                  ? const Key('staffRouteMapPickHint')
-                  : null,
+              key: isPickingStart ? const Key('staffRouteMapPickHint') : null,
               maxLines: 2,
               overflow: TextOverflow.ellipsis,
               style: Theme.of(context).textTheme.bodySmall?.copyWith(
@@ -923,13 +921,13 @@ class RoadRouteStep {
 }
 
 String localizeRoadRouteInstruction(BuildContext context, RoadRouteStep step) {
+  final l10n = context.l10n;
   final maneuverType = step.maneuverType?.trim().toLowerCase();
   if (maneuverType == null || maneuverType.isEmpty) {
-    return step.instruction;
+    return l10n.routeManeuverContinue;
   }
 
   final direction = _localizedManeuverDirection(context, step.maneuverModifier);
-  final l10n = context.l10n;
   final action = switch (maneuverType) {
     'depart' => l10n.routeManeuverHeadOut,
     'arrive' => l10n.routeManeuverArrive,

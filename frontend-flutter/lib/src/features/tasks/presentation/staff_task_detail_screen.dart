@@ -82,8 +82,8 @@ class _StaffTaskDetailScreenState extends State<StaffTaskDetailScreen> {
       await Navigator.of(
         context,
       ).pushNamed(AppRoutes.staffTaskRoute, arguments: task.id);
-    } on TaskApiException catch (error) {
-      _showError(error.message);
+    } on TaskApiException catch (_) {
+      _showError(context.l10n.taskUpdateFailed);
     } catch (_) {
       if (!mounted) {
         return;
@@ -132,10 +132,10 @@ class _StaffTaskDetailScreenState extends State<StaffTaskDetailScreen> {
       if (changed == true) {
         setState(_loadTask);
       }
-    } on TaskApiException catch (error) {
-      _showError(error.message);
-    } on ReportApiException catch (error) {
-      _showError(error.message);
+    } on TaskApiException catch (_) {
+      _showError(context.l10n.taskLoadFailed);
+    } on ReportApiException catch (_) {
+      _showError(context.l10n.taskLoadFailed);
     } catch (_) {
       if (mounted) {
         _showError(context.l10n.taskLoadFailed);
@@ -242,18 +242,27 @@ class _StaffTaskDetailScreenState extends State<StaffTaskDetailScreen> {
                 title: task.status == TaskStatus.denied
                     ? context.l10n.taskReworkInstructions
                     : context.l10n.commonDescription,
-                child: Text(task.description, style: const TextStyle(height: 1.65)),
+                child: Text(
+                  task.description,
+                  style: const TextStyle(height: 1.65),
+                ),
               ),
               _Section(
                 icon: Icons.location_on_rounded,
                 title: context.l10n.commonLocation,
-                child: Text(task.locationLabel, style: const TextStyle(height: 1.55)),
+                child: Text(
+                  task.locationLabel,
+                  style: const TextStyle(height: 1.55),
+                ),
               ),
               if ((task.staffNote ?? '').trim().isNotEmpty)
                 _Section(
                   icon: Icons.chat_bubble_outline_rounded,
                   title: context.l10n.taskStaffNote,
-                  child: Text(task.staffNote!, style: const TextStyle(height: 1.55)),
+                  child: Text(
+                    task.staffNote!,
+                    style: const TextStyle(height: 1.55),
+                  ),
                 ),
               const SizedBox(height: 10),
               Row(
@@ -323,18 +332,28 @@ class _TaskHero extends StatelessWidget {
               Row(
                 children: [
                   Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 10,
+                      vertical: 6,
+                    ),
                     decoration: BoxDecoration(
                       color: Colors.white.withValues(alpha: .10),
                       borderRadius: BorderRadius.circular(999),
                     ),
                     child: Text(
                       task.status.localizedLabel(context),
-                      style: const TextStyle(color: Color(0xFFD6F3EC), fontWeight: FontWeight.w700, fontSize: 12),
+                      style: const TextStyle(
+                        color: Color(0xFFD6F3EC),
+                        fontWeight: FontWeight.w700,
+                        fontSize: 12,
+                      ),
                     ),
                   ),
                   const Spacer(),
-                  Icon(Icons.assignment_turned_in_outlined, color: Colors.white.withValues(alpha: .75)),
+                  Icon(
+                    Icons.assignment_turned_in_outlined,
+                    color: Colors.white.withValues(alpha: .75),
+                  ),
                 ],
               ),
               const SizedBox(height: 22),
@@ -352,8 +371,14 @@ class _TaskHero extends StatelessWidget {
                 spacing: 18,
                 runSpacing: 10,
                 children: [
-                  _HeroMeta(icon: Icons.category_outlined, text: task.category.localizedLabel(context)),
-                  _HeroMeta(icon: Icons.trending_up_rounded, text: context.l10n.priorityValue(task.priorityScore)),
+                  _HeroMeta(
+                    icon: Icons.category_outlined,
+                    text: task.category.localizedLabel(context),
+                  ),
+                  _HeroMeta(
+                    icon: Icons.trending_up_rounded,
+                    text: context.l10n.priorityValue(task.priorityScore),
+                  ),
                 ],
               ),
             ],
@@ -376,7 +401,13 @@ class _HeroMeta extends StatelessWidget {
       children: [
         Icon(icon, size: 17, color: const Color(0xFF82D5C5)),
         const SizedBox(width: 7),
-        Text(text, style: const TextStyle(color: Color(0xFFD6E7E3), fontWeight: FontWeight.w600)),
+        Text(
+          text,
+          style: const TextStyle(
+            color: Color(0xFFD6E7E3),
+            fontWeight: FontWeight.w600,
+          ),
+        ),
       ],
     );
   }
@@ -442,8 +473,16 @@ class _LinkedReportTile extends StatelessWidget {
       decoration: BoxDecoration(
         color: Colors.white,
         borderRadius: BorderRadius.circular(18),
-        border: const Border(left: BorderSide(color: Color(0xFF0F766E), width: 4)),
-        boxShadow: const [BoxShadow(color: Color(0x0D000000), blurRadius: 16, offset: Offset(0, 7))],
+        border: const Border(
+          left: BorderSide(color: Color(0xFF0F766E), width: 4),
+        ),
+        boxShadow: const [
+          BoxShadow(
+            color: Color(0x0D000000),
+            blurRadius: 16,
+            offset: Offset(0, 7),
+          ),
+        ],
       ),
       child: ListTile(
         contentPadding: const EdgeInsets.fromLTRB(12, 8, 8, 8),
@@ -588,7 +627,11 @@ class _TaskActions extends StatelessWidget {
 }
 
 class _Section extends StatelessWidget {
-  const _Section({required this.icon, required this.title, required this.child});
+  const _Section({
+    required this.icon,
+    required this.title,
+    required this.child,
+  });
 
   final IconData icon;
   final String title;
@@ -616,10 +659,17 @@ class _Section extends StatelessWidget {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text(title, style: theme.textTheme.titleMedium?.copyWith(fontWeight: FontWeight.w800)),
+                Text(
+                  title,
+                  style: theme.textTheme.titleMedium?.copyWith(
+                    fontWeight: FontWeight.w800,
+                  ),
+                ),
                 const SizedBox(height: 8),
                 DefaultTextStyle.merge(
-                  style: theme.textTheme.bodyMedium?.copyWith(color: theme.colorScheme.onSurfaceVariant),
+                  style: theme.textTheme.bodyMedium?.copyWith(
+                    color: theme.colorScheme.onSurfaceVariant,
+                  ),
                   child: child,
                 ),
               ],

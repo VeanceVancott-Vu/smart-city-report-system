@@ -399,7 +399,7 @@ class AppLocalizationsVi extends AppLocalizations {
   String get mapConfirmLocationTooltip => 'Xác nhận vị trí';
 
   @override
-  String get mapPickerSearchHint => 'Tìm địa chỉ hoặc báo cáo đang mở…';
+  String get mapPickerSearchHint => 'Tìm địa chỉ hoặc địa điểm…';
 
   @override
   String get mapActiveReportsHeader => 'BÁO CÁO ĐANG HOẠT ĐỘNG';
@@ -414,7 +414,7 @@ class AppLocalizationsVi extends AppLocalizations {
   String get mapLoadingAddress => 'Đang tải địa chỉ…';
 
   @override
-  String get mapConfirmPinnedLocation => 'Xác nhận vị trí đã ghim';
+  String get mapConfirmPinnedLocation => 'Dùng vị trí này';
 
   @override
   String get reportCreateTitle => 'Tạo báo cáo';
@@ -702,25 +702,25 @@ class AppLocalizationsVi extends AppLocalizations {
   String get taskAssignedStaff => 'Nhân viên được giao';
 
   @override
-  String get taskCompletedBy => 'Completed by';
+  String get taskCompletedBy => 'Người hoàn thành';
 
   @override
-  String get taskCreatedBy => 'Created by overseer';
+  String get taskCreatedBy => 'Người giám sát tạo';
 
   @override
-  String get taskCreatedAt => 'Created at';
+  String get taskCreatedAt => 'Thời gian tạo';
 
   @override
-  String get taskStartedAt => 'Started at';
+  String get taskStartedAt => 'Thời gian bắt đầu';
 
   @override
-  String get taskSubmittedAt => 'Submitted at';
+  String get taskSubmittedAt => 'Thời gian gửi duyệt';
 
   @override
-  String get taskReviewedAt => 'Reviewed at';
+  String get taskReviewedAt => 'Thời gian xét duyệt';
 
   @override
-  String get taskClosedAt => 'Closed at';
+  String get taskClosedAt => 'Thời gian đóng';
 
   @override
   String get taskReportIds => 'Mã báo cáo';
@@ -1101,4 +1101,402 @@ class AppLocalizationsVi extends AppLocalizations {
 
   @override
   String get routeDirectionSharpLeft => 'gấp sang trái';
+
+  @override
+  String get commonShowPassword => 'Hiện mật khẩu';
+
+  @override
+  String get commonHidePassword => 'Ẩn mật khẩu';
+
+  @override
+  String get commonOk => 'Đồng ý';
+
+  @override
+  String get commonBack => 'Quay lại';
+
+  @override
+  String get commonGoBack => 'Quay lại';
+
+  @override
+  String get commonClearSearch => 'Xóa tìm kiếm';
+
+  @override
+  String get commonAll => 'Tất cả';
+
+  @override
+  String get commonAddressUnavailable => 'Không có địa chỉ';
+
+  @override
+  String get commonPriorityScore => 'Điểm ưu tiên';
+
+  @override
+  String get commonConfirmations => 'Lượt xác nhận';
+
+  @override
+  String get commonClearFilters => 'Xóa bộ lọc';
+
+  @override
+  String confirmationCount(num count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count lượt xác nhận',
+      one: '1 lượt xác nhận',
+      zero: 'Chưa có lượt xác nhận',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get brandSmartCityLabel => 'ĐÔ THỊ THÔNG MINH';
+
+  @override
+  String get photoCloseTooltip => 'Đóng ảnh';
+
+  @override
+  String get photoRemove => 'Xóa ảnh';
+
+  @override
+  String get photoUploading => 'Đang tải ảnh lên…';
+
+  @override
+  String get photoAdd => 'Thêm ảnh';
+
+  @override
+  String get authLoginHeroDescription =>
+      'Báo cáo sự cố tại địa phương và theo dõi tiến độ tại một nơi.';
+
+  @override
+  String get authFeatureIncidentMap => 'Bản đồ sự cố';
+
+  @override
+  String get authFeatureResolutionTracking => 'Theo dõi xử lý';
+
+  @override
+  String get authFeatureGuidedReporting => 'Hướng dẫn báo cáo';
+
+  @override
+  String get authRegisterHeroDescription =>
+      'Tham gia cùng cộng đồng và góp phần giúp dịch vụ đô thị phản hồi nhanh hơn.';
+
+  @override
+  String get authBenefitQuickReportTitle => 'Báo cáo sự cố nhanh chóng';
+
+  @override
+  String get authBenefitQuickReportDescription =>
+      'Thêm ảnh và vị trí để đúng đội ngũ có thể xử lý.';
+
+  @override
+  String get authBenefitStatusTrackingTitle => 'Theo dõi mọi cập nhật';
+
+  @override
+  String get authBenefitStatusTrackingDescription =>
+      'Theo dõi báo cáo từ lúc gửi đến khi được xử lý xong.';
+
+  @override
+  String get authBenefitProtectedInfoTitle => 'Kiểm soát quyền riêng tư';
+
+  @override
+  String get authBenefitProtectedInfoDescription =>
+      'Chọn có hiển thị danh tính trên báo cáo công khai hay không.';
+
+  @override
+  String get reportCreateIntroTitle => 'Báo cáo sự cố đô thị';
+
+  @override
+  String get reportCreateIntroDescription =>
+      'Chia sẻ sự cố, thêm ảnh rõ ràng và xác nhận vị trí để đội ngũ thành phố có thể xử lý nhanh hơn.';
+
+  @override
+  String get reportCreateStepCategoryTitle => 'Chọn loại sự cố';
+
+  @override
+  String get reportCreateStepCategoryDescription =>
+      'Chọn danh mục phù hợp nhất với vấn đề.';
+
+  @override
+  String get reportCreateStepPhotoTitle => 'Thêm ảnh rõ ràng';
+
+  @override
+  String get reportCreateStepPhotoDescription =>
+      'Sử dụng ảnh thể hiện rõ sự cố.';
+
+  @override
+  String get reportCreateStepLocationTitle => 'Xác nhận vị trí';
+
+  @override
+  String get reportCreateStepLocationDescription =>
+      'Ghim đúng vị trí trước khi gửi.';
+
+  @override
+  String get reportEditIntroTitle => 'Cập nhật báo cáo của bạn';
+
+  @override
+  String get reportEditIntroDescription =>
+      'Xem lại thông tin hiện có và chỉ cập nhật những nội dung đã thay đổi trước khi lưu.';
+
+  @override
+  String get reportEditPhotoHintTitle => 'Giữ ảnh rõ ràng';
+
+  @override
+  String get reportEditPhotoHintDescription =>
+      'Chỉ thay ảnh khi có góc chụp tốt hơn.';
+
+  @override
+  String get reportEditLocationHintTitle => 'Kiểm tra vị trí';
+
+  @override
+  String get reportEditLocationHintDescription =>
+      'Xác nhận ghim vẫn đúng với sự cố đã báo cáo.';
+
+  @override
+  String get reportEditDetailsHintTitle => 'Lưu thông tin chính xác';
+
+  @override
+  String get reportEditDetailsHintDescription =>
+      'Thông tin rõ ràng giúp đội ngũ thành phố xử lý chính xác.';
+
+  @override
+  String get reportLoadingTitle => 'Đang tải báo cáo';
+
+  @override
+  String get reportLoadingMessage =>
+      'Vui lòng chờ trong khi thông tin mới nhất được chuẩn bị.';
+
+  @override
+  String get reportEditingUnavailable => 'Không thể chỉnh sửa';
+
+  @override
+  String get reportFormCreateHeading =>
+      'Hãy cho chúng tôi biết chuyện gì đã xảy ra';
+
+  @override
+  String get reportFormEditHeading => 'Cập nhật thông tin báo cáo';
+
+  @override
+  String get reportFormDescription =>
+      'Hoàn thành từng phần bên dưới. Thông tin rõ ràng giúp đội ngũ thành phố xử lý nhanh hơn.';
+
+  @override
+  String get reportFormCategoryTitle => 'Loại sự cố';
+
+  @override
+  String get reportFormCategoryDescription =>
+      'Chọn phương án phù hợp nhất với vấn đề.';
+
+  @override
+  String get reportFormPhotoTitle => 'Ảnh minh chứng';
+
+  @override
+  String get reportFormPhotoDescription =>
+      'Thêm một ảnh rõ ràng thể hiện sự cố.';
+
+  @override
+  String reportPhotoAddedCount(Object added, Object total) {
+    return 'Đã thêm $added/$total ảnh';
+  }
+
+  @override
+  String get reportBeforePhotoHelp =>
+      'Tải ảnh chụp trước khi có bất kỳ hoạt động xử lý nào';
+
+  @override
+  String get reportFormLocationDescription =>
+      'Xác nhận chính xác vị trí của sự cố.';
+
+  @override
+  String get reportStreetAddress => 'Địa chỉ đường phố';
+
+  @override
+  String get reportStreetAddressHint => 'Thêm địa danh gần đó hoặc tên đường';
+
+  @override
+  String get reportFormDetailsDescription =>
+      'Dùng tiêu đề ngắn và mô tả điều bạn quan sát được.';
+
+  @override
+  String get reportFormTitleLabel => 'Tiêu đề báo cáo';
+
+  @override
+  String get reportFormTitleHint => 'Ví dụ: Đèn đường bị hỏng';
+
+  @override
+  String get reportFormDescriptionHint =>
+      'Mô tả sự cố, thời điểm bạn phát hiện và các chi tiết hữu ích.';
+
+  @override
+  String get reportPrivacyTitle => 'Quyền riêng tư';
+
+  @override
+  String get reportPrivacyDescription =>
+      'Chọn có hiển thị danh tính công khai hay không.';
+
+  @override
+  String get reportAnonymousHelp =>
+      'Thông tin cá nhân của bạn sẽ được ẩn khỏi báo cáo công khai.';
+
+  @override
+  String get reportReviewBeforeSubmit =>
+      'Vui lòng xem lại thông tin trước khi gửi.';
+
+  @override
+  String get reportNew => 'Báo cáo mới';
+
+  @override
+  String get reportsTrackProgressDescription =>
+      'Theo dõi tiến độ của những sự cố bạn đã báo cáo.';
+
+  @override
+  String get reportsSearchHint => 'Tìm kiếm báo cáo';
+
+  @override
+  String get reportsSortTooltip => 'Sắp xếp báo cáo';
+
+  @override
+  String get reportsSortNewest => 'Mới nhất trước';
+
+  @override
+  String get reportsSortOldest => 'Cũ nhất trước';
+
+  @override
+  String get reportsSortPriority => 'Ưu tiên cao nhất';
+
+  @override
+  String get reportsLoading => 'Đang tải báo cáo của bạn…';
+
+  @override
+  String get reportsNoMatches => 'Không có báo cáo phù hợp';
+
+  @override
+  String get reportsNoMatchesHelp =>
+      'Hãy thay đổi nội dung tìm kiếm hoặc bộ lọc.';
+
+  @override
+  String get reportsEmptyHelp =>
+      'Tạo báo cáo đầu tiên để bắt đầu theo dõi một sự cố.';
+
+  @override
+  String get reportViewPhoto => 'Xem ảnh';
+
+  @override
+  String get reportCurrentStatusTitle => 'Trạng thái hiện tại';
+
+  @override
+  String get reportCurrentStatusDescription =>
+      'Xem tiến độ xử lý sự cố của đội ngũ thành phố.';
+
+  @override
+  String get reportStaffAssignment => 'Phân công nhân viên';
+
+  @override
+  String get reportStaffUnassigned => 'Chưa phân công nhân viên';
+
+  @override
+  String get reportDescriptionSectionHelp =>
+      'Thông tin chi tiết được cung cấp cùng báo cáo.';
+
+  @override
+  String get reportNoDescription => 'Chưa có mô tả.';
+
+  @override
+  String get reportSubmittedAnonymously => 'Đã gửi ẩn danh';
+
+  @override
+  String get reportSubmittedPublicly => 'Đã gửi công khai';
+
+  @override
+  String get reportLocationSectionHelp => 'Vị trí sự cố được báo cáo.';
+
+  @override
+  String mapSelectedLocationCoordinates(Object latitude, Object longitude) {
+    return 'Tọa độ đã chọn: $latitude, $longitude';
+  }
+
+  @override
+  String get reportOverviewTitle => 'Tổng quan báo cáo';
+
+  @override
+  String get reportOverviewDescription => 'Thông tin chính về sự cố này.';
+
+  @override
+  String get mapExploreCityIssuesTitle => 'Khám phá sự cố đô thị';
+
+  @override
+  String get mapExploreCityIssuesDescription =>
+      'Tìm kiếm trên bản đồ và xem các báo cáo gần bạn.';
+
+  @override
+  String get mapNearbyReportsTitle => 'Báo cáo lân cận';
+
+  @override
+  String get mapNearbyReportsDescription =>
+      'Xem các sự cố đang mở trong khu vực hiển thị.';
+
+  @override
+  String get mapShowMyReports => 'Hiện báo cáo của tôi';
+
+  @override
+  String get mapLoadingNearbyReports => 'Đang tải báo cáo lân cận…';
+
+  @override
+  String get mapNoReportsHelp =>
+      'Di chuyển bản đồ hoặc đổi bộ lọc để khám phá khu vực khác.';
+
+  @override
+  String get mapUnavailableTitle => 'Không thể hiển thị bản đồ';
+
+  @override
+  String get mapCheckNearbyReportsTooltip => 'Kiểm tra báo cáo lân cận';
+
+  @override
+  String get mapUseCurrentLocationTooltip => 'Dùng vị trí hiện tại';
+
+  @override
+  String get mapMovePinInstruction =>
+      'Di chuyển bản đồ đến khi ghim nằm chính xác trên sự cố.';
+
+  @override
+  String mapNearbyReportCount(num count, Object distance) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: 'Tìm thấy $count báo cáo hiện có trong phạm vi $distance mét.',
+      one: 'Tìm thấy 1 báo cáo hiện có trong phạm vi $distance mét.',
+      zero: 'Không tìm thấy báo cáo nào trong phạm vi $distance mét.',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get mapCloseTooltip => 'Đóng bản đồ';
+
+  @override
+  String get staffCompleteIntro =>
+      'Bổ sung bằng chứng rõ ràng để giám sát viên có thể xem xét công việc đã hoàn thành.';
+
+  @override
+  String get staffCompleteChecklistTitle => 'Trước khi gửi';
+
+  @override
+  String get staffCompleteChecklistWorkDone =>
+      'Xác nhận công việc được giao đã hoàn thành.';
+
+  @override
+  String get staffCompleteChecklistPhotosAdded =>
+      'Tải lên ảnh rõ ràng sau khi xử lý.';
+
+  @override
+  String get staffCompleteChecklistNoteClear =>
+      'Thêm ghi chú hoàn thành ngắn gọn.';
+
+  @override
+  String get staffCompleteNoteHelp =>
+      'Mô tả nội dung đã hoàn thành và những điều người duyệt cần biết.';
+
+  @override
+  String get staffCompleteNoteHint =>
+      'Ví dụ: Đã thay đèn bị hỏng và kiểm tra hoạt động.';
+
+  @override
+  String get overseerReportOperations => 'Thao tác báo cáo';
 }

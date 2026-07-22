@@ -64,6 +64,7 @@ class Report {
     required this.createdAt,
     required this.updatedAt,
     required this.createdBy,
+    this.assignedStaff,
   });
 
   final String id;
@@ -82,6 +83,7 @@ class Report {
   final DateTime createdAt;
   final DateTime updatedAt;
   final ReportUserSummary? createdBy;
+  final ReportUserSummary? assignedStaff;
 
   String get photoLabel {
     final value = beforePhotoUrl?.trim();
@@ -110,6 +112,11 @@ class Report {
           : ReportUserSummary.fromJson(
               json['createdBy'] as Map<String, dynamic>,
             ),
+      assignedStaff: json['assignedStaff'] == null
+          ? null
+          : ReportUserSummary.fromJson(
+              json['assignedStaff'] as Map<String, dynamic>,
+            ),
     );
   }
 
@@ -130,6 +137,7 @@ class Report {
     DateTime? createdAt,
     DateTime? updatedAt,
     ReportUserSummary? createdBy,
+    ReportUserSummary? assignedStaff,
   }) {
     return Report(
       id: id ?? this.id,
@@ -148,6 +156,7 @@ class Report {
       createdAt: createdAt ?? this.createdAt,
       updatedAt: updatedAt ?? this.updatedAt,
       createdBy: createdBy ?? this.createdBy,
+      assignedStaff: assignedStaff ?? this.assignedStaff,
     );
   }
 }

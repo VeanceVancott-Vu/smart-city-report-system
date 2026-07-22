@@ -82,7 +82,7 @@ class CitizenReportListScreenState extends State<CitizenReportListScreen> {
         heroTag: 'citizen_report_list_create_report',
         onPressed: openCreateReport,
         icon: const Icon(Icons.add),
-        label: const Text('New report'),
+        label: Text(context.l10n.reportNew),
       ),
       body: SafeArea(
         child: LayoutBuilder(
@@ -106,7 +106,7 @@ class CitizenReportListScreenState extends State<CitizenReportListScreen> {
 
                       if (snapshot.hasError) {
                         return _ErrorState(
-                          message: 'Unable to load your reports.',
+                          message: context.l10n.reportsLoadFailed,
                           onRetry: reload,
                         );
                       }
@@ -118,11 +118,15 @@ class CitizenReportListScreenState extends State<CitizenReportListScreen> {
                             r.status == _selectedStatus;
                         final matchesQuery =
                             r.title.toLowerCase().contains(
-                                  _searchQuery.toLowerCase(),
-                                ) ||
+                              _searchQuery.toLowerCase(),
+                            ) ||
                             r.category.label.toLowerCase().contains(
-                                  _searchQuery.toLowerCase(),
-                                );
+                              _searchQuery.toLowerCase(),
+                            ) ||
+                            r.category
+                                .localizedLabel(context)
+                                .toLowerCase()
+                                .contains(_searchQuery.toLowerCase());
                         return matchesStatus && matchesQuery;
                       }).toList();
 
@@ -136,8 +140,7 @@ class CitizenReportListScreenState extends State<CitizenReportListScreen> {
                         );
                       } else if (_sortBy == 'Priority') {
                         filteredReports.sort(
-                          (a, b) =>
-                              b.priorityScore.compareTo(a.priorityScore),
+                          (a, b) => b.priorityScore.compareTo(a.priorityScore),
                         );
                       }
 
@@ -195,11 +198,12 @@ class CitizenReportListScreenState extends State<CitizenReportListScreen> {
                                                 const SizedBox(height: 12),
                                             itemBuilder: (context, index) =>
                                                 _DesktopReportRow(
-                                              report: filteredReports[index],
-                                              onTap: () => _openDetails(
-                                                filteredReports[index].id,
-                                              ),
-                                            ),
+                                                  report:
+                                                      filteredReports[index],
+                                                  onTap: () => _openDetails(
+                                                    filteredReports[index].id,
+                                                  ),
+                                                ),
                                           )
                                         : ListView.separated(
                                             padding: const EdgeInsets.fromLTRB(
@@ -213,11 +217,12 @@ class CitizenReportListScreenState extends State<CitizenReportListScreen> {
                                                 const SizedBox(height: 12),
                                             itemBuilder: (context, index) =>
                                                 _ReportTile(
-                                              report: filteredReports[index],
-                                              onTap: () => _openDetails(
-                                                filteredReports[index].id,
-                                              ),
-                                            ),
+                                                  report:
+                                                      filteredReports[index],
+                                                  onTap: () => _openDetails(
+                                                    filteredReports[index].id,
+                                                  ),
+                                                ),
                                           ),
                                   ),
                           ),
@@ -279,14 +284,14 @@ class _PageHeader extends StatelessWidget {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
-                  'My reports',
+                  context.l10n.homeMyReports,
                   style: theme.textTheme.headlineSmall?.copyWith(
                     fontWeight: FontWeight.w800,
                   ),
                 ),
                 const SizedBox(height: 3),
                 Text(
-                  'Track the progress of issues you have submitted.',
+                  context.l10n.reportsTrackProgressDescription,
                   style: theme.textTheme.bodyMedium?.copyWith(
                     color: colorScheme.onSurfaceVariant,
                   ),
@@ -295,7 +300,7 @@ class _PageHeader extends StatelessWidget {
             ),
           ),
           IconButton(
-            tooltip: 'Refresh reports',
+            tooltip: context.l10n.commonRefresh,
             onPressed: onRefresh,
             icon: const Icon(Icons.refresh),
           ),
@@ -304,7 +309,7 @@ class _PageHeader extends StatelessWidget {
             FilledButton.icon(
               onPressed: onCreate,
               icon: const Icon(Icons.add),
-              label: const Text('New report'),
+              label: Text(context.l10n.reportNew),
             ),
           ],
         ],
@@ -334,6 +339,18 @@ class _Toolbar extends StatelessWidget {
   final ValueChanged<ReportStatus?> onStatusChanged;
   final ValueChanged<String> onSortChanged;
 
+  String _localizedSortLabel(BuildContext context, String value) {
+    switch (value) {
+      case 'Oldest':
+        return context.l10n.reportsSortOldest;
+      case 'Priority':
+        return context.l10n.reportsSortPriority;
+      case 'Newest':
+      default:
+        return context.l10n.reportsSortNewest;
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     final colorScheme = Theme.of(context).colorScheme;
@@ -350,11 +367,11 @@ class _Toolbar extends StatelessWidget {
                   controller: searchController,
                   onChanged: onSearchChanged,
                   decoration: InputDecoration(
-                    hintText: 'Search reports',
+                    hintText: context.l10n.reportsSearchHint,
                     prefixIcon: const Icon(Icons.search),
                     suffixIcon: searchQuery.isNotEmpty
                         ? IconButton(
-                            tooltip: 'Clear search',
+                            tooltip: context.l10n.commonClearSearch,
                             onPressed: onClearSearch,
                             icon: const Icon(Icons.close),
                           )
@@ -372,19 +389,19 @@ class _Toolbar extends StatelessWidget {
               PopupMenuButton<String>(
                 initialValue: sortBy,
                 onSelected: onSortChanged,
-                tooltip: 'Sort reports',
-                itemBuilder: (context) => const [
+                tooltip: context.l10n.reportsSortTooltip,
+                itemBuilder: (context) => [
                   PopupMenuItem(
                     value: 'Newest',
-                    child: Text('Newest first'),
+                    child: Text(context.l10n.reportsSortNewest),
                   ),
                   PopupMenuItem(
                     value: 'Oldest',
-                    child: Text('Oldest first'),
+                    child: Text(context.l10n.reportsSortOldest),
                   ),
                   PopupMenuItem(
                     value: 'Priority',
-                    child: Text('Highest priority'),
+                    child: Text(context.l10n.reportsSortPriority),
                   ),
                 ],
                 child: Container(
@@ -400,7 +417,7 @@ class _Toolbar extends StatelessWidget {
                     children: [
                       const Icon(Icons.sort),
                       const SizedBox(width: 8),
-                      Text(sortBy),
+                      Text(_localizedSortLabel(context, sortBy)),
                       const SizedBox(width: 4),
                       const Icon(Icons.keyboard_arrow_down),
                     ],
@@ -416,7 +433,7 @@ class _Toolbar extends StatelessWidget {
               scrollDirection: Axis.horizontal,
               children: [
                 ChoiceChip(
-                  label: const Text('All'),
+                  label: Text(context.l10n.commonAll),
                   selected: selectedStatus == null,
                   onSelected: (_) => onStatusChanged(null),
                 ),
@@ -477,10 +494,7 @@ class _ReportTile extends StatelessWidget {
                 ),
                 clipBehavior: Clip.antiAlias,
                 child: photoUrl != null
-                    ? UploadedPhotoImage(
-                        fileUrl: photoUrl,
-                        fit: BoxFit.cover,
-                      )
+                    ? UploadedPhotoImage(fileUrl: photoUrl, fit: BoxFit.cover)
                     : Icon(
                         Icons.image_outlined,
                         color: colorScheme.onSurfaceVariant,
@@ -511,7 +525,8 @@ class _ReportTile extends StatelessWidget {
                     ),
                     const SizedBox(height: 8),
                     Text(
-                      report.addressText ?? 'Address not available',
+                      report.addressText ??
+                          context.l10n.commonAddressUnavailable,
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
                       style: theme.textTheme.bodySmall?.copyWith(
@@ -529,7 +544,9 @@ class _ReportTile extends StatelessWidget {
                         ),
                         _MetaChip(
                           icon: Icons.trending_up,
-                          label: 'Priority ${report.priorityScore}',
+                          label: context.l10n.priorityValue(
+                            report.priorityScore,
+                          ),
                         ),
                         _MetaChip(
                           icon: Icons.thumb_up_alt_outlined,
@@ -583,10 +600,7 @@ class _DesktopReportRow extends StatelessWidget {
                   borderRadius: BorderRadius.circular(12),
                 ),
                 child: photoUrl != null
-                    ? UploadedPhotoImage(
-                        fileUrl: photoUrl,
-                        fit: BoxFit.cover,
-                      )
+                    ? UploadedPhotoImage(fileUrl: photoUrl, fit: BoxFit.cover)
                     : Icon(
                         Icons.image_outlined,
                         color: colorScheme.onSurfaceVariant,
@@ -608,7 +622,8 @@ class _DesktopReportRow extends StatelessWidget {
                     ),
                     const SizedBox(height: 5),
                     Text(
-                      report.addressText ?? 'Address not available',
+                      report.addressText ??
+                          context.l10n.commonAddressUnavailable,
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
                       style: theme.textTheme.bodySmall?.copyWith(
@@ -624,25 +639,20 @@ class _DesktopReportRow extends StatelessWidget {
                   style: theme.textTheme.bodyMedium,
                 ),
               ),
-              Expanded(
-                child: _StatusBadge(status: report.status),
-              ),
+              Expanded(child: _StatusBadge(status: report.status)),
               Expanded(
                 child: Text(
-                  'Priority ${report.priorityScore}',
+                  context.l10n.priorityValue(report.priorityScore),
                   style: theme.textTheme.bodyMedium,
                 ),
               ),
               Expanded(
                 child: Text(
-                  '${report.upvoteCount} confirmations',
+                  context.l10n.confirmationCount(report.upvoteCount),
                   style: theme.textTheme.bodyMedium,
                 ),
               ),
-              Icon(
-                Icons.chevron_right,
-                color: colorScheme.onSurfaceVariant,
-              ),
+              Icon(Icons.chevron_right, color: colorScheme.onSurfaceVariant),
             ],
           ),
         ),
@@ -724,9 +734,9 @@ class _MetaChip extends StatelessWidget {
           Text(
             label,
             style: Theme.of(context).textTheme.labelSmall?.copyWith(
-                  color: colorScheme.onSurfaceVariant,
-                  fontWeight: FontWeight.w600,
-                ),
+              color: colorScheme.onSurfaceVariant,
+              fontWeight: FontWeight.w600,
+            ),
           ),
         ],
       ),
@@ -739,13 +749,13 @@ class _LoadingState extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return const Center(
+    return Center(
       child: Column(
         mainAxisSize: MainAxisSize.min,
         children: [
-          CircularProgressIndicator(),
-          SizedBox(height: 16),
-          Text('Loading your reports…'),
+          const CircularProgressIndicator(),
+          const SizedBox(height: 16),
+          Text(context.l10n.reportsLoading),
         ],
       ),
     );
@@ -778,15 +788,15 @@ class _EmptyState extends StatelessWidget {
         children: [
           const SizedBox(height: 64),
           Icon(
-            hasFilters
-                ? Icons.search_off_outlined
-                : Icons.assignment_outlined,
+            hasFilters ? Icons.search_off_outlined : Icons.assignment_outlined,
             size: 62,
             color: colorScheme.primary,
           ),
           const SizedBox(height: 18),
           Text(
-            hasFilters ? 'No matching reports' : 'No reports yet',
+            hasFilters
+                ? context.l10n.reportsNoMatches
+                : context.l10n.reportsEmpty,
             textAlign: TextAlign.center,
             style: theme.textTheme.headlineSmall?.copyWith(
               fontWeight: FontWeight.w800,
@@ -795,8 +805,8 @@ class _EmptyState extends StatelessWidget {
           const SizedBox(height: 8),
           Text(
             hasFilters
-                ? 'Try changing your search or filters.'
-                : 'Create your first report to start tracking an issue.',
+                ? context.l10n.reportsNoMatchesHelp
+                : context.l10n.reportsEmptyHelp,
             textAlign: TextAlign.center,
             style: theme.textTheme.bodyMedium?.copyWith(
               color: colorScheme.onSurfaceVariant,
@@ -808,12 +818,12 @@ class _EmptyState extends StatelessWidget {
                 ? OutlinedButton.icon(
                     onPressed: onClearFilters,
                     icon: const Icon(Icons.filter_alt_off_outlined),
-                    label: const Text('Clear filters'),
+                    label: Text(context.l10n.commonClearFilters),
                   )
                 : FilledButton.icon(
                     onPressed: onCreate,
                     icon: const Icon(Icons.add),
-                    label: const Text('Create report'),
+                    label: Text(context.l10n.reportCreateTitle),
                   ),
           ),
         ],
@@ -848,7 +858,7 @@ class _ErrorState extends StatelessWidget {
               ),
               const SizedBox(height: 16),
               Text(
-                'Unable to load reports',
+                context.l10n.reportsLoadFailed,
                 style: theme.textTheme.titleLarge?.copyWith(
                   fontWeight: FontWeight.w800,
                 ),
@@ -865,7 +875,7 @@ class _ErrorState extends StatelessWidget {
               FilledButton.icon(
                 onPressed: onRetry,
                 icon: const Icon(Icons.refresh),
-                label: const Text('Try again'),
+                label: Text(context.l10n.commonRetry),
               ),
             ],
           ),

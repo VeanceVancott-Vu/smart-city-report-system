@@ -108,90 +108,214 @@ class _OverseerReportDetailScreenState
               child: LayoutBuilder(
                 builder: (context, constraints) {
                   final wide = constraints.maxWidth >= 920;
-                  final summary = Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-                    Container(
-                      padding: const EdgeInsets.all(24),
-                      decoration: BoxDecoration(color: const Color(0xFF123B38), borderRadius: BorderRadius.circular(24)),
-                      child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-                        Row(children: [Container(width: 46, height: 46, decoration: BoxDecoration(color: Colors.white.withValues(alpha: .12), borderRadius: BorderRadius.circular(14)), child: const Icon(Icons.report_gmailerrorred_outlined, color: Colors.white)), const Spacer(), _InfoChip(icon: Icons.flag_outlined, label: report.status.localizedLabel(context))]),
-                        const SizedBox(height: 18),
-                        Text(report.title, style: Theme.of(context).textTheme.headlineSmall?.copyWith(color: Colors.white, fontWeight: FontWeight.w800, height: 1.25)),
-                        const SizedBox(height: 14),
-                        Wrap(spacing: 8, runSpacing: 8, children: [_InfoChip(icon: Icons.category_outlined, label: report.category.localizedLabel(context)), _InfoChip(icon: Icons.trending_up, label: context.l10n.priorityValue(report.priorityScore))]),
-                      ]),
-                    ),
-                    _Section(title: context.l10n.commonDescription, icon: Icons.notes_outlined, child: Text(report.description)),
-                    _Section(
-                      title: context.l10n.commonLocation,
-                      icon: Icons.map_outlined,
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          InkWell(
-                            onTap: () {
-                              setState(() {
-                                _showMap = true;
-                              });
-                            },
-                            borderRadius: BorderRadius.circular(8),
-                            child: Padding(
-                              padding: const EdgeInsets.symmetric(vertical: 4, horizontal: 8),
-                              child: Row(
-                                mainAxisSize: MainAxisSize.min,
-                                children: [
-                                  Text(
-                                    context.l10n.coordinatesValue(
-                                      report.latitude.toStringAsFixed(6),
-                                      report.longitude.toStringAsFixed(6),
-                                    ),
-                                    style: TextStyle(
-                                      color: Theme.of(context).colorScheme.primary,
-                                      fontWeight: FontWeight.w700,
-                                      decoration: TextDecoration.underline,
-                                    ),
+                  final summary = Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Container(
+                        padding: const EdgeInsets.all(24),
+                        decoration: BoxDecoration(
+                          color: const Color(0xFF123B38),
+                          borderRadius: BorderRadius.circular(24),
+                        ),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Row(
+                              children: [
+                                Container(
+                                  width: 46,
+                                  height: 46,
+                                  decoration: BoxDecoration(
+                                    color: Colors.white.withValues(alpha: .12),
+                                    borderRadius: BorderRadius.circular(14),
                                   ),
-                                  const SizedBox(width: 8),
-                                  Icon(
-                                    Icons.open_in_new_rounded,
-                                    size: 16,
-                                    color: Theme.of(context).colorScheme.primary,
+                                  child: const Icon(
+                                    Icons.report_gmailerrorred_outlined,
+                                    color: Colors.white,
                                   ),
-                                ],
-                              ),
+                                ),
+                                const Spacer(),
+                                _InfoChip(
+                                  icon: Icons.flag_outlined,
+                                  label: report.status.localizedLabel(context),
+                                ),
+                              ],
                             ),
-                          ),
-                          if ((report.addressText ?? '').trim().isNotEmpty) ...[
-                            const SizedBox(height: 8),
-                            Padding(
-                              padding: const EdgeInsets.symmetric(horizontal: 8),
-                              child: Text(report.addressText!),
+                            const SizedBox(height: 18),
+                            Text(
+                              report.title,
+                              style: Theme.of(context).textTheme.headlineSmall
+                                  ?.copyWith(
+                                    color: Colors.white,
+                                    fontWeight: FontWeight.w800,
+                                    height: 1.25,
+                                  ),
+                            ),
+                            const SizedBox(height: 14),
+                            Wrap(
+                              spacing: 8,
+                              runSpacing: 8,
+                              children: [
+                                _InfoChip(
+                                  icon: Icons.category_outlined,
+                                  label: report.category.localizedLabel(
+                                    context,
+                                  ),
+                                ),
+                                _InfoChip(
+                                  icon: Icons.trending_up,
+                                  label: context.l10n.priorityValue(
+                                    report.priorityScore,
+                                  ),
+                                ),
+                              ],
                             ),
                           ],
-                        ],
+                        ),
                       ),
-                    ),
-                    _Section(title: context.l10n.commonBeforePhoto, icon: Icons.photo_outlined, child: UploadedPhotoView(fileUrl: report.beforePhotoUrl)),
-                  ]);
-                  final side = Column(children: [
-                    _Section(title: context.l10n.reportCreatedBy, icon: Icons.person_outline, child: Text(report.createdBy?.fullName ?? context.l10n.commonUnknownUser)),
-                    const SizedBox(height: 14),
-                    SizedBox(width: double.infinity, child: FilledButton.icon(onPressed: canCreateTask ? () => _createTask(report) : null, icon: const Icon(Icons.add_task_outlined), label: Text(context.l10n.taskCreateFromReport), style: FilledButton.styleFrom(padding: const EdgeInsets.symmetric(vertical: 16)))),
-                    if (_showMap) ...[
-                      const SizedBox(height: 16),
-                      _MapSection(
-                        latitude: report.latitude,
-                        longitude: report.longitude,
-                        onClose: () {
-                          setState(() {
-                            _showMap = false;
-                          });
-                        },
+                      _Section(
+                        title: context.l10n.commonDescription,
+                        icon: Icons.notes_outlined,
+                        child: Text(report.description),
+                      ),
+                      _Section(
+                        title: context.l10n.commonLocation,
+                        icon: Icons.map_outlined,
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            InkWell(
+                              onTap: () {
+                                setState(() {
+                                  _showMap = true;
+                                });
+                              },
+                              borderRadius: BorderRadius.circular(8),
+                              child: Padding(
+                                padding: const EdgeInsets.symmetric(
+                                  vertical: 4,
+                                  horizontal: 8,
+                                ),
+                                child: Row(
+                                  mainAxisSize: MainAxisSize.min,
+                                  children: [
+                                    Text(
+                                      context.l10n.coordinatesValue(
+                                        report.latitude.toStringAsFixed(6),
+                                        report.longitude.toStringAsFixed(6),
+                                      ),
+                                      style: TextStyle(
+                                        color: Theme.of(
+                                          context,
+                                        ).colorScheme.primary,
+                                        fontWeight: FontWeight.w700,
+                                        decoration: TextDecoration.underline,
+                                      ),
+                                    ),
+                                    const SizedBox(width: 8),
+                                    Icon(
+                                      Icons.open_in_new_rounded,
+                                      size: 16,
+                                      color: Theme.of(
+                                        context,
+                                      ).colorScheme.primary,
+                                    ),
+                                  ],
+                                ),
+                              ),
+                            ),
+                            if ((report.addressText ?? '')
+                                .trim()
+                                .isNotEmpty) ...[
+                              const SizedBox(height: 8),
+                              Padding(
+                                padding: const EdgeInsets.symmetric(
+                                  horizontal: 8,
+                                ),
+                                child: Text(report.addressText!),
+                              ),
+                            ],
+                          ],
+                        ),
+                      ),
+                      _Section(
+                        title: context.l10n.commonBeforePhoto,
+                        icon: Icons.photo_outlined,
+                        child: UploadedPhotoView(
+                          fileUrl: report.beforePhotoUrl,
+                        ),
                       ),
                     ],
-                  ]);
+                  );
+                  final side = Column(
+                    children: [
+                      _Section(
+                        title: context.l10n.reportCreatedBy,
+                        icon: Icons.person_outline,
+                        child: Text(
+                          report.createdBy?.fullName ??
+                              context.l10n.commonUnknownUser,
+                        ),
+                      ),
+                      const SizedBox(height: 14),
+                      SizedBox(
+                        width: double.infinity,
+                        child: FilledButton.icon(
+                          onPressed: canCreateTask
+                              ? () => _createTask(report)
+                              : null,
+                          icon: const Icon(Icons.add_task_outlined),
+                          label: Text(context.l10n.taskCreateFromReport),
+                          style: FilledButton.styleFrom(
+                            padding: const EdgeInsets.symmetric(vertical: 16),
+                          ),
+                        ),
+                      ),
+                      if (_showMap) ...[
+                        const SizedBox(height: 16),
+                        _MapSection(
+                          latitude: report.latitude,
+                          longitude: report.longitude,
+                          onClose: () {
+                            setState(() {
+                              _showMap = false;
+                            });
+                          },
+                        ),
+                      ],
+                    ],
+                  );
                   return ListView(
                     padding: const EdgeInsets.fromLTRB(20, 20, 20, 112),
-                    children: [Center(child: ConstrainedBox(constraints: const BoxConstraints(maxWidth: 1180), child: wide ? Row(crossAxisAlignment: CrossAxisAlignment.start, children: [Expanded(flex: _showMap ? 6 : 7, child: summary), const SizedBox(width: 18), Expanded(flex: _showMap ? 4 : 3, child: side)]) : Column(children: [summary, const SizedBox(height: 16), side])) )],
+                    children: [
+                      Center(
+                        child: ConstrainedBox(
+                          constraints: const BoxConstraints(maxWidth: 1180),
+                          child: wide
+                              ? Row(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    Expanded(
+                                      flex: _showMap ? 6 : 7,
+                                      child: summary,
+                                    ),
+                                    const SizedBox(width: 18),
+                                    Expanded(
+                                      flex: _showMap ? 4 : 3,
+                                      child: side,
+                                    ),
+                                  ],
+                                )
+                              : Column(
+                                  children: [
+                                    summary,
+                                    const SizedBox(height: 16),
+                                    side,
+                                  ],
+                                ),
+                        ),
+                      ),
+                    ],
                   );
                 },
               ),
@@ -204,7 +328,11 @@ class _OverseerReportDetailScreenState
 }
 
 class _Section extends StatelessWidget {
-  const _Section({required this.title, required this.child, required this.icon});
+  const _Section({
+    required this.title,
+    required this.child,
+    required this.icon,
+  });
 
   final String title;
   final Widget child;
@@ -215,8 +343,38 @@ class _Section extends StatelessWidget {
     return Container(
       margin: const EdgeInsets.only(top: 16),
       padding: const EdgeInsets.all(18),
-      decoration: BoxDecoration(color: Colors.white, borderRadius: BorderRadius.circular(20), border: Border.all(color: const Color(0xFFDCE6E3))),
-      child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [Row(children: [Container(width: 34, height: 34, decoration: BoxDecoration(color: const Color(0xFFE8F3F1), borderRadius: BorderRadius.circular(10)), child: Icon(icon, size: 18, color: const Color(0xFF0F766E))), const SizedBox(width: 10), Text(title, style: Theme.of(context).textTheme.titleSmall?.copyWith(fontWeight: FontWeight.w800))]), const SizedBox(height: 14), child]),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(20),
+        border: Border.all(color: const Color(0xFFDCE6E3)),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Container(
+                width: 34,
+                height: 34,
+                decoration: BoxDecoration(
+                  color: const Color(0xFFE8F3F1),
+                  borderRadius: BorderRadius.circular(10),
+                ),
+                child: Icon(icon, size: 18, color: const Color(0xFF0F766E)),
+              ),
+              const SizedBox(width: 10),
+              Text(
+                title,
+                style: Theme.of(
+                  context,
+                ).textTheme.titleSmall?.copyWith(fontWeight: FontWeight.w800),
+              ),
+            ],
+          ),
+          const SizedBox(height: 14),
+          child,
+        ],
+      ),
     );
   }
 }
@@ -314,13 +472,13 @@ class _MapSection extends StatelessWidget {
                   child: Text(
                     context.l10n.commonLocation,
                     style: Theme.of(context).textTheme.titleSmall?.copyWith(
-                          fontWeight: FontWeight.w800,
-                        ),
+                      fontWeight: FontWeight.w800,
+                    ),
                   ),
                 ),
                 IconButton(
                   onPressed: onClose,
-                  tooltip: 'Close map',
+                  tooltip: context.l10n.mapCloseTooltip,
                   icon: const Icon(Icons.close_rounded, size: 20),
                 ),
               ],

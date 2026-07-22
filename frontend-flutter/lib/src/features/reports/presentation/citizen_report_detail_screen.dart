@@ -1,4 +1,3 @@
-import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter/material.dart';
 import 'package:flutter_map/flutter_map.dart';
 import 'package:latlong2/latlong.dart' hide Path;
@@ -6,27 +5,15 @@ import 'package:latlong2/latlong.dart' hide Path;
 import '../../../core/files/uploaded_photo_view.dart';
 import '../../../core/localization/app_localizations_extension.dart';
 import '../../../core/localization/domain_localizations.dart';
-import '../../../core/routing/app_routes.dart';
-import '../../../core/ui/app_feedback.dart';
-import '../../auth/data/auth_api_service.dart';
-import '../../auth/domain/current_user.dart';
-import '../../tasks/data/task_api_service.dart';
-import '../../tasks/domain/task.dart';
+
 import '../data/report_api_service.dart';
 import '../domain/report.dart';
 import 'report_category_visuals.dart';
 
 class CitizenReportDetailScreen extends StatefulWidget {
-  const CitizenReportDetailScreen({
-    super.key,
-    required this.reportApiService,
-    required this.authApiService,
-    required this.taskApiService,
-  });
+  const CitizenReportDetailScreen({super.key, required this.reportApiService});
 
   final ReportApiService reportApiService;
-  final AuthApiService authApiService;
-  final TaskApiService taskApiService;
 
   @override
   State<CitizenReportDetailScreen> createState() =>
@@ -35,16 +22,8 @@ class CitizenReportDetailScreen extends StatefulWidget {
 
 class _CitizenReportDetailScreenState extends State<CitizenReportDetailScreen> {
   late Future<Report> _reportFuture;
-  CurrentUser? _currentUser;
-  late Future<Task?> _assignedTaskFuture;
 
   String get _reportId => ModalRoute.of(context)!.settings.arguments! as String;
-
-  @override
-  void initState() {
-    super.initState();
-    _loadCurrentUser();
-  }
 
   @override
   void didChangeDependencies() {
@@ -54,32 +33,6 @@ class _CitizenReportDetailScreenState extends State<CitizenReportDetailScreen> {
 
   void _loadReport() {
     _reportFuture = widget.reportApiService.fetchReport(_reportId);
-    _assignedTaskFuture = _loadAssignedTask();
-  }
-
-  Future<Task?> _loadAssignedTask() async {
-    try {
-      final tasks = await widget.taskApiService.fetchTasks();
-      for (final task in tasks) {
-        if (task.reportIds.contains(_reportId)) {
-          return task;
-        }
-      }
-    } catch (_) {
-      // The report remains usable even if task data is temporarily unavailable.
-    }
-    return null;
-  }
-
-  Future<void> _loadCurrentUser() async {
-    try {
-      final user = await widget.authApiService.getCurrentUser();
-      if (mounted) {
-        setState(() {
-          _currentUser = user;
-        });
-      }
-    } catch (_) {}
   }
 
   Future<void> _openFullPhoto(String url) async {
@@ -100,7 +53,7 @@ class _CitizenReportDetailScreenState extends State<CitizenReportDetailScreen> {
       backgroundColor: colorScheme.surfaceContainerLowest,
       appBar: AppBar(
         title: Text(
-          'Report details',
+          context.l10n.reportDetailsTitle,
           style: theme.textTheme.titleLarge?.copyWith(
             fontWeight: FontWeight.w700,
           ),
@@ -110,7 +63,7 @@ class _CitizenReportDetailScreenState extends State<CitizenReportDetailScreen> {
         elevation: 0,
         scrolledUnderElevation: 1,
         leading: IconButton(
-          tooltip: 'Back',
+          tooltip: context.l10n.commonBack,
           icon: const Icon(Icons.arrow_back),
           onPressed: () => Navigator.of(context).pop(),
         ),
@@ -124,7 +77,7 @@ class _CitizenReportDetailScreenState extends State<CitizenReportDetailScreen> {
 
           if (snapshot.hasError) {
             return _ErrorState(
-              message: 'We could not load this report right now.',
+              message: context.l10n.reportLoadFailed,
               onSecondary: _loadReport,
             );
           }
@@ -210,10 +163,12 @@ class _CitizenReportDetailScreenState extends State<CitizenReportDetailScreen> {
       decoration: BoxDecoration(
         color: colorScheme.surface,
         borderRadius: BorderRadius.circular(24),
-        border: Border.all(color: colorScheme.outlineVariant.withOpacity(0.75)),
+        border: Border.all(
+          color: colorScheme.outlineVariant.withValues(alpha: 0.75),
+        ),
         boxShadow: [
           BoxShadow(
-            color: colorScheme.shadow.withOpacity(0.05),
+            color: colorScheme.shadow.withValues(alpha: 0.05),
             blurRadius: 24,
             offset: const Offset(0, 10),
           ),
@@ -285,7 +240,7 @@ class _CitizenReportDetailScreenState extends State<CitizenReportDetailScreen> {
                 right: 14,
                 bottom: 14,
                 child: Material(
-                  color: colorScheme.surface.withOpacity(0.92),
+                  color: colorScheme.surface.withValues(alpha: 0.92),
                   borderRadius: BorderRadius.circular(12),
                   child: Padding(
                     padding: const EdgeInsets.symmetric(
@@ -302,7 +257,7 @@ class _CitizenReportDetailScreenState extends State<CitizenReportDetailScreen> {
                         ),
                         const SizedBox(width: 6),
                         Text(
-                          'View photo',
+                          context.l10n.reportViewPhoto,
                           style: Theme.of(context).textTheme.labelLarge,
                         ),
                       ],
@@ -343,11 +298,11 @@ class _CitizenReportDetailScreenState extends State<CitizenReportDetailScreen> {
             ),
             _InfoChip(
               icon: Icons.trending_up,
-              label: 'Priority ${report.priorityScore}',
+              label: context.l10n.priorityValue(report.priorityScore),
             ),
             _InfoChip(
               icon: Icons.thumb_up_alt_outlined,
-              label: '${report.upvoteCount} confirmations',
+              label: context.l10n.confirmationCount(report.upvoteCount),
             ),
           ],
         ),
@@ -360,13 +315,11 @@ class _CitizenReportDetailScreenState extends State<CitizenReportDetailScreen> {
     final colorScheme = theme.colorScheme;
 
     return _SectionSurface(
-      title: 'Current status',
-      subtitle: 'Track how this report is being handled.',
-      child: FutureBuilder<Task?>(
-        future: _assignedTaskFuture,
-        builder: (context, snapshot) {
-          final task = snapshot.data;
-          final staff = task?.assignedStaff;
+      title: context.l10n.reportCurrentStatusTitle,
+      subtitle: context.l10n.reportCurrentStatusDescription,
+      child: Builder(
+        builder: (context) {
+          final staff = report.assignedStaff;
 
           return Column(
             crossAxisAlignment: CrossAxisAlignment.start,
@@ -399,14 +352,14 @@ class _CitizenReportDetailScreenState extends State<CitizenReportDetailScreen> {
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
                               Text(
-                                'Staff assignment',
+                                context.l10n.reportStaffAssignment,
                                 style: theme.textTheme.titleSmall?.copyWith(
                                   fontWeight: FontWeight.w700,
                                 ),
                               ),
                               const SizedBox(height: 4),
                               Text(
-                                'A staff member has not been assigned yet.',
+                                context.l10n.reportStaffUnassigned,
                                 style: theme.textTheme.bodyMedium?.copyWith(
                                   color: colorScheme.onSurfaceVariant,
                                 ),
@@ -417,7 +370,7 @@ class _CitizenReportDetailScreenState extends State<CitizenReportDetailScreen> {
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
                               Text(
-                                'Assigned staff',
+                                context.l10n.taskAssignedStaff,
                                 style: theme.textTheme.labelLarge?.copyWith(
                                   color: colorScheme.onSurfaceVariant,
                                 ),
@@ -430,7 +383,7 @@ class _CitizenReportDetailScreenState extends State<CitizenReportDetailScreen> {
                                 ),
                               ),
                               Text(
-                                staff.role,
+                                _localizedRole(staff.role),
                                 style: theme.textTheme.bodySmall?.copyWith(
                                   color: colorScheme.onSurfaceVariant,
                                 ),
@@ -438,12 +391,6 @@ class _CitizenReportDetailScreenState extends State<CitizenReportDetailScreen> {
                             ],
                           ),
                   ),
-                  if (task != null)
-                    Chip(
-                      avatar: const Icon(Icons.assignment_outlined, size: 16),
-                      label: Text(task.status.label),
-                      visualDensity: VisualDensity.compact,
-                    ),
                 ],
               ),
             ],
@@ -458,14 +405,14 @@ class _CitizenReportDetailScreenState extends State<CitizenReportDetailScreen> {
     final colorScheme = theme.colorScheme;
 
     return _SectionSurface(
-      title: 'Description',
-      subtitle: 'Details provided with the original report.',
+      title: context.l10n.commonDescription,
+      subtitle: context.l10n.reportDescriptionSectionHelp,
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Text(
             report.description.isEmpty
-                ? 'No additional description was provided.'
+                ? context.l10n.reportNoDescription
                 : report.description,
             style: theme.textTheme.bodyLarge?.copyWith(
               height: 1.6,
@@ -488,8 +435,8 @@ class _CitizenReportDetailScreenState extends State<CitizenReportDetailScreen> {
               Expanded(
                 child: Text(
                   report.anonymous
-                      ? 'Submitted anonymously'
-                      : 'Submitted from a public profile',
+                      ? context.l10n.reportSubmittedAnonymously
+                      : context.l10n.reportSubmittedPublicly,
                   style: theme.textTheme.bodySmall?.copyWith(
                     color: colorScheme.onSurfaceVariant,
                     fontWeight: FontWeight.w600,
@@ -509,8 +456,8 @@ class _CitizenReportDetailScreenState extends State<CitizenReportDetailScreen> {
     final reportLatLng = LatLng(report.latitude, report.longitude);
 
     return _SectionSurface(
-      title: 'Location',
-      subtitle: 'The position attached to this report.',
+      title: context.l10n.commonLocation,
+      subtitle: context.l10n.reportLocationSectionHelp,
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
@@ -531,9 +478,10 @@ class _CitizenReportDetailScreenState extends State<CitizenReportDetailScreen> {
                     ..showSnackBar(
                       SnackBar(
                         content: Text(
-                          'Selected location: '
-                          '${point.latitude.toStringAsFixed(6)}, '
-                          '${point.longitude.toStringAsFixed(6)}',
+                          context.l10n.mapSelectedLocationCoordinates(
+                            point.latitude.toStringAsFixed(6),
+                            point.longitude.toStringAsFixed(6),
+                          ),
                         ),
                         duration: const Duration(seconds: 2),
                       ),
@@ -557,7 +505,7 @@ class _CitizenReportDetailScreenState extends State<CitizenReportDetailScreen> {
                           shape: BoxShape.circle,
                           boxShadow: [
                             BoxShadow(
-                              color: colorScheme.shadow.withOpacity(0.2),
+                              color: colorScheme.shadow.withValues(alpha: 0.2),
                               blurRadius: 10,
                               offset: const Offset(0, 4),
                             ),
@@ -597,7 +545,8 @@ class _CitizenReportDetailScreenState extends State<CitizenReportDetailScreen> {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
-                      report.addressText ?? 'Address not available',
+                      report.addressText ??
+                          context.l10n.commonAddressUnavailable,
                       style: theme.textTheme.titleSmall?.copyWith(
                         fontWeight: FontWeight.w700,
                       ),
@@ -622,30 +571,43 @@ class _CitizenReportDetailScreenState extends State<CitizenReportDetailScreen> {
 
   Widget _buildReportMetaSection(Report report) {
     return _SectionSurface(
-      title: 'Report overview',
-      subtitle: 'Quick reference information.',
+      title: context.l10n.reportOverviewTitle,
+      subtitle: context.l10n.reportOverviewDescription,
       child: Column(
         children: [
           _MetaRow(
             icon: reportCategoryIcon(report.category),
-            label: 'Category',
+            label: context.l10n.commonCategory,
             value: report.category.localizedLabel(context),
           ),
           const SizedBox(height: 14),
           _MetaRow(
             icon: Icons.trending_up,
-            label: 'Priority score',
+            label: context.l10n.commonPriorityScore,
             value: '${report.priorityScore}',
           ),
           const SizedBox(height: 14),
           _MetaRow(
             icon: Icons.thumb_up_alt_outlined,
-            label: 'Confirmations',
+            label: context.l10n.commonConfirmations,
             value: '${report.upvoteCount}',
           ),
         ],
       ),
     );
+  }
+
+  String _localizedRole(String role) {
+    switch (role.trim().toUpperCase()) {
+      case 'CITIZEN':
+        return context.l10n.roleCitizen;
+      case 'STAFF':
+        return context.l10n.roleStaff;
+      case 'OVERSEER':
+        return context.l10n.roleOverseer;
+      default:
+        return role;
+    }
   }
 }
 
@@ -671,7 +633,9 @@ class _SectionSurface extends StatelessWidget {
       decoration: BoxDecoration(
         color: colorScheme.surface,
         borderRadius: BorderRadius.circular(20),
-        border: Border.all(color: colorScheme.outlineVariant.withOpacity(0.75)),
+        border: Border.all(
+          color: colorScheme.outlineVariant.withValues(alpha: 0.75),
+        ),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -718,23 +682,42 @@ class _StatusProgress extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final colorScheme = Theme.of(context).colorScheme;
-    final steps = const [
-      ('Submitted', Icons.inbox_outlined),
-      ('In progress', Icons.build_outlined),
-      ('Resolved', Icons.check_circle_outline),
+    final steps = [
+      (context.l10n.reportStatusSubmitted, Icons.inbox_outlined),
+      (context.l10n.reportStatusInProgress, Icons.build_outlined),
+      (context.l10n.reportStatusFixed, Icons.check_circle_outline),
     ];
 
+    Color connectorColor(bool active) =>
+        active ? colorScheme.primary : colorScheme.outlineVariant;
+
     return Row(
+      crossAxisAlignment: CrossAxisAlignment.start,
       children: List.generate(steps.length, (index) {
         final active =
             status != ReportStatus.cancelled && index <= _currentStep;
-        final isLast = index == steps.length - 1;
+        final hasLeftConnector = index > 0;
+        final hasRightConnector = index < steps.length - 1;
+        final leftConnectorActive =
+            status != ReportStatus.cancelled && index <= _currentStep;
+        final rightConnectorActive =
+            status != ReportStatus.cancelled && index < _currentStep;
 
         return Expanded(
-          child: Row(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
             children: [
-              Column(
+              Row(
                 children: [
+                  Expanded(
+                    child: Container(
+                      height: 2,
+                      margin: const EdgeInsets.only(right: 8),
+                      color: hasLeftConnector
+                          ? connectorColor(leftConnectorActive)
+                          : Colors.transparent,
+                    ),
+                  ),
                   Container(
                     width: 36,
                     height: 36,
@@ -752,28 +735,30 @@ class _StatusProgress extends StatelessWidget {
                           : colorScheme.onSurfaceVariant,
                     ),
                   ),
-                  const SizedBox(height: 6),
-                  Text(
-                    steps[index].$1,
-                    style: Theme.of(context).textTheme.labelSmall?.copyWith(
-                      color: active
-                          ? colorScheme.primary
-                          : colorScheme.onSurfaceVariant,
-                      fontWeight: active ? FontWeight.w700 : FontWeight.w500,
+                  Expanded(
+                    child: Container(
+                      height: 2,
+                      margin: const EdgeInsets.only(left: 8),
+                      color: hasRightConnector
+                          ? connectorColor(rightConnectorActive)
+                          : Colors.transparent,
                     ),
                   ),
                 ],
               ),
-              if (!isLast)
-                Expanded(
-                  child: Container(
-                    height: 2,
-                    margin: const EdgeInsets.fromLTRB(8, 0, 8, 22),
-                    color: index < _currentStep
-                        ? colorScheme.primary
-                        : colorScheme.outlineVariant,
-                  ),
+              const SizedBox(height: 6),
+              Text(
+                steps[index].$1,
+                maxLines: 2,
+                overflow: TextOverflow.ellipsis,
+                textAlign: TextAlign.center,
+                style: Theme.of(context).textTheme.labelSmall?.copyWith(
+                  color: active
+                      ? colorScheme.primary
+                      : colorScheme.onSurfaceVariant,
+                  fontWeight: active ? FontWeight.w700 : FontWeight.w500,
                 ),
+              ),
             ],
           ),
         );
@@ -869,7 +854,7 @@ class _StatusBadge extends StatelessWidget {
       ),
       padding: const EdgeInsets.symmetric(horizontal: 11, vertical: 6),
       child: Text(
-        status.label,
+        status.localizedLabel(context),
         style: TextStyle(
           color: foregroundColor,
           fontSize: 11,
@@ -941,14 +926,14 @@ class _LoadingState extends StatelessWidget {
                 const CircularProgressIndicator(),
                 const SizedBox(height: 18),
                 Text(
-                  'Loading report',
+                  context.l10n.reportLoadingTitle,
                   style: theme.textTheme.titleMedium?.copyWith(
                     fontWeight: FontWeight.w800,
                   ),
                 ),
                 const SizedBox(height: 6),
                 Text(
-                  'Please wait while the latest information is prepared.',
+                  context.l10n.reportLoadingMessage,
                   textAlign: TextAlign.center,
                   style: theme.textTheme.bodyMedium?.copyWith(
                     color: colorScheme.onSurfaceVariant,
@@ -984,7 +969,9 @@ class _ErrorState extends StatelessWidget {
             decoration: BoxDecoration(
               color: colorScheme.surface,
               borderRadius: BorderRadius.circular(24),
-              border: Border.all(color: colorScheme.error.withOpacity(0.18)),
+              border: Border.all(
+                color: colorScheme.error.withValues(alpha: 0.18),
+              ),
             ),
             child: Column(
               mainAxisSize: MainAxisSize.min,
@@ -1004,7 +991,7 @@ class _ErrorState extends StatelessWidget {
                 ),
                 const SizedBox(height: 18),
                 Text(
-                  'Unable to load report',
+                  context.l10n.reportLoadFailed,
                   style: theme.textTheme.titleLarge?.copyWith(
                     fontWeight: FontWeight.w800,
                   ),
@@ -1021,7 +1008,7 @@ class _ErrorState extends StatelessWidget {
                 FilledButton.icon(
                   onPressed: onSecondary,
                   icon: const Icon(Icons.refresh),
-                  label: const Text('Try again'),
+                  label: Text(context.l10n.commonRetry),
                 ),
               ],
             ),

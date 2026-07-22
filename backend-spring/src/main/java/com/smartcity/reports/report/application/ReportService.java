@@ -96,7 +96,7 @@ public class ReportService {
                 currentUser
         );
 
-        return reportMapper.toResponse(reportRepository.save(report));
+        return toResponse(reportRepository.save(report));
     }
 
     @Transactional(readOnly = true)
@@ -111,7 +111,7 @@ public class ReportService {
         List<ReportResponse> reports = reportRepository
                 .findAll(filters, Sort.by(Sort.Direction.DESC, "createdAt"))
                 .stream()
-                .map(reportMapper::toResponse)
+                .map(this::toResponse)
                 .toList();
         return new ReportListResponse(reports);
     }
@@ -121,7 +121,7 @@ public class ReportService {
         requireAuthenticated(currentUser);
         Report report = getReportEntity(id);
         ensureCanView(report, currentUser);
-        return reportMapper.toResponse(report);
+        return toResponse(report);
     }
 
     @Transactional
@@ -145,7 +145,7 @@ public class ReportService {
             reportRepository.flush();
             fileReferenceCleanupService.deleteIfUnused(previousBeforePhotoUrl, report.getId());
         }
-        return reportMapper.toResponse(report);
+        return toResponse(report);
     }
 
     @Transactional
@@ -165,7 +165,7 @@ public class ReportService {
             reportRepository.flush();
             fileReferenceCleanupService.deleteIfUnused(previousAfterPhotoUrl, report.getId());
         }
-        return reportMapper.toResponse(report);
+        return toResponse(report);
     }
     @Transactional
     public ReportResponse uploadAfterPhoto(
@@ -211,7 +211,7 @@ public class ReportService {
         reportRepository.flush();
         fileReferenceCleanupService.deleteIfUnused(beforePhotoUrl, report.getId());
         fileReferenceCleanupService.deleteIfUnused(afterPhotoUrl, report.getId());
-        return reportMapper.toResponse(report);
+        return toResponse(report);
     }
 
     @Transactional
@@ -223,7 +223,7 @@ public class ReportService {
 
         Report report = getReportEntity(id);
         report.fix();
-        return reportMapper.toResponse(report);
+        return toResponse(report);
     }
 
     @Transactional
@@ -296,6 +296,17 @@ public class ReportService {
     private Report getReportEntity(UUID id) {
         return reportRepository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("Report not found: " + id));
+    }
+
+    private ReportResponse toResponse(Report report) {
+        User assignedStaff = null;
+        UUID linkedTaskId = report.getLinkedTaskId();
+        if (taskRepository != null && linkedTaskId != null) {
+            assignedStaff = taskRepository.findById(linkedTaskId)
+                    .map(Task::getAssignedStaff)
+                    .orElse(null);
+        }
+        return reportMapper.toResponse(report, assignedStaff);
     }
 
     private ReportUpvoteResponse syncUpvoteSummary(Report report, boolean hasUpvoted) {

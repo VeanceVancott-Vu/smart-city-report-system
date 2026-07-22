@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 
+import '../localization/app_localizations_extension.dart';
+
 class AppFeedback {
   const AppFeedback._();
 
@@ -66,7 +68,7 @@ class AppFeedback {
           actions: [
             FilledButton(
               onPressed: () => Navigator.of(context).pop(),
-              child: const Text('OK'),
+              child: Text(context.l10n.commonOk),
             ),
           ],
         );

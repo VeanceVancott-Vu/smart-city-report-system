@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:smart_city_report_frontend/l10n/app_localizations.dart';
 import 'package:smart_city_report_frontend/src/core/files/uploaded_photo_view.dart';
 
 void main() {
@@ -41,6 +42,8 @@ void main() {
   ) async {
     await tester.pumpWidget(
       MaterialApp(
+        localizationsDelegates: AppLocalizations.localizationsDelegates,
+        supportedLocales: AppLocalizations.supportedLocales,
         home: Builder(
           builder: (context) => Scaffold(
             body: Center(

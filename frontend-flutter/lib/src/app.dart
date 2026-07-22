@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:smart_city_report_frontend/l10n/app_localizations.dart';
 
+import 'core/localization/app_localizations_extension.dart';
 import 'core/localization/locale_controller.dart';
 import 'core/localization/locale_scope.dart';
 import 'core/localization/locale_storage.dart';
@@ -60,7 +61,7 @@ class SmartCityReportApp extends StatelessWidget {
       builder: (context, _) => LocaleScope(
         controller: localeController,
         child: MaterialApp(
-          title: 'Smart City Reports',
+          onGenerateTitle: (context) => context.l10n.appTitle,
           debugShowCheckedModeBanner: false,
           locale: localeController.locale,
           localizationsDelegates: AppLocalizations.localizationsDelegates,
@@ -106,8 +107,6 @@ class SmartCityReportApp extends StatelessWidget {
                 CitizenCreateReportScreen(reportApiService: reportApiService),
             AppRoutes.citizenReportDetail: (_) => CitizenReportDetailScreen(
               reportApiService: reportApiService,
-              authApiService: authApiService,
-              taskApiService: taskApiService,
             ),
             AppRoutes.citizenEditReport: (_) =>
                 CitizenEditReportScreen(reportApiService: reportApiService),

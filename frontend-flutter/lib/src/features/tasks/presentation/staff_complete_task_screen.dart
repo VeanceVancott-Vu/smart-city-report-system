@@ -68,8 +68,8 @@ class _StaffCompleteTaskScreenState extends State<StaffCompleteTaskScreen> {
         SnackBar(content: Text(context.l10n.staffTaskCompleted(task.title))),
       );
       Navigator.of(context).pop(true);
-    } on TaskApiException catch (error) {
-      _showError(error.message);
+    } on TaskApiException catch (_) {
+      _showError(context.l10n.taskUpdateFailed);
     } catch (_) {
       if (!mounted) {
         return;
@@ -143,7 +143,11 @@ class _StaffCompleteTaskScreenState extends State<StaffCompleteTaskScreen> {
                             color: Colors.white.withValues(alpha: .10),
                             borderRadius: BorderRadius.circular(16),
                           ),
-                          child: const Icon(Icons.task_alt_rounded, color: Color(0xFF82D5C5), size: 28),
+                          child: const Icon(
+                            Icons.task_alt_rounded,
+                            color: Color(0xFF82D5C5),
+                            size: 28,
+                          ),
                         ),
                         const SizedBox(width: 18),
                         Expanded(
@@ -159,9 +163,12 @@ class _StaffCompleteTaskScreenState extends State<StaffCompleteTaskScreen> {
                                 ),
                               ),
                               const SizedBox(height: 7),
-                              const Text(
-                                'Review the work, leave a useful handover, and send it to the reviewer.',
-                                style: TextStyle(color: Color(0xFFB7D5D0), height: 1.5),
+                              Text(
+                                context.l10n.staffCompleteIntro,
+                                style: const TextStyle(
+                                  color: Color(0xFFB7D5D0),
+                                  height: 1.5,
+                                ),
                               ),
                             ],
                           ),
@@ -181,10 +188,13 @@ class _StaffCompleteTaskScreenState extends State<StaffCompleteTaskScreen> {
                       children: [
                         Row(
                           children: [
-                            Icon(Icons.fact_check_outlined, color: colors.primary),
+                            Icon(
+                              Icons.fact_check_outlined,
+                              color: colors.primary,
+                            ),
                             const SizedBox(width: 10),
                             Text(
-                              'Before submitting',
+                              context.l10n.staffCompleteChecklistTitle,
                               style: theme.textTheme.titleMedium?.copyWith(
                                 fontWeight: FontWeight.w700,
                               ),
@@ -192,9 +202,15 @@ class _StaffCompleteTaskScreenState extends State<StaffCompleteTaskScreen> {
                           ],
                         ),
                         const SizedBox(height: 14),
-                        const _ChecklistItem(text: 'The assigned work has been completed.'),
-                        const _ChecklistItem(text: 'After photos were added to every linked report.'),
-                        const _ChecklistItem(text: 'The note below is clear for the reviewer.'),
+                        _ChecklistItem(
+                          text: context.l10n.staffCompleteChecklistWorkDone,
+                        ),
+                        _ChecklistItem(
+                          text: context.l10n.staffCompleteChecklistPhotosAdded,
+                        ),
+                        _ChecklistItem(
+                          text: context.l10n.staffCompleteChecklistNoteClear,
+                        ),
                       ],
                     ),
                   ),
@@ -216,7 +232,7 @@ class _StaffCompleteTaskScreenState extends State<StaffCompleteTaskScreen> {
                         ),
                         const SizedBox(height: 6),
                         Text(
-                          'Mention what was done, any remaining concern, or information the reviewer should know.',
+                          context.l10n.staffCompleteNoteHelp,
                           style: theme.textTheme.bodySmall?.copyWith(
                             color: colors.onSurfaceVariant,
                             height: 1.45,
@@ -230,17 +246,21 @@ class _StaffCompleteTaskScreenState extends State<StaffCompleteTaskScreen> {
                           maxLength: 4000,
                           validator: (value) => _maxLength(value, 4000),
                           decoration: InputDecoration(
-                            hintText: 'Example: Replaced the damaged cover and cleared the surrounding area.',
+                            hintText: context.l10n.staffCompleteNoteHint,
                             alignLabelWithHint: true,
                             filled: true,
                             fillColor: Colors.white,
                             border: OutlineInputBorder(
                               borderRadius: BorderRadius.circular(16),
-                              borderSide: BorderSide(color: colors.outlineVariant),
+                              borderSide: BorderSide(
+                                color: colors.outlineVariant,
+                              ),
                             ),
                             enabledBorder: OutlineInputBorder(
                               borderRadius: BorderRadius.circular(16),
-                              borderSide: BorderSide(color: colors.outlineVariant),
+                              borderSide: BorderSide(
+                                color: colors.outlineVariant,
+                              ),
                             ),
                           ),
                         ),

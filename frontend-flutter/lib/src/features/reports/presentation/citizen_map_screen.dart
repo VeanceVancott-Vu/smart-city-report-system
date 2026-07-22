@@ -315,7 +315,7 @@ class _CitizenMapScreenState extends State<CitizenMapScreen> {
 
                       if (snapshot.hasError && _pins.isEmpty) {
                         return _ErrorState(
-                          message: 'Unable to load open report pins.',
+                          message: context.l10n.mapOpenPinsLoadFailed,
                           onRetry: refresh,
                         );
                       }
@@ -337,11 +337,7 @@ class _CitizenMapScreenState extends State<CitizenMapScreen> {
                       }).toList();
 
                       if (_isMapView) {
-                        return _buildMapView(
-                          context,
-                          filteredPins,
-                          isDesktop,
-                        );
+                        return _buildMapView(context, filteredPins, isDesktop);
                       }
 
                       if (filteredPins.isEmpty) {
@@ -360,11 +356,11 @@ class _CitizenMapScreenState extends State<CitizenMapScreen> {
                                 ),
                                 gridDelegate:
                                     const SliverGridDelegateWithMaxCrossAxisExtent(
-                                  maxCrossAxisExtent: 520,
-                                  crossAxisSpacing: 16,
-                                  mainAxisSpacing: 16,
-                                  mainAxisExtent: 184,
-                                ),
+                                      maxCrossAxisExtent: 520,
+                                      crossAxisSpacing: 16,
+                                      mainAxisSpacing: 16,
+                                      mainAxisExtent: 184,
+                                    ),
                                 itemCount: filteredPins.length,
                                 itemBuilder: (context, index) => _PinTile(
                                   pin: filteredPins[index],
@@ -492,7 +488,8 @@ class _CitizenMapScreenState extends State<CitizenMapScreen> {
                           height: 90,
                           child: _SearchedPlaceMarker(
                             name:
-                                _searchedPlaceName ?? 'Searched location',
+                                _searchedPlaceName ??
+                                context.l10n.mapSearchedLocation,
                             onClear: () {
                               setState(() {
                                 _searchedPlaceLocation = null;
@@ -534,8 +531,7 @@ class _CitizenMapScreenState extends State<CitizenMapScreen> {
                           });
                         },
                       ),
-                      if (_searchQuery.isNotEmpty &&
-                          _searchFocusNode.hasFocus)
+                      if (_searchQuery.isNotEmpty && _searchFocusNode.hasFocus)
                         _SearchSuggestions(
                           pins: filteredPins,
                           addresses: _addressSuggestions,
@@ -556,10 +552,7 @@ class _CitizenMapScreenState extends State<CitizenMapScreen> {
                             );
                           },
                           onSelectAddress: (addr) {
-                            final point = LatLng(
-                              addr.latitude,
-                              addr.longitude,
-                            );
+                            final point = LatLng(addr.latitude, addr.longitude);
                             setState(() {
                               _searchedPlaceLocation = point;
                               _searchedPlaceName = addr.displayName;
@@ -581,7 +574,7 @@ class _CitizenMapScreenState extends State<CitizenMapScreen> {
               bottom: _selectedPin == null ? 18 : (isDesktop ? 190 : 230),
               child: FloatingActionButton.small(
                 heroTag: 'citizen_map_refresh_visible',
-                tooltip: 'Refresh visible area',
+                tooltip: context.l10n.mapRefreshVisibleArea,
                 onPressed: refresh,
                 backgroundColor: colorScheme.surface,
                 foregroundColor: colorScheme.primary,
@@ -601,8 +594,7 @@ class _CitizenMapScreenState extends State<CitizenMapScreen> {
                     constraints: const BoxConstraints(maxWidth: 460),
                     child: _SelectedPinCard(
                       pin: _selectedPin!,
-                      hasUpvoted:
-                          _upvotedReportIds.contains(_selectedPin!.id),
+                      hasUpvoted: _upvotedReportIds.contains(_selectedPin!.id),
                       onUpvote: () => _toggleUpvote(_selectedPin!),
                       onViewDetails: () => _openDetails(_selectedPin!),
                       onClose: () {
@@ -668,15 +660,17 @@ class _MapTopBar extends StatelessWidget {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
-                  isMapView ? 'Explore city issues' : 'Nearby reports',
+                  isMapView
+                      ? context.l10n.mapExploreCityIssuesTitle
+                      : context.l10n.mapNearbyReportsTitle,
                   style: theme.textTheme.titleLarge?.copyWith(
                     fontWeight: FontWeight.w800,
                   ),
                 ),
                 Text(
                   isMapView
-                      ? 'Browse and confirm issues reported around the city.'
-                      : 'Review reports currently visible in this area.',
+                      ? context.l10n.mapExploreCityIssuesDescription
+                      : context.l10n.mapNearbyReportsDescription,
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
                   style: theme.textTheme.bodySmall?.copyWith(
@@ -692,12 +686,12 @@ class _MapTopBar extends StatelessWidget {
               ButtonSegment<bool>(
                 value: true,
                 icon: const Icon(Icons.map_outlined),
-                label: isDesktop ? const Text('Map') : null,
+                label: isDesktop ? Text(context.l10n.commonMap) : null,
               ),
               ButtonSegment<bool>(
                 value: false,
                 icon: const Icon(Icons.view_list_outlined),
-                label: isDesktop ? const Text('List') : null,
+                label: isDesktop ? Text(context.l10n.commonList) : null,
               ),
             ],
             selected: {isMapView},
@@ -707,7 +701,7 @@ class _MapTopBar extends StatelessWidget {
           if (isDesktop) ...[
             const SizedBox(width: 8),
             IconButton(
-              tooltip: 'Refresh visible area',
+              tooltip: context.l10n.mapRefreshVisibleArea,
               onPressed: onRefresh,
               icon: const Icon(Icons.refresh),
             ),
@@ -748,7 +742,7 @@ class _FilterBar extends StatelessWidget {
               child: Row(
                 children: [
                   ChoiceChip(
-                    label: const Text('All'),
+                    label: Text(context.l10n.commonAll),
                     selected: selectedCategory == null,
                     onSelected: (_) => onCategoryChanged(null),
                   ),
@@ -757,10 +751,7 @@ class _FilterBar extends StatelessWidget {
                     return Padding(
                       padding: const EdgeInsets.only(right: 8),
                       child: ChoiceChip(
-                        avatar: Icon(
-                          _getCategoryIcon(category),
-                          size: 16,
-                        ),
+                        avatar: Icon(_getCategoryIcon(category), size: 16),
                         label: Text(category.localizedLabel(context)),
                         selected: selectedCategory == category,
                         onSelected: (_) => onCategoryChanged(category),
@@ -775,15 +766,12 @@ class _FilterBar extends StatelessWidget {
             const SizedBox(width: 8),
             Tooltip(
               message: hideOwnReports
-                  ? 'Show my reports'
-                  : 'Hide my reports',
+                  ? context.l10n.mapShowMyReports
+                  : context.l10n.mapHideMyReports,
               child: IconButton.filledTonal(
-                onPressed: () =>
-                    onHideOwnReportsChanged(!hideOwnReports),
+                onPressed: () => onHideOwnReportsChanged(!hideOwnReports),
                 icon: Icon(
-                  hideOwnReports
-                      ? Icons.person_off
-                      : Icons.person_outline,
+                  hideOwnReports ? Icons.person_off : Icons.person_outline,
                 ),
               ),
             ),
@@ -807,7 +795,7 @@ class _MapLoadingState extends StatelessWidget {
           const CircularProgressIndicator(),
           const SizedBox(height: 16),
           Text(
-            'Loading nearby reports',
+            context.l10n.mapLoadingNearbyReports,
             style: theme.textTheme.titleMedium?.copyWith(
               fontWeight: FontWeight.w700,
             ),
@@ -842,7 +830,7 @@ class _EmptyMapListState extends StatelessWidget {
           ),
           const SizedBox(height: 18),
           Text(
-            'No reports in this area',
+            context.l10n.mapNoOpenPins,
             textAlign: TextAlign.center,
             style: theme.textTheme.titleLarge?.copyWith(
               fontWeight: FontWeight.w800,
@@ -850,7 +838,7 @@ class _EmptyMapListState extends StatelessWidget {
           ),
           const SizedBox(height: 8),
           Text(
-            'Move the map or change the filters to explore other reports.',
+            context.l10n.mapNoReportsHelp,
             textAlign: TextAlign.center,
             style: theme.textTheme.bodyMedium?.copyWith(
               color: colorScheme.onSurfaceVariant,
@@ -896,9 +884,9 @@ class _SearchBar extends StatelessWidget {
         onChanged: onChanged,
         onSubmitted: onSubmitted,
         decoration: InputDecoration(
-          hintText: 'Search reports, categories or places',
+          hintText: context.l10n.mapCitizenSearchHint,
           prefixIcon: IconButton(
-            tooltip: 'Search',
+            tooltip: context.l10n.commonSearch,
             onPressed: isSearching ? null : onSearch,
             icon: isSearching
                 ? const SizedBox.square(
@@ -909,7 +897,7 @@ class _SearchBar extends StatelessWidget {
           ),
           suffixIcon: controller.text.isNotEmpty
               ? IconButton(
-                  tooltip: 'Clear search',
+                  tooltip: context.l10n.commonClearSearch,
                   onPressed: onClear,
                   icon: const Icon(Icons.close),
                 )
@@ -928,10 +916,7 @@ class _SearchBar extends StatelessWidget {
           ),
           focusedBorder: OutlineInputBorder(
             borderRadius: BorderRadius.circular(18),
-            borderSide: BorderSide(
-              color: colorScheme.primary,
-              width: 1.5,
-            ),
+            borderSide: BorderSide(color: colorScheme.primary, width: 1.5),
           ),
         ),
       ),
@@ -962,9 +947,12 @@ class _SearchSuggestions extends StatelessWidget {
   Widget build(BuildContext context) {
     final filteredPins = pins.where((pin) {
       final titleMatch = pin.title.toLowerCase().contains(query.toLowerCase());
-      final categoryMatch = pin.category.label.toLowerCase().contains(
-        query.toLowerCase(),
-      );
+      final categoryMatch =
+          pin.category.label.toLowerCase().contains(query.toLowerCase()) ||
+          pin.category
+              .localizedLabel(context)
+              .toLowerCase()
+              .contains(query.toLowerCase());
       return titleMatch || categoryMatch;
     }).toList();
 
@@ -988,9 +976,9 @@ class _SearchSuggestions extends StatelessWidget {
           ],
         ),
         padding: const EdgeInsets.all(16),
-        child: const Text(
-          'No matching reports or addresses found',
-          style: TextStyle(color: Color(0xFF64748B)),
+        child: Text(
+          context.l10n.mapNoSearchMatches,
+          style: const TextStyle(color: Color(0xFF64748B)),
         ),
       );
     }
@@ -1020,9 +1008,9 @@ class _SearchSuggestions extends StatelessWidget {
               Container(
                 color: const Color(0xFFF7F9F8),
                 padding: const EdgeInsets.fromLTRB(12, 8, 12, 4),
-                child: const Text(
-                  'REPORTS',
-                  style: TextStyle(
+                child: Text(
+                  context.l10n.mapReportsHeader,
+                  style: const TextStyle(
                     fontSize: 10,
                     fontWeight: FontWeight.bold,
                     color: Color(0xFF64748B),
@@ -1063,9 +1051,9 @@ class _SearchSuggestions extends StatelessWidget {
               Container(
                 color: const Color(0xFFF7F9F8),
                 padding: const EdgeInsets.fromLTRB(12, 8, 12, 4),
-                child: const Text(
-                  'ADDRESSES & PLACES',
-                  style: TextStyle(
+                child: Text(
+                  context.l10n.mapPlacesHeader,
+                  style: const TextStyle(
                     fontSize: 10,
                     fontWeight: FontWeight.bold,
                     color: Color(0xFF64748B),
@@ -1226,11 +1214,11 @@ class _PinTile extends StatelessWidget {
                 children: [
                   _MetaChip(
                     icon: Icons.thumb_up_alt_outlined,
-                    label: '${pin.upvoteCount} upvotes',
+                    label: context.l10n.upvoteCount(pin.upvoteCount),
                   ),
                   _MetaChip(
                     icon: Icons.trending_up,
-                    label: 'Priority ${pin.priorityScore}',
+                    label: context.l10n.priorityValue(pin.priorityScore),
                   ),
                   if (showUpvote)
                     TextButton.icon(
@@ -1242,7 +1230,9 @@ class _PinTile extends StatelessWidget {
                         size: 17,
                       ),
                       label: Text(
-                        hasUpvoted ? 'Remove' : 'I see this too',
+                        hasUpvoted
+                            ? context.l10n.mapRemoveUpvote
+                            : context.l10n.mapSeeThisToo,
                       ),
                     ),
                 ],
@@ -1323,7 +1313,7 @@ class _ErrorState extends StatelessWidget {
               ),
               const SizedBox(height: 18),
               Text(
-                'Map unavailable',
+                context.l10n.mapUnavailableTitle,
                 style: theme.textTheme.titleLarge?.copyWith(
                   fontWeight: FontWeight.w800,
                 ),
@@ -1340,7 +1330,7 @@ class _ErrorState extends StatelessWidget {
               FilledButton.icon(
                 onPressed: onRetry,
                 icon: const Icon(Icons.refresh),
-                label: const Text('Try again'),
+                label: Text(context.l10n.commonRetry),
               ),
             ],
           ),
@@ -1556,10 +1546,7 @@ class _SelectedPinCard extends StatelessWidget {
                     color: color.withOpacity(0.12),
                     borderRadius: BorderRadius.circular(14),
                   ),
-                  child: Icon(
-                    _getCategoryIcon(pin.category),
-                    color: color,
-                  ),
+                  child: Icon(_getCategoryIcon(pin.category), color: color),
                 ),
                 const SizedBox(width: 12),
                 Expanded(
@@ -1587,7 +1574,7 @@ class _SelectedPinCard extends StatelessWidget {
                   ),
                 ),
                 IconButton(
-                  tooltip: 'Close',
+                  tooltip: context.l10n.commonClose,
                   onPressed: onClose,
                   icon: const Icon(Icons.close),
                 ),
@@ -1622,7 +1609,7 @@ class _SelectedPinCard extends StatelessWidget {
                 Expanded(
                   child: OutlinedButton(
                     onPressed: onViewDetails,
-                    child: const Text('View details'),
+                    child: Text(context.l10n.mapViewDetails),
                   ),
                 ),
                 if (showUpvote) ...[
@@ -1637,7 +1624,9 @@ class _SelectedPinCard extends StatelessWidget {
                         size: 18,
                       ),
                       label: Text(
-                        hasUpvoted ? 'Remove upvote' : 'I see this too',
+                        hasUpvoted
+                            ? context.l10n.mapRemoveUpvote
+                            : context.l10n.mapSeeThisToo,
                       ),
                     ),
                   ),

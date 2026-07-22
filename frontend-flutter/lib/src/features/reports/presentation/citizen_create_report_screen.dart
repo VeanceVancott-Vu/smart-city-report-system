@@ -68,9 +68,7 @@ class CitizenCreateReportScreen extends StatelessWidget {
                           children: [
                             const _CreateReportIntro(compact: true),
                             const SizedBox(height: 16),
-                            Expanded(
-                              child: _buildFormSurface(context),
-                            ),
+                            Expanded(child: _buildFormSurface(context)),
                           ],
                         ),
                 ),
@@ -90,9 +88,7 @@ class CitizenCreateReportScreen extends StatelessWidget {
       decoration: BoxDecoration(
         color: colorScheme.surface,
         borderRadius: BorderRadius.circular(24),
-        border: Border.all(
-          color: colorScheme.outlineVariant.withOpacity(0.75),
-        ),
+        border: Border.all(color: colorScheme.outlineVariant.withOpacity(0.75)),
         boxShadow: [
           BoxShadow(
             color: colorScheme.shadow.withOpacity(0.06),
@@ -156,9 +152,7 @@ class _CreateReportIntro extends StatelessWidget {
       decoration: BoxDecoration(
         color: colorScheme.primaryContainer.withOpacity(0.55),
         borderRadius: BorderRadius.circular(24),
-        border: Border.all(
-          color: colorScheme.primary.withOpacity(0.12),
-        ),
+        border: Border.all(color: colorScheme.primary.withOpacity(0.12)),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -178,7 +172,7 @@ class _CreateReportIntro extends StatelessWidget {
           ),
           SizedBox(height: compact ? 16 : 24),
           Text(
-            'Report a city issue',
+            context.l10n.reportCreateIntroTitle,
             style: theme.textTheme.headlineSmall?.copyWith(
               fontWeight: FontWeight.w800,
               color: colorScheme.onPrimaryContainer,
@@ -187,29 +181,29 @@ class _CreateReportIntro extends StatelessWidget {
           ),
           const SizedBox(height: 10),
           Text(
-            'Share the issue, add a clear photo and confirm the location so the city team can respond faster.',
+            context.l10n.reportCreateIntroDescription,
             style: theme.textTheme.bodyLarge?.copyWith(
               color: colorScheme.onPrimaryContainer.withOpacity(0.78),
               height: 1.5,
             ),
           ),
           SizedBox(height: compact ? 18 : 28),
-          const _IntroStep(
+          _IntroStep(
             number: '1',
-            title: 'Choose the issue type',
-            description: 'Select the category that best matches the problem.',
+            title: context.l10n.reportCreateStepCategoryTitle,
+            description: context.l10n.reportCreateStepCategoryDescription,
           ),
           const SizedBox(height: 16),
-          const _IntroStep(
+          _IntroStep(
             number: '2',
-            title: 'Add a clear photo',
-            description: 'Use a photo that clearly shows the issue.',
+            title: context.l10n.reportCreateStepPhotoTitle,
+            description: context.l10n.reportCreateStepPhotoDescription,
           ),
           const SizedBox(height: 16),
-          const _IntroStep(
+          _IntroStep(
             number: '3',
-            title: 'Confirm the location',
-            description: 'Pin the exact position before submitting.',
+            title: context.l10n.reportCreateStepLocationTitle,
+            description: context.l10n.reportCreateStepLocationDescription,
           ),
         ],
       ),
@@ -243,9 +237,7 @@ class _IntroStep extends StatelessWidget {
           decoration: BoxDecoration(
             color: colorScheme.surface,
             shape: BoxShape.circle,
-            border: Border.all(
-              color: colorScheme.primary.withOpacity(0.22),
-            ),
+            border: Border.all(color: colorScheme.primary.withOpacity(0.22)),
           ),
           child: Text(
             number,

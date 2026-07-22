@@ -40,6 +40,11 @@ void main() {
               'displayName': 'Citizen',
               'role': 'CITIZEN',
             },
+            'assignedStaff': <String, Object?>{
+              'id': '33333333-3333-3333-3333-333333333333',
+              'displayName': 'Assigned Staff',
+              'role': 'STAFF',
+            },
           }),
           200,
         );
@@ -57,6 +62,8 @@ void main() {
       );
 
       expect(report.afterPhotoUrl, '/uploads/report-after/after.jpg');
+      expect(report.assignedStaff?.fullName, 'Assigned Staff');
+      expect(report.assignedStaff?.role, 'STAFF');
       expect(methods, <String>['POST', 'GET']);
     },
   );

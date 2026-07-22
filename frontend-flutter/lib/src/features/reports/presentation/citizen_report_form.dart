@@ -257,15 +257,15 @@ class _CitizenReportFormState extends State<CitizenReportForm> {
               children: [
                 Text(
                   widget.initialReport == null
-                      ? 'Tell us what happened'
-                      : 'Update report information',
+                      ? context.l10n.reportFormCreateHeading
+                      : context.l10n.reportFormEditHeading,
                   style: theme.textTheme.headlineSmall?.copyWith(
                     fontWeight: FontWeight.w800,
                   ),
                 ),
                 const SizedBox(height: 6),
                 Text(
-                  'Complete each section below. Clear information helps the city team respond faster.',
+                  context.l10n.reportFormDescription,
                   style: theme.textTheme.bodyMedium?.copyWith(
                     color: colorScheme.onSurfaceVariant,
                     height: 1.45,
@@ -275,11 +275,13 @@ class _CitizenReportFormState extends State<CitizenReportForm> {
 
                 _FormSection(
                   step: '1',
-                  title: 'Issue category',
-                  description: 'Choose the option that best matches the problem.',
+                  title: context.l10n.reportFormCategoryTitle,
+                  description: context.l10n.reportFormCategoryDescription,
                   child: LayoutBuilder(
                     builder: (context, sectionConstraints) {
-                      final columns = sectionConstraints.maxWidth >= 620 ? 4 : 2;
+                      final columns = sectionConstraints.maxWidth >= 620
+                          ? 4
+                          : 2;
                       return GridView.builder(
                         shrinkWrap: true,
                         physics: const NeverScrollableScrollPhysics(),
@@ -287,7 +289,7 @@ class _CitizenReportFormState extends State<CitizenReportForm> {
                           crossAxisCount: columns,
                           crossAxisSpacing: 12,
                           mainAxisSpacing: 12,
-                          mainAxisExtent: 92,
+                          mainAxisExtent: 104,
                         ),
                         itemCount: ReportCategory.values.length,
                         itemBuilder: (context, index) {
@@ -330,14 +332,15 @@ class _CitizenReportFormState extends State<CitizenReportForm> {
                                     maxLines: 2,
                                     overflow: TextOverflow.ellipsis,
                                     textAlign: TextAlign.center,
-                                    style: theme.textTheme.labelMedium?.copyWith(
-                                      color: isSelected
-                                          ? colorScheme.onPrimaryContainer
-                                          : colorScheme.onSurface,
-                                      fontWeight: isSelected
-                                          ? FontWeight.w800
-                                          : FontWeight.w600,
-                                    ),
+                                    style: theme.textTheme.labelMedium
+                                        ?.copyWith(
+                                          color: isSelected
+                                              ? colorScheme.onPrimaryContainer
+                                              : colorScheme.onSurface,
+                                          fontWeight: isSelected
+                                              ? FontWeight.w800
+                                              : FontWeight.w600,
+                                        ),
                                   ),
                                 ],
                               ),
@@ -352,10 +355,12 @@ class _CitizenReportFormState extends State<CitizenReportForm> {
 
                 _FormSection(
                   step: '2',
-                  title: 'Photo evidence',
-                  description: 'Add one clear photo showing the issue.',
+                  title: context.l10n.reportFormPhotoTitle,
+                  description: context.l10n.reportFormPhotoDescription,
                   trailing: Text(
-                    _beforePhotoUrl != null ? '1 of 1 added' : 'Required',
+                    _beforePhotoUrl != null
+                        ? context.l10n.reportPhotoAddedCount(1, 1)
+                        : context.l10n.commonRequired,
                     style: theme.textTheme.labelMedium?.copyWith(
                       color: _beforePhotoUrl != null
                           ? colorScheme.primary
@@ -364,7 +369,7 @@ class _CitizenReportFormState extends State<CitizenReportForm> {
                     ),
                   ),
                   child: _PhotoUploadField(
-                    label: 'Upload a picture before any actions are taken',
+                    label: context.l10n.reportBeforePhotoHelp,
                     fileUrl: _beforePhotoUrl,
                     errorText: _beforePhotoError,
                     isUploading: _isUploadingPhoto,
@@ -376,8 +381,8 @@ class _CitizenReportFormState extends State<CitizenReportForm> {
 
                 _FormSection(
                   step: '3',
-                  title: 'Location',
-                  description: 'Confirm the exact position of the issue.',
+                  title: context.l10n.commonLocation,
+                  description: context.l10n.reportFormLocationDescription,
                   child: Column(
                     children: [
                       if (!isTestMode) ...[
@@ -386,7 +391,7 @@ class _CitizenReportFormState extends State<CitizenReportForm> {
                           child: FilledButton.tonalIcon(
                             onPressed: _isSaving ? null : _openMapPicker,
                             icon: const Icon(Icons.map_outlined),
-                            label: const Text('Choose location on map'),
+                            label: Text(context.l10n.reportSelectLocationMap),
                             style: FilledButton.styleFrom(
                               padding: const EdgeInsets.symmetric(vertical: 15),
                               shape: RoundedRectangleBorder(
@@ -399,11 +404,11 @@ class _CitizenReportFormState extends State<CitizenReportForm> {
                       ],
                       TextFormField(
                         controller: _addressController,
-                        decoration: const InputDecoration(
-                          labelText: 'Street address',
-                          hintText: 'Add a nearby landmark or street name',
-                          prefixIcon: Icon(Icons.location_on_outlined),
-                          border: OutlineInputBorder(),
+                        decoration: InputDecoration(
+                          labelText: context.l10n.reportStreetAddress,
+                          hintText: context.l10n.reportStreetAddressHint,
+                          prefixIcon: const Icon(Icons.location_on_outlined),
+                          border: const OutlineInputBorder(),
                         ),
                         textInputAction: TextInputAction.next,
                       ),
@@ -414,19 +419,21 @@ class _CitizenReportFormState extends State<CitizenReportForm> {
                           final latitudeField = TextFormField(
                             controller: _latitudeController,
                             readOnly: true,
-                            decoration: const InputDecoration(
-                              labelText: 'Latitude',
-                              prefixIcon: Icon(Icons.my_location_outlined),
-                              border: OutlineInputBorder(),
+                            decoration: InputDecoration(
+                              labelText: context.l10n.commonLatitude,
+                              prefixIcon: const Icon(
+                                Icons.my_location_outlined,
+                              ),
+                              border: const OutlineInputBorder(),
                             ),
                           );
                           final longitudeField = TextFormField(
                             controller: _longitudeController,
                             readOnly: true,
-                            decoration: const InputDecoration(
-                              labelText: 'Longitude',
-                              prefixIcon: Icon(Icons.explore_outlined),
-                              border: OutlineInputBorder(),
+                            decoration: InputDecoration(
+                              labelText: context.l10n.commonLongitude,
+                              prefixIcon: const Icon(Icons.explore_outlined),
+                              border: const OutlineInputBorder(),
                             ),
                           );
 
@@ -454,18 +461,18 @@ class _CitizenReportFormState extends State<CitizenReportForm> {
 
                 _FormSection(
                   step: '4',
-                  title: 'Report details',
-                  description: 'Use a short title and describe what you observed.',
+                  title: context.l10n.reportDetailsTitle,
+                  description: context.l10n.reportFormDetailsDescription,
                   child: Column(
                     children: [
                       TextFormField(
                         key: const Key('report_title_field'),
                         controller: _titleController,
-                        decoration: const InputDecoration(
-                          labelText: 'Report title',
-                          hintText: 'Example: Broken street light',
-                          prefixIcon: Icon(Icons.title_outlined),
-                          border: OutlineInputBorder(),
+                        decoration: InputDecoration(
+                          labelText: context.l10n.reportFormTitleLabel,
+                          hintText: context.l10n.reportFormTitleHint,
+                          prefixIcon: const Icon(Icons.title_outlined),
+                          border: const OutlineInputBorder(),
                         ),
                         textInputAction: TextInputAction.next,
                         validator: _required,
@@ -474,12 +481,11 @@ class _CitizenReportFormState extends State<CitizenReportForm> {
                       TextFormField(
                         key: const Key('report_description_field'),
                         controller: _descriptionController,
-                        decoration: const InputDecoration(
-                          labelText: 'Description',
+                        decoration: InputDecoration(
+                          labelText: context.l10n.commonDescription,
                           alignLabelWithHint: true,
-                          hintText:
-                              'Describe the issue, when you noticed it and any useful details.',
-                          border: OutlineInputBorder(),
+                          hintText: context.l10n.reportFormDescriptionHint,
+                          border: const OutlineInputBorder(),
                         ),
                         minLines: 5,
                         maxLines: 7,
@@ -493,8 +499,8 @@ class _CitizenReportFormState extends State<CitizenReportForm> {
                   const SizedBox(height: 18),
                   _FormSection(
                     step: '5',
-                    title: 'Privacy',
-                    description: 'Choose whether your identity is shown publicly.',
+                    title: context.l10n.reportPrivacyTitle,
+                    description: context.l10n.reportPrivacyDescription,
                     child: Container(
                       decoration: BoxDecoration(
                         color: colorScheme.surfaceContainerLowest,
@@ -511,10 +517,8 @@ class _CitizenReportFormState extends State<CitizenReportForm> {
                               ? Icons.visibility_off_outlined
                               : Icons.account_circle_outlined,
                         ),
-                        title: const Text('Submit anonymously'),
-                        subtitle: const Text(
-                          'Your personal information will be hidden from the public report.',
-                        ),
+                        title: Text(context.l10n.reportSubmitAnonymously),
+                        subtitle: Text(context.l10n.reportAnonymousHelp),
                         contentPadding: const EdgeInsets.symmetric(
                           horizontal: 16,
                           vertical: 6,
@@ -536,6 +540,7 @@ class _CitizenReportFormState extends State<CitizenReportForm> {
                       SizedBox(
                         width: double.infinity,
                         child: FilledButton.icon(
+                          key: const Key('report_submit_button'),
                           onPressed: _isSaving || _isUploadingPhoto
                               ? null
                               : _submit,
@@ -558,7 +563,7 @@ class _CitizenReportFormState extends State<CitizenReportForm> {
                       ),
                       const SizedBox(height: 10),
                       Text(
-                        'Please review the information before submitting.',
+                        context.l10n.reportReviewBeforeSubmit,
                         textAlign: TextAlign.center,
                         style: theme.textTheme.bodySmall?.copyWith(
                           color: colorScheme.onSurfaceVariant,
@@ -646,9 +651,7 @@ class _FormSection extends StatelessWidget {
       decoration: BoxDecoration(
         color: colorScheme.surface,
         borderRadius: BorderRadius.circular(18),
-        border: Border.all(
-          color: colorScheme.outlineVariant.withOpacity(0.8),
-        ),
+        border: Border.all(color: colorScheme.outlineVariant.withOpacity(0.8)),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -694,10 +697,7 @@ class _FormSection extends StatelessWidget {
                   ],
                 ),
               ),
-              if (trailing != null) ...[
-                const SizedBox(width: 10),
-                trailing!,
-              ],
+              if (trailing != null) ...[const SizedBox(width: 10), trailing!],
             ],
           ),
           const SizedBox(height: 18),
@@ -765,7 +765,7 @@ class _PhotoUploadField extends StatelessWidget {
                     color: colorScheme.surface.withOpacity(0.94),
                     borderRadius: BorderRadius.circular(12),
                     child: IconButton(
-                      tooltip: 'Remove photo',
+                      tooltip: context.l10n.photoRemove,
                       onPressed: onRemove,
                       icon: Icon(
                         Icons.delete_outline,
@@ -783,17 +783,17 @@ class _PhotoUploadField extends StatelessWidget {
                     child: InkWell(
                       onTap: isUploading ? null : onUpload,
                       borderRadius: BorderRadius.circular(12),
-                      child: const Padding(
-                        padding: EdgeInsets.symmetric(
+                      child: Padding(
+                        padding: const EdgeInsets.symmetric(
                           horizontal: 12,
                           vertical: 9,
                         ),
                         child: Row(
                           mainAxisSize: MainAxisSize.min,
                           children: [
-                            Icon(Icons.refresh, size: 17),
-                            SizedBox(width: 6),
-                            Text('Replace photo'),
+                            const Icon(Icons.refresh, size: 17),
+                            const SizedBox(width: 6),
+                            Text(context.l10n.photoReplace),
                           ],
                         ),
                       ),
@@ -810,10 +810,7 @@ class _PhotoUploadField extends StatelessWidget {
             borderRadius: BorderRadius.circular(18),
             child: Container(
               width: double.infinity,
-              padding: const EdgeInsets.symmetric(
-                horizontal: 20,
-                vertical: 30,
-              ),
+              padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 30),
               decoration: BoxDecoration(
                 color: colorScheme.surfaceContainerLowest,
                 borderRadius: BorderRadius.circular(18),
@@ -846,7 +843,9 @@ class _PhotoUploadField extends StatelessWidget {
                   ),
                   const SizedBox(height: 12),
                   Text(
-                    isUploading ? 'Uploading photo…' : 'Add a photo',
+                    isUploading
+                        ? context.l10n.photoUploading
+                        : context.l10n.photoAdd,
                     style: theme.textTheme.titleSmall?.copyWith(
                       fontWeight: FontWeight.w800,
                     ),

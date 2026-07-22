@@ -81,10 +81,10 @@ class _StaffReportDetailScreenState extends State<StaffReportDetailScreen> {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(content: Text(context.l10n.staffAfterPhotoUploaded)),
       );
-    } on FilePickerException catch (error) {
-      _setAfterPhotoError(error.message);
-    } on ReportApiException catch (error) {
-      _setAfterPhotoError(error.message);
+    } on FilePickerException catch (_) {
+      _setAfterPhotoError(context.l10n.staffAfterPhotoUploadFailed);
+    } on ReportApiException catch (_) {
+      _setAfterPhotoError(context.l10n.staffAfterPhotoUploadFailed);
     } catch (_) {
       if (!mounted) {
         return;
@@ -145,78 +145,81 @@ class _StaffReportDetailScreenState extends State<StaffReportDetailScreen> {
                   child: ListView(
                     padding: const EdgeInsets.fromLTRB(16, 20, 16, 32),
                     children: [
-                  Text(
-                    report.title,
-                    style: Theme.of(context).textTheme.headlineSmall?.copyWith(
-                      fontWeight: FontWeight.w700,
-                    ),
-                  ),
-                  const SizedBox(height: 10),
-                  Wrap(
-                    spacing: 8,
-                    runSpacing: 8,
-                    children: [
-                      _InfoChip(
-                        icon: Icons.flag_outlined,
-                        label: report.status.localizedLabel(context),
+                      Text(
+                        report.title,
+                        style: Theme.of(context).textTheme.headlineSmall
+                            ?.copyWith(fontWeight: FontWeight.w700),
                       ),
-                      _InfoChip(
-                        icon: Icons.category_outlined,
-                        label: report.category.localizedLabel(context),
+                      const SizedBox(height: 10),
+                      Wrap(
+                        spacing: 8,
+                        runSpacing: 8,
+                        children: [
+                          _InfoChip(
+                            icon: Icons.flag_outlined,
+                            label: report.status.localizedLabel(context),
+                          ),
+                          _InfoChip(
+                            icon: Icons.category_outlined,
+                            label: report.category.localizedLabel(context),
+                          ),
+                          _InfoChip(
+                            icon: Icons.thumb_up_alt_outlined,
+                            label: context.l10n.upvoteCount(report.upvoteCount),
+                          ),
+                          _InfoChip(
+                            icon: Icons.trending_up,
+                            label: context.l10n.priorityValue(
+                              report.priorityScore,
+                            ),
+                          ),
+                        ],
                       ),
-                      _InfoChip(
-                        icon: Icons.thumb_up_alt_outlined,
-                        label: context.l10n.upvoteCount(report.upvoteCount),
+                      _Section(
+                        title: context.l10n.commonDescription,
+                        child: Text(report.description),
                       ),
-                      _InfoChip(
-                        icon: Icons.trending_up,
-                        label: context.l10n.priorityValue(report.priorityScore),
+                      _Section(
+                        title: context.l10n.commonLocation,
+                        child: Text(_locationLabel(context, report)),
                       ),
-                    ],
-                  ),
-                  _Section(
-                    title: context.l10n.commonDescription,
-                    child: Text(report.description),
-                  ),
-                  _Section(
-                    title: context.l10n.commonLocation,
-                    child: Text(_locationLabel(context, report)),
-                  ),
-                  _Section(
-                    title: context.l10n.commonCoordinates,
-                    child: Text(
-                      context.l10n.coordinatesValue(
-                        report.latitude.toStringAsFixed(6),
-                        report.longitude.toStringAsFixed(6),
+                      _Section(
+                        title: context.l10n.commonCoordinates,
+                        child: Text(
+                          context.l10n.coordinatesValue(
+                            report.latitude.toStringAsFixed(6),
+                            report.longitude.toStringAsFixed(6),
+                          ),
+                        ),
                       ),
-                    ),
-                  ),
-                  _Section(
-                    title: context.l10n.commonBeforePhoto,
-                    child: UploadedPhotoView(fileUrl: report.beforePhotoUrl),
-                  ),
-                  _Section(
-                    title: context.l10n.commonAfterPhoto,
-                    child: _AfterPhotoSection(
-                      report: report,
-                      isUploading: _isUploadingAfterPhoto,
-                      errorText: _afterPhotoError,
-                      onUpload: () => _pickAndUploadAfterPhoto(report),
-                    ),
-                  ),
-                  _Section(
-                    title: context.l10n.reportReporter,
-                    child: Text(
-                      report.anonymous
-                          ? context.l10n.commonAnonymous
-                          : report.createdBy?.fullName ??
-                                context.l10n.commonUnknownUser,
-                    ),
-                  ),
-                  _Section(
-                    title: context.l10n.reportId,
-                    child: SelectableText(report.id),
-                  ),
+                      _Section(
+                        title: context.l10n.commonBeforePhoto,
+                        child: UploadedPhotoView(
+                          fileUrl: report.beforePhotoUrl,
+                        ),
+                      ),
+                      _Section(
+                        title: context.l10n.commonAfterPhoto,
+                        child: _AfterPhotoSection(
+                          report: report,
+                          isUploading: _isUploadingAfterPhoto,
+                          errorText: _afterPhotoError,
+                          onUpload: () => _pickAndUploadAfterPhoto(report),
+                        ),
+                      ),
+                      _Section(
+                        title: context.l10n.reportReporter,
+                        child: Text(
+                          report.anonymous
+                              ? context.l10n.commonAnonymous
+                              : report.createdBy?.fullName ??
+                                    context.l10n.commonUnknownUser,
+                        ),
+                      ),
+                      _Section(
+                        title: context.l10n.reportId,
+                        child: SelectableText(report.id),
+                      ),
                     ],
                   ),
                 ),

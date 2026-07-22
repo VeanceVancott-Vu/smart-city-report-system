@@ -82,14 +82,16 @@ void main() {
     );
     await tester.pumpAndSettle();
 
-    expect(find.text('Log in'), findsOneWidget);
+    expect(find.byIcon(Icons.login_rounded), findsOneWidget);
+    expect(find.byTooltip('Show password'), findsOneWidget);
 
     await tester.tap(find.byIcon(Icons.language));
     await tester.pumpAndSettle();
     await tester.tap(find.byType(CheckedPopupMenuItem<String>).last);
     await tester.pumpAndSettle();
 
-    expect(find.text('Đăng nhập'), findsOneWidget);
+    expect(find.text('Đăng nhập'), findsWidgets);
+    expect(find.byTooltip('Hiện mật khẩu'), findsOneWidget);
     expect(localeController.locale, const Locale('vi'));
     expect(storage.languageCode, 'vi');
   });
@@ -307,29 +309,35 @@ void main() {
     await tester.pumpAndSettle();
 
     expect(find.text('Smart City Reports'), findsOneWidget);
-    expect(find.text('Log in'), findsOneWidget);
+    expect(find.byIcon(Icons.login_rounded), findsOneWidget);
 
     await tester.enterText(find.byType(EditableText).at(0), 'citizen@test.com');
     await tester.enterText(find.byType(EditableText).at(1), 'Password123');
-    await tester.tap(find.text('Log in'));
+    await tester.tap(find.byIcon(Icons.login_rounded));
     await tester.pumpAndSettle();
 
-    expect(find.text('My reports'), findsOneWidget);
+    expect(find.text('My reports'), findsWidgets);
     expect(find.text('Broken streetlight near Nguyen Hue'), findsOneWidget);
   });
 
   testWidgets('citizen can create a report from home', (tester) async {
+    tester.view.physicalSize = const Size(390, 800);
+    tester.view.devicePixelRatio = 1;
+    addTearDown(tester.view.resetPhysicalSize);
+    addTearDown(tester.view.resetDevicePixelRatio);
+    final reportApiService = MockReportApiService();
+
     await tester.pumpWidget(
       SmartCityReportApp(
         authApiService: FakeAuthApiService(loginRole: UserRole.citizen),
-        reportApiService: MockReportApiService(),
+        reportApiService: reportApiService,
       ),
     );
     await tester.pumpAndSettle();
 
     await tester.enterText(find.byType(EditableText).at(0), 'citizen@test.com');
     await tester.enterText(find.byType(EditableText).at(1), 'Password123');
-    await tester.tap(find.text('Log in'));
+    await tester.tap(find.byIcon(Icons.login_rounded));
     await tester.pumpAndSettle();
 
     await tester.tap(find.text('Report an issue'));
@@ -351,28 +359,57 @@ void main() {
       scrollable: formScrollable,
     );
     await tester.enterText(titleField, 'Blocked drain');
-    await tester.ensureVisible(descriptionField);
+    await Scrollable.ensureVisible(
+      tester.element(descriptionField),
+      alignment: 0.5,
+    );
+    await tester.pumpAndSettle();
     await tester.enterText(descriptionField, 'Water is pooling after rain.');
+    expect(
+      tester.widget<TextFormField>(titleField).controller?.text,
+      'Blocked drain',
+    );
+    expect(
+      tester.widget<TextFormField>(descriptionField).controller?.text,
+      'Water is pooling after rain.',
+    );
     final uploadControl = find.byKey(const Key('report_photo_upload'));
     await tester.scrollUntilVisible(
       uploadControl,
       -300,
       scrollable: formScrollable,
     );
+    await Scrollable.ensureVisible(
+      tester.element(uploadControl),
+      alignment: 0.5,
+    );
+    await tester.pumpAndSettle();
     await tester.tap(uploadControl);
     await tester.pumpAndSettle();
     await tester.pump(const Duration(seconds: 4));
     await tester.pumpAndSettle();
-    final submitButton = find.text('Submit report');
+    expect(find.text('1 of 1 added'), findsOneWidget);
+    final submitButton = find.byKey(const Key('report_submit_button'));
     await tester.scrollUntilVisible(
       submitButton,
       300,
       scrollable: formScrollable,
     );
-    await tester.tap(submitButton);
+    await Scrollable.ensureVisible(
+      tester.element(submitButton),
+      alignment: 0.5,
+    );
+    await tester.pumpAndSettle();
+    final submitAction = tester.widget<FilledButton>(submitButton).onPressed;
+    expect(submitAction, isNotNull);
+    submitAction!();
     await tester.pumpAndSettle();
 
-    expect(find.text('My reports'), findsOneWidget);
+    expect(find.text('Required'), findsNothing);
+    expect(find.text('Before photo required'), findsNothing);
+    final reports = await tester.runAsync(reportApiService.fetchCitizenReports);
+    expect(reports?.any((report) => report.title == 'Blocked drain'), isTrue);
+    expect(find.text('My reports'), findsWidgets);
     expect(find.text('Report submitted'), findsOneWidget);
     expect(find.text('Blocked drain'), findsWidgets);
   });
@@ -394,7 +431,7 @@ void main() {
 
     await tester.enterText(find.byType(EditableText).at(0), 'staff@test.com');
     await tester.enterText(find.byType(EditableText).at(1), 'Password123');
-    await tester.tap(find.text('Log in'));
+    await tester.tap(find.byIcon(Icons.login_rounded));
     await tester.pumpAndSettle();
 
     expect(find.text('My tasks'), findsOneWidget);
@@ -437,7 +474,7 @@ void main() {
 
     await tester.enterText(find.byType(EditableText).at(0), 'staff@test.com');
     await tester.enterText(find.byType(EditableText).at(1), 'Password123');
-    await tester.tap(find.text('Log in'));
+    await tester.tap(find.byIcon(Icons.login_rounded));
     await tester.pumpAndSettle();
 
     await tester.tap(find.text('Fix pothole'));
@@ -474,7 +511,7 @@ void main() {
 
     await tester.enterText(find.byType(EditableText).at(0), 'staff@test.com');
     await tester.enterText(find.byType(EditableText).at(1), 'Password123');
-    await tester.tap(find.text('Log in'));
+    await tester.tap(find.byIcon(Icons.login_rounded));
     await tester.pumpAndSettle();
 
     await tester.tap(find.text('Fix pothole'));
@@ -551,7 +588,7 @@ void main() {
     await tester.pumpAndSettle();
 
     expect(authApiService.loggedOut, isTrue);
-    expect(find.text('Log in'), findsOneWidget);
+    expect(find.byIcon(Icons.login_rounded), findsOneWidget);
   });
 
   testWidgets('overseer task tab refreshes when selected', (tester) async {
