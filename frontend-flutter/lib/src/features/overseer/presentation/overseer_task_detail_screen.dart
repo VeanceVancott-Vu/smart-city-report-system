@@ -394,10 +394,20 @@ class _OverseerTaskDetailScreenState extends State<OverseerTaskDetailScreen> {
                   ),
                   _Section(
                     title: context.l10n.taskAssignedStaff,
-                    child: Text(
-                      task.assignedStaff?.fullName ??
-                          context.l10n.commonUnassigned,
-                    ),
+                    child: task.assignedStaff == null
+                        ? Text(context.l10n.commonUnassigned)
+                        : TextButton.icon(
+                            key: const Key(
+                              'overseerTaskAssignedStaffProfileButton',
+                            ),
+                            onPressed: () => Navigator.of(context).pushNamed(
+                              AppRoutes.overseerStaffProfile,
+                              arguments: task.assignedStaff!.id,
+                            ),
+                            iconAlignment: IconAlignment.end,
+                            icon: const Icon(Icons.chevron_right),
+                            label: Text(task.assignedStaff!.fullName),
+                          ),
                   ),
                   if (task.submittedAt != null && task.assignedStaff != null)
                     _Section(

@@ -1509,4 +1509,47 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get overseerReportOperations => 'Report operations';
+
+  @override
+  String get profileTitle => 'My profile';
+
+  @override
+  String get profileLoadFailed => 'Unable to load your profile.';
+
+  @override
+  String get profileEmail => 'Email';
+
+  @override
+  String get profileMemberSince => 'Member since';
+
+  @override
+  String get profileActive => 'Active';
+
+  @override
+  String get profileInactive => 'Inactive';
+
+  @override
+  String get profileAccountStatus => 'Account status';
+
+  @override
+  String get profileReportAnalytics => 'Report summary';
+
+  @override
+  String get profileTotalReports => 'Total reports';
+
+  @override
+  String get profileTaskAnalytics => 'Task summary';
+
+  @override
+  String get profileTotalTasks => 'Total assigned tasks';
+
+  @override
+  String get profileOverseerAnalyticsNote =>
+      'A complete overseer analytics dashboard will be available on its own page.';
+
+  @override
+  String get staffProfileTitle => 'Staff profile';
+
+  @override
+  String get staffProfileLoadFailed => 'Unable to load this staff profile.';
 }

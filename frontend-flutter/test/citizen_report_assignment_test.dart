@@ -1,9 +1,14 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:smart_city_report_frontend/l10n/app_localizations.dart';
+import 'package:smart_city_report_frontend/src/core/routing/app_routes.dart';
+import 'package:smart_city_report_frontend/src/features/auth/domain/current_user.dart';
 import 'package:smart_city_report_frontend/src/features/reports/data/report_api_service.dart';
 import 'package:smart_city_report_frontend/src/features/reports/domain/report.dart';
 import 'package:smart_city_report_frontend/src/features/reports/presentation/citizen_report_detail_screen.dart';
+import 'package:smart_city_report_frontend/src/features/users/data/user_api_service.dart';
+import 'package:smart_city_report_frontend/src/features/users/domain/app_user.dart';
+import 'package:smart_city_report_frontend/src/features/users/presentation/staff_public_profile_screen.dart';
 
 void main() {
   testWidgets('fixed citizen report shows its assigned staff on mobile', (
@@ -33,6 +38,14 @@ void main() {
           ),
         ),
         onGenerateRoute: (settings) {
+          if (settings.name == AppRoutes.staffPublicProfile) {
+            return MaterialPageRoute<void>(
+              settings: settings,
+              builder: (_) => StaffPublicProfileScreen(
+                userApiService: _AssignedStaffApiService(),
+              ),
+            );
+          }
           if (settings.name != '/report') {
             return null;
           }
@@ -56,8 +69,32 @@ void main() {
       find.text('A staff member has not been assigned yet.'),
       findsNothing,
     );
+
+    await tester.ensureVisible(
+      find.byKey(const Key('assignedStaffProfileButton')),
+    );
+    await tester.tap(find.byKey(const Key('assignedStaffProfileButton')));
+    await tester.pumpAndSettle();
+
+    expect(find.text('Staff profile'), findsOneWidget);
+    expect(find.text('Demo Staff'), findsOneWidget);
+    expect(find.text('demo.staff@test.com'), findsOneWidget);
     expect(tester.takeException(), isNull);
   });
+}
+
+class _AssignedStaffApiService extends MockUserApiService {
+  @override
+  Future<StaffPublicProfile> fetchStaffPublicProfile(String staffId) async {
+    return StaffPublicProfile(
+      id: staffId,
+      fullName: 'Demo Staff',
+      email: 'demo.staff@test.com',
+      role: UserRole.staff,
+      active: true,
+      createdAt: DateTime.utc(2026, 6, 1),
+    );
+  }
 }
 
 class _AssignedReportApiService extends MockReportApiService {

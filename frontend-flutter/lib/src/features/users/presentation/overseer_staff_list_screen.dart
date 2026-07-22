@@ -1,9 +1,7 @@
 import 'package:flutter/material.dart';
 
 import '../../../core/localization/app_localizations_extension.dart';
-import '../../../core/localization/domain_localizations.dart';
 import '../../../core/routing/app_routes.dart';
-import '../../tasks/domain/task.dart';
 import '../data/user_api_service.dart';
 import '../domain/app_user.dart';
 
@@ -155,13 +153,14 @@ class _OverseerStaffListScreenState extends State<OverseerStaffListScreen> {
                     return _StaffSummaryCard(
                       member: member,
                       initials: _getInitials(member.fullName),
-                      onTaskTapped: (taskId) {
-                        Navigator.of(context)
-                            .pushNamed(
-                              AppRoutes.overseerTaskDetail,
-                              arguments: taskId,
-                            )
-                            .then((_) => _loadSummary());
+                      onProfileTapped: () async {
+                        await Navigator.of(context).pushNamed(
+                          AppRoutes.overseerStaffProfile,
+                          arguments: member.id,
+                        );
+                        if (mounted) {
+                          _loadSummary();
+                        }
                       },
                     );
                   },
@@ -214,12 +213,12 @@ class _StaffSummaryCard extends StatelessWidget {
   const _StaffSummaryCard({
     required this.member,
     required this.initials,
-    required this.onTaskTapped,
+    required this.onProfileTapped,
   });
 
   final StaffSummary member;
   final String initials;
-  final ValueChanged<String> onTaskTapped;
+  final VoidCallback onProfileTapped;
 
   @override
   Widget build(BuildContext context) {
@@ -230,25 +229,6 @@ class _StaffSummaryCard extends StatelessWidget {
         ? const Color(0xFF0F766E)
         : Colors.red.shade700;
 
-    // Filter tasks
-    final activeTasks = member.tasks
-        .where(
-          (t) =>
-              t.status == TaskStatus.assigned ||
-              t.status == TaskStatus.inProgress ||
-              t.status == TaskStatus.denied,
-        )
-        .toList();
-    final completedTasks = member.tasks
-        .where(
-          (t) =>
-              t.status == TaskStatus.done ||
-              t.status == TaskStatus.closed ||
-              t.status == TaskStatus.approved ||
-              t.status == TaskStatus.pendingReview,
-        )
-        .toList();
-
     return Card(
       elevation: 0,
       shape: RoundedRectangleBorder(
@@ -257,11 +237,12 @@ class _StaffSummaryCard extends StatelessWidget {
       ),
       child: ClipRRect(
         borderRadius: BorderRadius.circular(12),
-        child: ExpansionTile(
-          shape: Border.all(color: Colors.transparent),
-          collapsedShape: Border.all(color: Colors.transparent),
-          backgroundColor: Colors.white,
-          collapsedBackgroundColor: Colors.white,
+        child: ListTile(
+          onTap: onProfileTapped,
+          contentPadding: const EdgeInsets.symmetric(
+            horizontal: 16,
+            vertical: 10,
+          ),
           leading: CircleAvatar(
             backgroundColor: avatarColor,
             child: Text(
@@ -319,81 +300,7 @@ class _StaffSummaryCard extends StatelessWidget {
               ],
             ),
           ),
-          children: [
-            const Divider(height: 1, color: Color(0xFFDDE5E2)),
-            Container(
-              color: const Color(0xFFF8FAF9),
-              padding: const EdgeInsets.all(12),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  // Active Tasks Section
-                  if (activeTasks.isNotEmpty) ...[
-                    Padding(
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 4,
-                        vertical: 6,
-                      ),
-                      child: Text(
-                        context.l10n.staffActiveTasksHeader,
-                        style: TextStyle(
-                          fontSize: 10,
-                          fontWeight: FontWeight.bold,
-                          color: Colors.grey,
-                        ),
-                      ),
-                    ),
-                    ...activeTasks.map(
-                      (t) => _TaskSubTile(
-                        task: t,
-                        onTap: () => onTaskTapped(t.id),
-                      ),
-                    ),
-                    const SizedBox(height: 10),
-                  ],
-
-                  // Completed Tasks Section
-                  if (completedTasks.isNotEmpty) ...[
-                    Padding(
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 4,
-                        vertical: 6,
-                      ),
-                      child: Text(
-                        context.l10n.staffCompletedTasksHeader,
-                        style: TextStyle(
-                          fontSize: 10,
-                          fontWeight: FontWeight.bold,
-                          color: Colors.grey,
-                        ),
-                      ),
-                    ),
-                    ...completedTasks.map(
-                      (t) => _TaskSubTile(
-                        task: t,
-                        onTap: () => onTaskTapped(t.id),
-                      ),
-                    ),
-                  ],
-
-                  if (activeTasks.isEmpty && completedTasks.isEmpty)
-                    Padding(
-                      padding: const EdgeInsets.symmetric(vertical: 16),
-                      child: Center(
-                        child: Text(
-                          context.l10n.staffNoAssignedTasksForMember,
-                          style: TextStyle(
-                            color: Colors.grey,
-                            fontSize: 13,
-                            fontStyle: FontStyle.italic,
-                          ),
-                        ),
-                      ),
-                    ),
-                ],
-              ),
-            ),
-          ],
+          trailing: const Icon(Icons.chevron_right),
         ),
       ),
     );
@@ -462,90 +369,6 @@ class _MiniStatChip extends StatelessWidget {
         ),
       ),
     );
-  }
-}
-
-class _TaskSubTile extends StatelessWidget {
-  const _TaskSubTile({required this.task, required this.onTap});
-
-  final Task task;
-  final VoidCallback onTap;
-
-  @override
-  Widget build(BuildContext context) {
-    final statusColor = _getStatusColor(task.status);
-    return Card(
-      elevation: 0,
-      margin: const EdgeInsets.symmetric(vertical: 4),
-      shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(8),
-        side: BorderSide(color: Colors.grey.shade200),
-      ),
-      color: Colors.white,
-      child: ListTile(
-        dense: true,
-        onTap: onTap,
-        title: Text(
-          task.title,
-          style: const TextStyle(fontWeight: FontWeight.w600, fontSize: 13),
-        ),
-        subtitle: Padding(
-          padding: const EdgeInsets.only(top: 4),
-          child: Row(
-            children: [
-              Container(
-                padding: const EdgeInsets.symmetric(
-                  horizontal: 6,
-                  vertical: 1.5,
-                ),
-                decoration: BoxDecoration(
-                  color: statusColor.withValues(alpha: 0.08),
-                  borderRadius: BorderRadius.circular(4),
-                  border: Border.all(color: statusColor.withValues(alpha: 0.2)),
-                ),
-                child: Text(
-                  task.status.localizedLabel(context),
-                  style: TextStyle(
-                    color: statusColor,
-                    fontSize: 9,
-                    fontWeight: FontWeight.bold,
-                  ),
-                ),
-              ),
-              const SizedBox(width: 8),
-              Text(
-                context.l10n.priorityValue(task.priorityScore),
-                style: TextStyle(color: Colors.grey.shade600, fontSize: 11),
-              ),
-            ],
-          ),
-        ),
-        trailing: const Icon(Icons.chevron_right, size: 16, color: Colors.grey),
-      ),
-    );
-  }
-
-  Color _getStatusColor(TaskStatus status) {
-    switch (status) {
-      case TaskStatus.newTask:
-        return Colors.blue;
-      case TaskStatus.assigned:
-        return Colors.indigo;
-      case TaskStatus.inProgress:
-        return Colors.orange.shade700;
-      case TaskStatus.done:
-        return Colors.teal;
-      case TaskStatus.pendingReview:
-        return Colors.amber.shade800;
-      case TaskStatus.denied:
-        return Colors.red.shade700;
-      case TaskStatus.approved:
-        return Colors.green.shade700;
-      case TaskStatus.closed:
-        return Colors.grey.shade700;
-      case TaskStatus.cancelled:
-        return Colors.red.shade600;
-    }
   }
 }
 

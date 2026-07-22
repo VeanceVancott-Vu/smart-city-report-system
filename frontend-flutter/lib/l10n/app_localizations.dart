@@ -2773,6 +2773,90 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Report operations'**
   String get overseerReportOperations;
+
+  /// No description provided for @profileTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'My profile'**
+  String get profileTitle;
+
+  /// No description provided for @profileLoadFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'Unable to load your profile.'**
+  String get profileLoadFailed;
+
+  /// No description provided for @profileEmail.
+  ///
+  /// In en, this message translates to:
+  /// **'Email'**
+  String get profileEmail;
+
+  /// No description provided for @profileMemberSince.
+  ///
+  /// In en, this message translates to:
+  /// **'Member since'**
+  String get profileMemberSince;
+
+  /// No description provided for @profileActive.
+  ///
+  /// In en, this message translates to:
+  /// **'Active'**
+  String get profileActive;
+
+  /// No description provided for @profileInactive.
+  ///
+  /// In en, this message translates to:
+  /// **'Inactive'**
+  String get profileInactive;
+
+  /// No description provided for @profileAccountStatus.
+  ///
+  /// In en, this message translates to:
+  /// **'Account status'**
+  String get profileAccountStatus;
+
+  /// No description provided for @profileReportAnalytics.
+  ///
+  /// In en, this message translates to:
+  /// **'Report summary'**
+  String get profileReportAnalytics;
+
+  /// No description provided for @profileTotalReports.
+  ///
+  /// In en, this message translates to:
+  /// **'Total reports'**
+  String get profileTotalReports;
+
+  /// No description provided for @profileTaskAnalytics.
+  ///
+  /// In en, this message translates to:
+  /// **'Task summary'**
+  String get profileTaskAnalytics;
+
+  /// No description provided for @profileTotalTasks.
+  ///
+  /// In en, this message translates to:
+  /// **'Total assigned tasks'**
+  String get profileTotalTasks;
+
+  /// No description provided for @profileOverseerAnalyticsNote.
+  ///
+  /// In en, this message translates to:
+  /// **'A complete overseer analytics dashboard will be available on its own page.'**
+  String get profileOverseerAnalyticsNote;
+
+  /// No description provided for @staffProfileTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Staff profile'**
+  String get staffProfileTitle;
+
+  /// No description provided for @staffProfileLoadFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'Unable to load this staff profile.'**
+  String get staffProfileLoadFailed;
 }
 
 class _AppLocalizationsDelegate

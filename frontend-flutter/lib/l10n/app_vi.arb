@@ -446,4 +446,18 @@
   "taskSubmittedAt": "Thời gian gửi duyệt",
   "taskReviewedAt": "Thời gian xét duyệt",
   "taskClosedAt": "Thời gian đóng"
+  ,"profileTitle": "H\u1ed3 s\u01a1 c\u1ee7a t\u00f4i",
+  "profileLoadFailed": "Kh\u00f4ng th\u1ec3 t\u1ea3i h\u1ed3 s\u01a1 c\u1ee7a b\u1ea1n.",
+  "profileEmail": "Email",
+  "profileMemberSince": "Th\u00e0nh vi\u00ean t\u1eeb",
+  "profileActive": "\u0110ang ho\u1ea1t \u0111\u1ed9ng",
+  "profileInactive": "Ng\u1eebng ho\u1ea1t \u0111\u1ed9ng",
+  "profileAccountStatus": "Tr\u1ea1ng th\u00e1i t\u00e0i kho\u1ea3n",
+  "profileReportAnalytics": "Th\u1ed1ng k\u00ea b\u00e1o c\u00e1o",
+  "profileTotalReports": "T\u1ed5ng s\u1ed1 b\u00e1o c\u00e1o",
+  "profileTaskAnalytics": "Th\u1ed1ng k\u00ea c\u00f4ng vi\u1ec7c",
+  "profileTotalTasks": "T\u1ed5ng c\u00f4ng vi\u1ec7c \u0111\u01b0\u1ee3c giao",
+  "profileOverseerAnalyticsNote": "B\u1ea3ng ph\u00e2n t\u00edch \u0111\u1ea7y \u0111\u1ee7 cho gi\u00e1m s\u00e1t vi\u00ean s\u1ebd n\u1eb1m tr\u00ean m\u1ed9t trang ri\u00eang.",
+  "staffProfileTitle": "H\u1ed3 s\u01a1 nh\u00e2n vi\u00ean",
+  "staffProfileLoadFailed": "Kh\u00f4ng th\u1ec3 t\u1ea3i h\u1ed3 s\u01a1 nh\u00e2n vi\u00ean n\u00e0y."
 }

@@ -212,6 +212,12 @@ class _StaffTaskInboxScreenState extends State<StaffTaskInboxScreen> {
       appBar: AppBar(
         title: Text(context.l10n.staffMyTasksTitle),
         actions: [
+          IconButton(
+            tooltip: context.l10n.profileTitle,
+            onPressed: () =>
+                Navigator.of(context).pushNamed(AppRoutes.myProfile),
+            icon: const Icon(Icons.account_circle_outlined),
+          ),
           const LanguageMenuButton(),
           IconButton(
             tooltip: context.l10n.commonRefresh,

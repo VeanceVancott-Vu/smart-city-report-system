@@ -250,6 +250,26 @@ class _OverseerReportDetailScreenState
                   final side = Column(
                     children: [
                       _Section(
+                        title: context.l10n.taskAssignedStaff,
+                        icon: Icons.badge_outlined,
+                        child: report.assignedStaff == null
+                            ? Text(context.l10n.commonUnassigned)
+                            : TextButton.icon(
+                                key: const Key(
+                                  'overseerReportAssignedStaffProfileButton',
+                                ),
+                                onPressed: () =>
+                                    Navigator.of(context).pushNamed(
+                                      AppRoutes.overseerStaffProfile,
+                                      arguments: report.assignedStaff!.id,
+                                    ),
+                                iconAlignment: IconAlignment.end,
+                                icon: const Icon(Icons.chevron_right),
+                                label: Text(report.assignedStaff!.fullName),
+                              ),
+                      ),
+                      const SizedBox(height: 14),
+                      _Section(
                         title: context.l10n.reportCreatedBy,
                         icon: Icons.person_outline,
                         child: Text(

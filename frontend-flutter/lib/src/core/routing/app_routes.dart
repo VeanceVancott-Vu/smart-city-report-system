@@ -15,11 +15,14 @@ class AppRoutes {
   static const overseerMap = '/overseer/map';
   static const overseerReports = '/overseer/reports';
   static const overseerCreateUser = '/overseer/users/create';
+  static const overseerStaffProfile = '/overseer/staff/profile';
   static const overseerReportDetail = '/overseer/reports/detail';
   static const overseerTasks = '/overseer/tasks';
   static const overseerCreateTask = '/overseer/tasks/create';
   static const overseerTaskDetail = '/overseer/tasks/detail';
   static const overseerAssignStaff = '/overseer/tasks/assign';
+  static const myProfile = '/profile';
+  static const staffPublicProfile = '/staff/profile';
   static const staffTasks = '/staff/tasks';
   static const staffTaskDetail = '/staff/tasks/detail';
   static const staffTaskRoute = '/staff/tasks/route';

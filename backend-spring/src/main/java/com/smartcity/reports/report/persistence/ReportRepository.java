@@ -1,6 +1,7 @@
 package com.smartcity.reports.report.persistence;
 
 import com.smartcity.reports.report.domain.Report;
+import com.smartcity.reports.report.domain.ReportStatus;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.JpaSpecificationExecutor;
 import org.springframework.data.jpa.repository.Query;
@@ -18,6 +19,14 @@ public interface ReportRepository extends JpaRepository<Report, UUID>, JpaSpecif
     boolean existsByAfterPhotoUrl(String afterPhotoUrl);
 
     boolean existsByAfterPhotoUrlAndIdNot(String afterPhotoUrl, UUID id);
+
+    @Query("""
+            SELECT report.status AS status, COUNT(report) AS count
+            FROM Report report
+            WHERE report.createdBy.id = :creatorId
+            GROUP BY report.status
+            """)
+    List<ReportStatusCount> countByCreatorGroupedByStatus(@Param("creatorId") UUID creatorId);
 
     @Query(value = """
             SELECT *
@@ -51,4 +60,10 @@ public interface ReportRepository extends JpaRepository<Report, UUID>, JpaSpecif
             @Param("maxLat") double maxLat,
             @Param("maxLng") double maxLng
     );
+
+    interface ReportStatusCount {
+        ReportStatus getStatus();
+
+        long getCount();
+    }
 }

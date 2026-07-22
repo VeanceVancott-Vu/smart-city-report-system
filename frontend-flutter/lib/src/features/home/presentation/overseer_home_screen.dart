@@ -47,6 +47,12 @@ class _OverseerHomeScreenState extends State<OverseerHomeScreen> {
       appBar: AppBar(
         title: Text(titles[_selectedIndex]),
         actions: [
+          IconButton(
+            tooltip: context.l10n.profileTitle,
+            onPressed: () =>
+                Navigator.of(context).pushNamed(AppRoutes.myProfile),
+            icon: const Icon(Icons.account_circle_outlined),
+          ),
           const LanguageMenuButton(),
           IconButton(
             tooltip: context.l10n.homeCreateUser,

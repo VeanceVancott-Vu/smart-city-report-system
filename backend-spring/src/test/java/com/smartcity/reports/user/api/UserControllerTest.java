@@ -19,6 +19,7 @@ import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.test.web.servlet.MockMvc;
 
 import java.util.List;
+import java.util.Map;
 import java.util.UUID;
 
 import static org.mockito.ArgumentMatchers.any;
@@ -108,6 +109,89 @@ class UserControllerTest {
                 .andExpect(jsonPath("$.fullName").value("Test Citizen"))
                 .andExpect(jsonPath("$.email").value("citizen@test.com"))
                 .andExpect(jsonPath("$.role").value("CITIZEN"))
+                .andExpect(jsonPath("$.passwordHash").doesNotExist());
+    }
+
+    @Test
+    void myProfileReturnsRoleSpecificAnalytics() throws Exception {
+        User citizen = user(UserRole.CITIZEN);
+        when(userService.getCurrentUserProfile(nullable(User.class)))
+                .thenReturn(new UserProfileResponse(
+                        citizen.getId(),
+                        "Test Citizen",
+                        "citizen@test.com",
+                        UserRole.CITIZEN,
+                        true,
+                        null,
+                        new CitizenReportAnalyticsResponse(3, Map.of(
+                                com.smartcity.reports.report.domain.ReportStatus.SUBMITTED, 2L,
+                                com.smartcity.reports.report.domain.ReportStatus.FIXED, 1L
+                        )),
+                        null
+                ));
+
+        mockMvc.perform(get("/api/users/me/profile")
+                        .with(authentication(authenticationToken(citizen))))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.fullName").value("Test Citizen"))
+                .andExpect(jsonPath("$.role").value("CITIZEN"))
+                .andExpect(jsonPath("$.citizenReportAnalytics.totalReports").value(3))
+                .andExpect(jsonPath("$.citizenReportAnalytics.byStatus.SUBMITTED").value(2))
+                .andExpect(jsonPath("$.staffTaskAnalytics").doesNotExist())
+                .andExpect(jsonPath("$.passwordHash").doesNotExist());
+    }
+
+    @Test
+    void staffProfileReturnsPublicBasicInformation() throws Exception {
+        User citizen = user(UserRole.CITIZEN);
+        UUID staffId = UUID.randomUUID();
+        when(userService.getStaffPublicProfile(eq(staffId), nullable(User.class)))
+                .thenReturn(new StaffPublicProfileResponse(
+                        staffId,
+                        "Assigned Staff",
+                        "assigned.staff@test.com",
+                        UserRole.STAFF,
+                        true,
+                        null
+                ));
+
+        mockMvc.perform(get("/api/users/staff/{staffId}/profile", staffId)
+                        .with(authentication(authenticationToken(citizen))))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.id").value(staffId.toString()))
+                .andExpect(jsonPath("$.fullName").value("Assigned Staff"))
+                .andExpect(jsonPath("$.email").value("assigned.staff@test.com"))
+                .andExpect(jsonPath("$.role").value("STAFF"))
+                .andExpect(jsonPath("$.active").value(true))
+                .andExpect(jsonPath("$.passwordHash").doesNotExist());
+    }
+
+    @Test
+    void staffDetailsReturnsAnalyticsAndTasks() throws Exception {
+        User overseer = user(UserRole.OVERSEER);
+        UUID staffId = UUID.randomUUID();
+        when(userService.getStaffDetailProfile(eq(staffId), nullable(User.class)))
+                .thenReturn(new StaffDetailProfileResponse(
+                        staffId,
+                        "Assigned Staff",
+                        "assigned.staff@test.com",
+                        UserRole.STAFF,
+                        true,
+                        null,
+                        new StaffTaskAnalyticsResponse(2, Map.of(
+                                com.smartcity.reports.task.domain.TaskStatus.ASSIGNED, 1L,
+                                com.smartcity.reports.task.domain.TaskStatus.IN_PROGRESS, 1L
+                        )),
+                        List.of()
+                ));
+
+        mockMvc.perform(get("/api/users/staff/{staffId}/details", staffId)
+                        .with(authentication(authenticationToken(overseer))))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.id").value(staffId.toString()))
+                .andExpect(jsonPath("$.taskAnalytics.totalTasks").value(2))
+                .andExpect(jsonPath("$.taskAnalytics.byStatus.ASSIGNED").value(1))
+                .andExpect(jsonPath("$.tasks").isArray())
                 .andExpect(jsonPath("$.passwordHash").doesNotExist());
     }
 

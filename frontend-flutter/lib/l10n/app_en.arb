@@ -445,5 +445,19 @@
   "staffCompleteChecklistNoteClear": "Add a concise completion note.",
   "staffCompleteNoteHelp": "Describe what was completed and mention anything the reviewer should know.",
   "staffCompleteNoteHint": "Example: Replaced the damaged light and tested it.",
-  "overseerReportOperations": "Report operations"
+  "overseerReportOperations": "Report operations",
+  "profileTitle": "My profile",
+  "profileLoadFailed": "Unable to load your profile.",
+  "profileEmail": "Email",
+  "profileMemberSince": "Member since",
+  "profileActive": "Active",
+  "profileInactive": "Inactive",
+  "profileAccountStatus": "Account status",
+  "profileReportAnalytics": "Report summary",
+  "profileTotalReports": "Total reports",
+  "profileTaskAnalytics": "Task summary",
+  "profileTotalTasks": "Total assigned tasks",
+  "profileOverseerAnalyticsNote": "A complete overseer analytics dashboard will be available on its own page.",
+  "staffProfileTitle": "Staff profile",
+  "staffProfileLoadFailed": "Unable to load this staff profile."
 }

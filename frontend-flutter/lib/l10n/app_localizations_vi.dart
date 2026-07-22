@@ -1499,4 +1499,47 @@ class AppLocalizationsVi extends AppLocalizations {
 
   @override
   String get overseerReportOperations => 'Thao tác báo cáo';
+
+  @override
+  String get profileTitle => 'Hồ sơ của tôi';
+
+  @override
+  String get profileLoadFailed => 'Không thể tải hồ sơ của bạn.';
+
+  @override
+  String get profileEmail => 'Email';
+
+  @override
+  String get profileMemberSince => 'Thành viên từ';
+
+  @override
+  String get profileActive => 'Đang hoạt động';
+
+  @override
+  String get profileInactive => 'Ngừng hoạt động';
+
+  @override
+  String get profileAccountStatus => 'Trạng thái tài khoản';
+
+  @override
+  String get profileReportAnalytics => 'Thống kê báo cáo';
+
+  @override
+  String get profileTotalReports => 'Tổng số báo cáo';
+
+  @override
+  String get profileTaskAnalytics => 'Thống kê công việc';
+
+  @override
+  String get profileTotalTasks => 'Tổng công việc được giao';
+
+  @override
+  String get profileOverseerAnalyticsNote =>
+      'Bảng phân tích đầy đủ cho giám sát viên sẽ nằm trên một trang riêng.';
+
+  @override
+  String get staffProfileTitle => 'Hồ sơ nhân viên';
+
+  @override
+  String get staffProfileLoadFailed => 'Không thể tải hồ sơ nhân viên này.';
 }

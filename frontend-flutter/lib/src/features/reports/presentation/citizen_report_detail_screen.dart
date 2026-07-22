@@ -5,6 +5,7 @@ import 'package:latlong2/latlong.dart' hide Path;
 import '../../../core/files/uploaded_photo_view.dart';
 import '../../../core/localization/app_localizations_extension.dart';
 import '../../../core/localization/domain_localizations.dart';
+import '../../../core/routing/app_routes.dart';
 
 import '../data/report_api_service.dart';
 import '../domain/report.dart';
@@ -376,10 +377,26 @@ class _CitizenReportDetailScreenState extends State<CitizenReportDetailScreen> {
                                 ),
                               ),
                               const SizedBox(height: 3),
-                              Text(
-                                staff.fullName,
-                                style: theme.textTheme.titleSmall?.copyWith(
-                                  fontWeight: FontWeight.w800,
+                              TextButton.icon(
+                                key: const Key('assignedStaffProfileButton'),
+                                onPressed: () =>
+                                    Navigator.of(context).pushNamed(
+                                      AppRoutes.staffPublicProfile,
+                                      arguments: staff.id,
+                                    ),
+                                style: TextButton.styleFrom(
+                                  padding: EdgeInsets.zero,
+                                  minimumSize: Size.zero,
+                                  tapTargetSize:
+                                      MaterialTapTargetSize.shrinkWrap,
+                                ),
+                                iconAlignment: IconAlignment.end,
+                                icon: const Icon(Icons.chevron_right, size: 18),
+                                label: Text(
+                                  staff.fullName,
+                                  style: theme.textTheme.titleSmall?.copyWith(
+                                    fontWeight: FontWeight.w800,
+                                  ),
                                 ),
                               ),
                               Text(

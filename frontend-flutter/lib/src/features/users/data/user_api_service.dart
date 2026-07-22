@@ -10,6 +10,12 @@ import '../../tasks/domain/task.dart';
 import '../../reports/domain/report.dart';
 
 abstract class UserApiService {
+  Future<UserProfile> fetchMyProfile();
+
+  Future<StaffPublicProfile> fetchStaffPublicProfile(String staffId);
+
+  Future<StaffDetailProfile> fetchStaffDetailProfile(String staffId);
+
   Future<List<AppUser>> fetchStaffUsers();
 
   Future<AppUser> createUser(UserDraft draft);
@@ -26,6 +32,36 @@ class BackendUserApiService extends ApiService implements UserApiService {
 
   final TokenStorage _tokenStorage;
   final http.Client _client;
+
+  @override
+  Future<UserProfile> fetchMyProfile() async {
+    final response = await _client.get(
+      _uri('/api/users/me/profile'),
+      headers: await _headers(),
+    );
+    _ensureSuccess(response);
+    return UserProfile.fromJson(_decodeMap(response.body));
+  }
+
+  @override
+  Future<StaffPublicProfile> fetchStaffPublicProfile(String staffId) async {
+    final response = await _client.get(
+      _uri('/api/users/staff/$staffId/profile'),
+      headers: await _headers(),
+    );
+    _ensureSuccess(response);
+    return StaffPublicProfile.fromJson(_decodeMap(response.body));
+  }
+
+  @override
+  Future<StaffDetailProfile> fetchStaffDetailProfile(String staffId) async {
+    final response = await _client.get(
+      _uri('/api/users/staff/$staffId/details'),
+      headers: await _headers(),
+    );
+    _ensureSuccess(response);
+    return StaffDetailProfile.fromJson(_decodeMap(response.body));
+  }
 
   @override
   Future<List<AppUser>> fetchStaffUsers() async {
@@ -133,6 +169,73 @@ class MockUserApiService extends ApiService implements UserApiService {
       role: UserRole.staff,
     ),
   ];
+
+  @override
+  Future<UserProfile> fetchMyProfile() async {
+    await Future<void>.delayed(const Duration(milliseconds: 100));
+    return UserProfile(
+      id: '22222222-2222-2222-2222-222222222222',
+      fullName: 'Test Citizen',
+      email: 'citizen@test.com',
+      role: UserRole.citizen,
+      active: true,
+      createdAt: DateTime(2026, 6, 1),
+      citizenReportAnalytics: const CitizenReportAnalytics(
+        totalReports: 4,
+        byStatus: {
+          ReportStatus.submitted: 1,
+          ReportStatus.inProgress: 1,
+          ReportStatus.fixed: 1,
+          ReportStatus.cancelled: 1,
+        },
+      ),
+      staffTaskAnalytics: null,
+    );
+  }
+
+  @override
+  Future<StaffPublicProfile> fetchStaffPublicProfile(String staffId) async {
+    await Future<void>.delayed(const Duration(milliseconds: 100));
+    final staff = _users.firstWhere(
+      (user) => user.id == staffId && user.role == UserRole.staff,
+      orElse: () => throw const UserApiException('Staff user not found.'),
+    );
+    return StaffPublicProfile(
+      id: staff.id,
+      fullName: staff.fullName,
+      email: staff.email,
+      role: staff.role,
+      active: true,
+      createdAt: DateTime(2026, 6, 1),
+    );
+  }
+
+  @override
+  Future<StaffDetailProfile> fetchStaffDetailProfile(String staffId) async {
+    final summary = (await fetchStaffSummary()).firstWhere(
+      (member) => member.id == staffId,
+      orElse: () => throw const UserApiException('Staff user not found.'),
+    );
+    final counts = <TaskStatus, int>{
+      for (final status in TaskStatus.values) status: 0,
+    };
+    for (final task in summary.tasks) {
+      counts[task.status] = (counts[task.status] ?? 0) + 1;
+    }
+    return StaffDetailProfile(
+      id: summary.id,
+      fullName: summary.fullName,
+      email: summary.email,
+      role: UserRole.staff,
+      active: summary.active,
+      createdAt: DateTime(2026, 6, 1),
+      taskAnalytics: StaffTaskAnalytics(
+        totalTasks: summary.tasks.length,
+        byStatus: counts,
+      ),
+      tasks: summary.tasks,
+    );
+  }
 
   @override
   Future<List<AppUser>> fetchStaffUsers() async {

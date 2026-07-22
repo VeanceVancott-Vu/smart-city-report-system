@@ -29,6 +29,9 @@ import 'features/tasks/presentation/staff_task_inbox_screen.dart';
 import 'features/tasks/presentation/staff_task_route_map_screen.dart';
 import 'features/users/data/user_api_service.dart';
 import 'features/users/presentation/overseer_create_user_screen.dart';
+import 'features/users/presentation/overseer_staff_profile_screen.dart';
+import 'features/users/presentation/my_profile_screen.dart';
+import 'features/users/presentation/staff_public_profile_screen.dart';
 
 class SmartCityReportApp extends StatelessWidget {
   SmartCityReportApp({
@@ -103,11 +106,16 @@ class SmartCityReportApp extends StatelessWidget {
             ),
             AppRoutes.overseerCreateUser: (_) =>
                 OverseerCreateUserScreen(userApiService: userApiService),
+            AppRoutes.overseerStaffProfile: (_) =>
+                OverseerStaffProfileScreen(userApiService: userApiService),
+            AppRoutes.myProfile: (_) =>
+                MyProfileScreen(userApiService: userApiService),
+            AppRoutes.staffPublicProfile: (_) =>
+                StaffPublicProfileScreen(userApiService: userApiService),
             AppRoutes.citizenCreateReport: (_) =>
                 CitizenCreateReportScreen(reportApiService: reportApiService),
-            AppRoutes.citizenReportDetail: (_) => CitizenReportDetailScreen(
-              reportApiService: reportApiService,
-            ),
+            AppRoutes.citizenReportDetail: (_) =>
+                CitizenReportDetailScreen(reportApiService: reportApiService),
             AppRoutes.citizenEditReport: (_) =>
                 CitizenEditReportScreen(reportApiService: reportApiService),
             AppRoutes.overseerReportDetail: (_) =>
