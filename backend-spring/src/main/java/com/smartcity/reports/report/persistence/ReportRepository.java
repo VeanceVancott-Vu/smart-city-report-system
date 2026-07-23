@@ -8,6 +8,7 @@ import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 
 import java.util.List;
+import java.util.Optional;
 import java.util.UUID;
 
 public interface ReportRepository extends JpaRepository<Report, UUID>, JpaSpecificationExecutor<Report> {
@@ -19,6 +20,8 @@ public interface ReportRepository extends JpaRepository<Report, UUID>, JpaSpecif
     boolean existsByAfterPhotoUrl(String afterPhotoUrl);
 
     boolean existsByAfterPhotoUrlAndIdNot(String afterPhotoUrl, UUID id);
+
+    Optional<Report> findFirstByTitleAndCreatedBy_EmailIgnoreCase(String title, String creatorEmail);
 
     @Query("""
             SELECT report.status AS status, COUNT(report) AS count

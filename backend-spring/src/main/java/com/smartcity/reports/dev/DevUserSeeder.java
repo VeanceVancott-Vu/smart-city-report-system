@@ -52,8 +52,14 @@ public class DevUserSeeder implements ApplicationRunner {
 
     private List<SeedUser> seedUsersToCreate() {
         return List.of(
-                new SeedUser("citizen@test.com", "Test Citizen", UserRole.CITIZEN),
-                new SeedUser("staff@test.com", "Test Staff", UserRole.STAFF),
+                new SeedUser("citizen@test.com", "Nguyen Minh Anh", UserRole.CITIZEN),
+                new SeedUser("linh.nguyen@test.com", "Nguyen Hoang Linh", UserRole.CITIZEN),
+                new SeedUser("minh.tran@test.com", "Tran Quang Minh", UserRole.CITIZEN),
+                new SeedUser("an.le@test.com", "Le Bao An", UserRole.CITIZEN),
+                new SeedUser("staff@test.com", "Pham Gia Bao", UserRole.STAFF),
+                new SeedUser("mai.nguyen.staff@test.com", "Nguyen Ngoc Mai", UserRole.STAFF),
+                new SeedUser("quang.tran.staff@test.com", "Tran Minh Quang", UserRole.STAFF),
+                new SeedUser("thuy.le.staff@test.com", "Le Thanh Thuy", UserRole.STAFF),
                 new SeedUser("overseer@test.com", "Test Overseer", UserRole.OVERSEER)
         );
     }

@@ -43,20 +43,30 @@ class DevUserSeederTest {
     void seedUsersCreatesMissingUsersWithHashedPasswords() {
         DevUserSeeder seeder = new DevUserSeeder(userRepository, passwordEncoder);
 
-        when(userRepository.existsByEmailIgnoreCase("citizen@test.com")).thenReturn(false);
-        when(userRepository.existsByEmailIgnoreCase("staff@test.com")).thenReturn(false);
-        when(userRepository.existsByEmailIgnoreCase("overseer@test.com")).thenReturn(false);
+        when(userRepository.existsByEmailIgnoreCase(org.mockito.ArgumentMatchers.anyString()))
+                .thenReturn(false);
 
         seeder.seedUsers();
 
         ArgumentCaptor<User> userCaptor = ArgumentCaptor.forClass(User.class);
-        verify(userRepository, org.mockito.Mockito.times(3)).save(userCaptor.capture());
+        verify(userRepository, org.mockito.Mockito.times(9)).save(userCaptor.capture());
 
         List<User> users = userCaptor.getAllValues();
         assertThat(users).extracting(User::getEmail)
-                .containsExactly("citizen@test.com", "staff@test.com", "overseer@test.com");
-        assertThat(users).extracting(User::getRole)
-                .containsExactly(UserRole.CITIZEN, UserRole.STAFF, UserRole.OVERSEER);
+                .containsExactly(
+                        "citizen@test.com",
+                        "linh.nguyen@test.com",
+                        "minh.tran@test.com",
+                        "an.le@test.com",
+                        "staff@test.com",
+                        "mai.nguyen.staff@test.com",
+                        "quang.tran.staff@test.com",
+                        "thuy.le.staff@test.com",
+                        "overseer@test.com"
+                );
+        assertThat(users).filteredOn(user -> user.getRole() == UserRole.CITIZEN).hasSize(4);
+        assertThat(users).filteredOn(user -> user.getRole() == UserRole.STAFF).hasSize(4);
+        assertThat(users).filteredOn(user -> user.getRole() == UserRole.OVERSEER).hasSize(1);
         assertThat(users).allSatisfy(user -> {
             assertThat(user.getPasswordHash()).isNotEqualTo("Password123");
             assertThat(passwordEncoder.matches("Password123", user.getPasswordHash())).isTrue();
@@ -67,9 +77,8 @@ class DevUserSeederTest {
     void seedUsersDoesNotCreateUsersThatAlreadyExist() {
         DevUserSeeder seeder = new DevUserSeeder(userRepository, passwordEncoder);
 
-        when(userRepository.existsByEmailIgnoreCase("citizen@test.com")).thenReturn(true);
-        when(userRepository.existsByEmailIgnoreCase("staff@test.com")).thenReturn(true);
-        when(userRepository.existsByEmailIgnoreCase("overseer@test.com")).thenReturn(true);
+        when(userRepository.existsByEmailIgnoreCase(org.mockito.ArgumentMatchers.anyString()))
+                .thenReturn(true);
 
         seeder.seedUsers();
 

@@ -1,12 +1,15 @@
 package com.smartcity.reports.dev;
 
+import com.smartcity.reports.issue.IssueCategory;
 import com.smartcity.reports.report.domain.Report;
+import com.smartcity.reports.report.domain.ReportStatus;
 import com.smartcity.reports.report.persistence.ReportRepository;
 import com.smartcity.reports.task.domain.Task;
+import com.smartcity.reports.task.domain.TaskStatus;
 import com.smartcity.reports.task.persistence.TaskRepository;
 import com.smartcity.reports.user.domain.User;
-import com.smartcity.reports.user.persistence.UserRepository;
 import com.smartcity.reports.user.domain.UserRole;
+import com.smartcity.reports.user.persistence.UserRepository;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.ArgumentCaptor;
@@ -15,18 +18,29 @@ import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.context.annotation.Profile;
 import org.springframework.core.annotation.Order;
 
+import java.time.Clock;
+import java.time.Duration;
+import java.time.Instant;
+import java.time.ZoneOffset;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 import java.util.UUID;
+import java.util.function.Function;
+import java.util.stream.Collectors;
+import java.util.stream.IntStream;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.Mockito.times;
+import static org.mockito.Mockito.atLeast;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 @ExtendWith(MockitoExtension.class)
 class DevDemoDataSeederTest {
+
+    private static final Instant NOW = Instant.parse("2026-07-23T12:00:00Z");
 
     @Mock
     private UserRepository userRepository;
@@ -49,19 +63,31 @@ class DevDemoDataSeederTest {
     }
 
     @Test
-    void seedDemoDataCreatesAssignedTasksAndLinkedReports() {
+    void seedDemoDataCreatesNaturalAnalyticsDistributionWithStableIds() {
         DevDemoDataSeeder seeder = new DevDemoDataSeeder(
                 userRepository,
                 reportRepository,
-                taskRepository
+                taskRepository,
+                Clock.fixed(NOW, ZoneOffset.UTC)
         );
-        User citizen = user("00000000-0000-0000-0000-000000000101", "citizen@test.com", UserRole.CITIZEN);
-        User staff = user("00000000-0000-0000-0000-000000000102", "staff@test.com", UserRole.STAFF);
-        User overseer = user("00000000-0000-0000-0000-000000000103", "overseer@test.com", UserRole.OVERSEER);
-
-        when(userRepository.findByEmailIgnoreCase("citizen@test.com")).thenReturn(Optional.of(citizen));
-        when(userRepository.findByEmailIgnoreCase("staff@test.com")).thenReturn(Optional.of(staff));
-        when(userRepository.findByEmailIgnoreCase("overseer@test.com")).thenReturn(Optional.of(overseer));
+        List<User> citizens = List.of(
+                user("00000000-0000-0000-0000-000000000101", "citizen@test.com", UserRole.CITIZEN),
+                user("00000000-0000-0000-0000-000000000102", "linh.nguyen@test.com", UserRole.CITIZEN),
+                user("00000000-0000-0000-0000-000000000103", "minh.tran@test.com", UserRole.CITIZEN),
+                user("00000000-0000-0000-0000-000000000104", "an.le@test.com", UserRole.CITIZEN)
+        );
+        List<User> staff = List.of(
+                user("00000000-0000-0000-0000-000000000201", "staff@test.com", UserRole.STAFF),
+                user("00000000-0000-0000-0000-000000000202", "mai.nguyen.staff@test.com", UserRole.STAFF),
+                user("00000000-0000-0000-0000-000000000203", "quang.tran.staff@test.com", UserRole.STAFF),
+                user("00000000-0000-0000-0000-000000000204", "thuy.le.staff@test.com", UserRole.STAFF)
+        );
+        User overseer = user(
+                "00000000-0000-0000-0000-000000000301",
+                "overseer@test.com",
+                UserRole.OVERSEER
+        );
+        stubUsers(citizens, staff, overseer);
         when(reportRepository.findById(any(UUID.class))).thenReturn(Optional.empty());
         when(taskRepository.findById(any(UUID.class))).thenReturn(Optional.empty());
         when(reportRepository.save(any(Report.class))).thenAnswer(invocation -> invocation.getArgument(0));
@@ -71,55 +97,126 @@ class DevDemoDataSeederTest {
         seeder.seedDemoData();
 
         ArgumentCaptor<Report> reportCaptor = ArgumentCaptor.forClass(Report.class);
-        verify(reportRepository, times(6)).save(reportCaptor.capture());
-        assertThat(reportCaptor.getAllValues()).extracting(Report::getId)
+        verify(reportRepository, atLeast(DevDemoDataSeeder.ANALYTICS_REPORT_COUNT))
+                .save(reportCaptor.capture());
+        Map<UUID, Report> reportsById = reportCaptor.getAllValues().stream()
+                .collect(Collectors.toMap(
+                        Report::getId,
+                        Function.identity(),
+                        (previous, replacement) -> replacement
+                ));
+        List<Report> analyticsReports = IntStream.range(0, DevDemoDataSeeder.ANALYTICS_REPORT_COUNT)
+                .mapToObj(index -> reportsById.get(DevDemoDataSeeder.analyticsReportId(index)))
+                .toList();
+
+        assertThat(analyticsReports).doesNotContainNull();
+        assertThat(analyticsReports).hasSize(48);
+        assertThat(new HashSet<>(analyticsReports.stream().map(Report::getCategory).toList()))
+                .containsExactlyInAnyOrder(IssueCategory.values());
+        assertThat(new HashSet<>(analyticsReports.stream().map(Report::getStatus).toList()))
+                .containsExactlyInAnyOrder(ReportStatus.values());
+        assertThat(analyticsReports).filteredOn(report -> report.getLinkedTaskId() != null).hasSize(32);
+        assertThat(analyticsReports).filteredOn(report -> report.getStatus() == ReportStatus.FIXED).hasSize(10);
+        assertThat(analyticsReports).filteredOn(report -> !report.getCreatedAt().isBefore(NOW.minus(Duration.ofDays(30))))
+                .hasSize(20);
+        assertThat(analyticsReports.stream().map(Report::getCreatedAt).min(Instant::compareTo).orElseThrow())
+                .isBefore(NOW.minus(Duration.ofDays(180)));
+        assertThat(analyticsReports.stream().map(Report::getCreatedAt).max(Instant::compareTo).orElseThrow())
+                .isAfter(NOW.minus(Duration.ofDays(5)));
+        assertThat(analyticsReports).extracting(Report::getUpvoteCount)
+                .contains(0)
+                .anyMatch(upvotes -> upvotes >= 12);
+        assertThat(new HashSet<>(analyticsReports.stream()
+                .map(report -> report.getCreatedBy().getEmail())
+                .toList()))
                 .containsExactlyInAnyOrder(
-                        DevDemoDataSeeder.POTHOLE_REPORT_ID,
-                        DevDemoDataSeeder.STREETLIGHT_REPORT_ID,
-                        DevDemoDataSeeder.CURB_REPORT_ID,
-                        DevDemoDataSeeder.DRAIN_REPORT_ID,
-                        DevDemoDataSeeder.MANHOLE_REPORT_ID,
-                        DevDemoDataSeeder.FLOODING_REPORT_ID
+                        "citizen@test.com",
+                        "linh.nguyen@test.com",
+                        "minh.tran@test.com",
+                        "an.le@test.com"
                 );
-        assertThat(reportCaptor.getAllValues()).allSatisfy(report -> {
-            assertThat(report.getCreatedBy()).isEqualTo(citizen);
-            assertThat(report.getPriorityScore()).isEqualTo(report.getUpvoteCount());
-        });
+        assertThat(analyticsReports).extracting(Report::getAddressText)
+                .anyMatch(address -> address.contains("District 1"))
+                .anyMatch(address -> address.contains("District 3"))
+                .anyMatch(address -> address.contains("Binh Thanh District"))
+                .anyMatch(address -> address.contains("Thu Duc City"))
+                .anyMatch(address -> address.contains("District 7"))
+                .anyMatch(address -> address.contains("Tan Binh District"));
 
         ArgumentCaptor<Task> taskCaptor = ArgumentCaptor.forClass(Task.class);
-        verify(taskRepository, times(6)).save(taskCaptor.capture());
-        List<Task> savedTasks = taskCaptor.getAllValues();
-        Task roadTask = lastSavedTask(savedTasks, DevDemoDataSeeder.ROAD_TASK_ID);
-        Task streetlightTask = lastSavedTask(savedTasks, DevDemoDataSeeder.STREETLIGHT_TASK_ID);
-        Task drainageTask = lastSavedTask(savedTasks, DevDemoDataSeeder.DRAINAGE_TASK_ID);
+        verify(taskRepository, atLeast(DevDemoDataSeeder.ANALYTICS_TASK_COUNT))
+                .save(taskCaptor.capture());
+        Map<UUID, Task> tasksById = taskCaptor.getAllValues().stream()
+                .collect(Collectors.toMap(
+                        Task::getId,
+                        Function.identity(),
+                        (previous, replacement) -> replacement
+                ));
+        List<Task> analyticsTasks = IntStream.range(0, DevDemoDataSeeder.ANALYTICS_TASK_COUNT)
+                .mapToObj(index -> tasksById.get(DevDemoDataSeeder.analyticsTaskId(index)))
+                .toList();
 
-        assertThat(roadTask.getAssignedStaff()).isEqualTo(staff);
-        assertThat(roadTask.getCreatedByOverseer()).isEqualTo(overseer);
-        assertThat(roadTask.getReports()).extracting(Report::getId)
+        assertThat(analyticsTasks).doesNotContainNull();
+        assertThat(analyticsTasks).hasSize(32);
+        assertThat(analyticsTasks).extracting(Task::getTitle)
+                .contains("Resolve flush the local drainage line in District 1");
+        assertThat(new HashSet<>(analyticsTasks.stream().map(Task::getStatus).toList()))
                 .containsExactlyInAnyOrder(
-                        DevDemoDataSeeder.POTHOLE_REPORT_ID,
-                        DevDemoDataSeeder.CURB_REPORT_ID
+                        TaskStatus.NEW,
+                        TaskStatus.ASSIGNED,
+                        TaskStatus.IN_PROGRESS,
+                        TaskStatus.DONE,
+                        TaskStatus.DENIED,
+                        TaskStatus.APPROVED,
+                        TaskStatus.CLOSED,
+                        TaskStatus.CANCELLED
                 );
-        assertThat(streetlightTask.getAssignedStaff()).isEqualTo(staff);
-        assertThat(streetlightTask.getReports()).extracting(Report::getId)
-                .containsExactly(DevDemoDataSeeder.STREETLIGHT_REPORT_ID);
-        assertThat(drainageTask.getAssignedStaff()).isEqualTo(staff);
-        assertThat(drainageTask.getReports()).extracting(Report::getId)
+        assertThat(analyticsTasks).filteredOn(task -> task.getAssignedStaff() == null).hasSize(3);
+        assertThat(new HashSet<>(analyticsTasks.stream()
+                .filter(task -> task.getAssignedStaff() != null)
+                .map(task -> task.getAssignedStaff().getEmail())
+                .toList()))
                 .containsExactlyInAnyOrder(
-                        DevDemoDataSeeder.DRAIN_REPORT_ID,
-                        DevDemoDataSeeder.MANHOLE_REPORT_ID,
-                        DevDemoDataSeeder.FLOODING_REPORT_ID
+                        "staff@test.com",
+                        "mai.nguyen.staff@test.com",
+                        "quang.tran.staff@test.com",
+                        "thuy.le.staff@test.com"
                 );
+        assertThat(analyticsTasks).allSatisfy(task -> {
+            assertThat(task.getCreatedByOverseer()).isEqualTo(overseer);
+            assertThat(task.getReports()).hasSize(1);
+            assertThat(task.getReports().iterator().next().getLinkedTaskId()).isEqualTo(task.getId());
+        });
+        assertThat(analyticsTasks).filteredOn(task -> task.getStatus() == TaskStatus.CLOSED)
+                .allSatisfy(task -> {
+                    assertThat(task.getStartedAt()).isNotNull();
+                    assertThat(task.getSubmittedAt()).isNotNull();
+                    assertThat(task.getReviewedAt()).isNotNull();
+                    assertThat(task.getClosedAt()).isNotNull();
+                });
+
+        verify(taskRepository).existsByTitleAndCreatedByOverseer_EmailIgnoreCase(
+                "Resolve flush the local drainage line in District 1",
+                "overseer@test.com"
+        );
+        verify(reportRepository).findFirstByTitleAndCreatedBy_EmailIgnoreCase(
+                "Pothole beside the bus stop",
+                "citizen@test.com"
+        );
+        verify(taskRepository).findFirstByTitleAndCreatedByOverseer_EmailIgnoreCase(
+                "Repair road damage near Le Loi",
+                "overseer@test.com"
+        );
     }
 
-    private Task lastSavedTask(List<Task> tasks, UUID id) {
-        for (int index = tasks.size() - 1; index >= 0; index--) {
-            Task task = tasks.get(index);
-            if (task.getId().equals(id)) {
-                return task;
-            }
+    private void stubUsers(List<User> citizens, List<User> staff, User overseer) {
+        for (User user : citizens) {
+            when(userRepository.findByEmailIgnoreCase(user.getEmail())).thenReturn(Optional.of(user));
         }
-        throw new IllegalStateException("Saved task not found: " + id);
+        for (User user : staff) {
+            when(userRepository.findByEmailIgnoreCase(user.getEmail())).thenReturn(Optional.of(user));
+        }
+        when(userRepository.findByEmailIgnoreCase(overseer.getEmail())).thenReturn(Optional.of(overseer));
     }
 
     private User user(String id, String email, UserRole role) {

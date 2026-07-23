@@ -7,10 +7,17 @@ import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 
 import java.util.List;
+import java.util.Optional;
 import java.util.UUID;
 
 public interface TaskRepository extends JpaRepository<Task, UUID> {
 
+    boolean existsByTitleAndCreatedByOverseer_EmailIgnoreCase(String title, String overseerEmail);
+
+    Optional<Task> findFirstByTitleAndCreatedByOverseer_EmailIgnoreCase(
+            String title,
+            String overseerEmail
+    );
 
     List<Task> findByAssignedStaff_IdOrderByCreatedAtDesc(UUID assignedStaffId);
 

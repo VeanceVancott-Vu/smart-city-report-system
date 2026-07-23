@@ -154,16 +154,26 @@ To disable seed data, run without `local` or `dev`, for example:
 SPRING_PROFILES_ACTIVE=prod
 ```
 
-Production must not use `local` or `dev`. With `prod`, `DevUserSeeder` is not loaded and demo users are not created.
+Production must not use `local` or `dev`. With `prod`, the demo users and analytics records are not created.
 
-citizen
-vu08112005@gmail.com 
-08112005
+Local/dev startup seeds nine accounts, 54 reports, and 35 tasks. Natural seed markers make repeated startup safe without changing or deleting user-created records. It includes:
 
-overseer
-overseer@test.com
-Password123
+- 48 reports spread across the latest 6 months, with 20 records in the latest 30 days.
+- Six Ho Chi Minh City areas and all report issue categories.
+- Submitted, in-progress, fixed, and cancelled reports with varied priority/upvote counts.
+- 32 linked tasks distributed across four staff accounts and the active task workflow statuses.
+- Realistic start, submission, review, and closure timestamps for cycle-time analytics.
 
-staff
-staff@test.com
-Password123
+All seeded accounts use the local-only password `Password123`.
+
+| Role | Email |
+| --- | --- |
+| Citizen | `citizen@test.com` |
+| Citizen | `linh.nguyen@test.com` |
+| Citizen | `minh.tran@test.com` |
+| Citizen | `an.le@test.com` |
+| Staff | `staff@test.com` |
+| Staff | `mai.nguyen.staff@test.com` |
+| Staff | `quang.tran.staff@test.com` |
+| Staff | `thuy.le.staff@test.com` |
+| Overseer | `overseer@test.com` |
