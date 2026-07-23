@@ -52,3 +52,42 @@ class GeoJSONFeature(CamelModel):
 class GeoJSONFeatureCollection(CamelModel):
     type: Literal["FeatureCollection"] = "FeatureCollection"
     features: list[GeoJSONFeature]
+
+
+class PriorityReportItem(CamelModel):
+    report_id: str = Field(..., alias="reportId", min_length=1)
+    title: str = Field(..., min_length=1)
+    description: str = Field(default="")
+    category: str = Field(..., min_length=1)
+    status: str = Field(..., min_length=1)
+    latitude: float = Field(..., ge=-90.0, le=90.0)
+    longitude: float = Field(..., ge=-180.0, le=180.0)
+    address_text: str | None = Field(default=None, alias="addressText")
+    upvote_count: int = Field(default=0, alias="upvoteCount", ge=0)
+    created_at: datetime | None = Field(default=None, alias="createdAt")
+
+
+class PriorityBatchRequest(CamelModel):
+    reports: list[PriorityReportItem] = Field(default_factory=list, max_length=500)
+
+
+class PriorityScoreComponents(CamelModel):
+    upvote_score: int = Field(..., alias="upvoteScore", ge=0, le=45)
+    crowd_score: int = Field(..., alias="crowdScore", ge=0, le=25)
+    urgency_score: int = Field(..., alias="urgencyScore", ge=0, le=30)
+
+
+class PriorityScoreResult(CamelModel):
+    report_id: str = Field(..., alias="reportId")
+    priority_score: int = Field(..., alias="priorityScore", ge=0, le=100)
+    priority_level: Literal["low", "medium", "high", "critical"] = Field(
+        ...,
+        alias="priorityLevel",
+    )
+    components: PriorityScoreComponents
+    reasons: list[str]
+
+
+class PriorityBatchResponse(CamelModel):
+    model_version: str = Field(..., alias="modelVersion")
+    results: list[PriorityScoreResult]

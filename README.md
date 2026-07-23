@@ -17,6 +17,7 @@ docker-compose.yml    Local PostgreSQL/PostGIS database
 1. Install Docker Desktop.
 2. Copy `.env.example` to `.env` and adjust local values if needed.
    Existing `.env` files should include `SERVER_PORT`, `JWT_SECRET`, `JWT_EXPIRATION_MINUTES`, `SPRING_DATASOURCE_URL`, `SPRING_DATASOURCE_USERNAME`, `SPRING_DATASOURCE_PASSWORD`, `APP_FILE_UPLOAD_DIR`, `APP_FILE_MAX_UPLOAD_SIZE`, and `APP_CORS_ALLOWED_ORIGINS`.
+   Priority scoring also supports `AI_SERVICE_BASE_URL`, `AI_PRIORITY_ENABLED`, `AI_PRIORITY_CONNECT_TIMEOUT`, and `AI_PRIORITY_READ_TIMEOUT`; the defaults target FastAPI on port 8000.
    The backend imports `.env` through `spring.config.import`; production should provide these as real environment variables instead of committing secrets.
 3. Start PostgreSQL with PostGIS from the repository root:
 
@@ -30,7 +31,17 @@ docker compose up -d
 docker compose ps
 ```
 
-5. Start the Spring Boot backend:
+5. Start the FastAPI priority service:
+
+```bash
+cd ai-service-fastapi
+python -m venv .venv
+.venv\Scripts\activate
+pip install -r requirements.txt
+uvicorn app.main:app --reload --host 127.0.0.1 --port 8000
+```
+
+6. Start the Spring Boot backend:
 
 ```bash
 mvn -f backend-spring/pom.xml spring-boot:run "-Dspring-boot.run.profiles=local"
@@ -39,7 +50,7 @@ mvn -f backend-spring/pom.xml spring-boot:run "-Dspring-boot.run.profiles=local"
 
 Demo users are created only by `DevUserSeeder`, which is active for the `local` and `dev` Spring profiles. A production run must not activate either profile.
 
-6. Run Flutter web:
+7. Run Flutter web:
 
 ```bash
 cd frontend-flutter
@@ -81,7 +92,7 @@ flutter run --dart-define=API_BASE_URL=http://your-backend-host:8080
 
 If Flutter web runs on a different host or port, add that browser origin to `APP_CORS_ALLOWED_ORIGINS` before starting Spring Boot. Native Android emulator traffic uses `10.0.2.2` to reach the host machine backend.
 
-7. Connect with pgAdmin if you want to inspect the database:
+8. Connect with pgAdmin if you want to inspect the database:
 
 ```text
 Host name/address: 127.0.0.1
@@ -91,7 +102,7 @@ Username: smart_city_user
 Password: change_me_for_local_dev
 ```
 
-8. Stop local services when finished:
+9. Stop local services when finished:
 
 ```bash
 docker compose down
@@ -107,7 +118,8 @@ docker compose down -v
 
 - Flutter must call the Spring Boot backend, not PostgreSQL directly.
 - Spring Boot will own auth, roles, reports, tasks, status workflow, map queries, and file metadata.
-- FastAPI will be used only for AI features such as before/after photo verification and predictive hotspot generation.
+- FastAPI is used only for AI features such as report priority scoring, before/after photo verification, and predictive hotspot generation.
+- When an overseer loads the report dashboard, Spring Boot sends the report batch to FastAPI, persists returned 0-100 priority scores, and returns reports ordered by score. If FastAPI is unavailable, the dashboard keeps using stored scores.
 - Secrets and passwords should be supplied through environment variables, not hardcoded in source files.
 - JWT secret, JWT expiry, database connection, upload directory, upload max size, and CORS origins are configured through `.env` / environment variables.
 - The local database is published on laptop port `55432` to avoid conflicts with PostgreSQL installations already using common ports like `5432` or `5433`.

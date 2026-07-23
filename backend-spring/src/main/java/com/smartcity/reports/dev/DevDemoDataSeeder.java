@@ -465,6 +465,7 @@ public class DevDemoDataSeeder implements ApplicationRunner {
                     );
                     report.setId(id);
                     report.updateUpvoteCount(analyticsUpvotes(index, issue.category()));
+                    report.updatePriorityScore(report.getUpvoteCount());
                     report.setCreatedAt(createdAt);
                     report.setUpdatedAt(createdAt);
                     if (!willBeLinked && (index % 3 == 0 || index % 11 == 0)) {
@@ -642,6 +643,7 @@ public class DevDemoDataSeeder implements ApplicationRunner {
                     );
                     report.setId(seed.id());
                     report.updateUpvoteCount(seed.upvoteCount());
+                    report.updatePriorityScore(seed.upvoteCount());
                     report.setCreatedAt(seed.createdAt());
                     report.setUpdatedAt(seed.createdAt());
                     return reportRepository.save(report);

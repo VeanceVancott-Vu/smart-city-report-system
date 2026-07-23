@@ -58,6 +58,7 @@ class OverseerAnalyticsServiceTest {
         User staff = user(UserRole.STAFF, "Demo Staff");
         Report submitted = report("Broken light", IssueCategory.STREET_LIGHT, "District 1", NOW.minusSeconds(20 * 86400L));
         submitted.updateUpvoteCount(4);
+        submitted.updatePriorityScore(4);
         Report fixed = report("Fixed road", IssueCategory.ROAD_DAMAGE, "District 3", NOW.minusSeconds(15 * 86400L));
         fixed.fix();
         fixed.setUpdatedAt(NOW.minusSeconds(3 * 86400L));

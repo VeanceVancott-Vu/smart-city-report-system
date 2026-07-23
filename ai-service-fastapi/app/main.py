@@ -4,15 +4,21 @@ from app.models import (
     HealthResponse,
     HotspotRequest,
     GeoJSONFeatureCollection,
+    PriorityBatchRequest,
+    PriorityBatchResponse,
     VerifyBeforeAfterRequest,
     VerifyBeforeAfterResponse,
 )
-from app.services import build_mock_hotspots, verify_before_after_mock
+from app.services import (
+    build_mock_hotspots,
+    calculate_priority_scores,
+    verify_before_after_mock,
+)
 
 app = FastAPI(
     title="Smart City AI Service",
-    description="Mock AI endpoints for report photo verification and hotspot prediction.",
-    version="0.1.0",
+    description="Lightweight AI endpoints for smart-city report analysis.",
+    version="0.2.0",
 )
 
 
@@ -29,3 +35,8 @@ def verify_before_after(request: VerifyBeforeAfterRequest) -> VerifyBeforeAfterR
 @app.post("/ai/hotspots", response_model=GeoJSONFeatureCollection)
 def hotspots(request: HotspotRequest) -> GeoJSONFeatureCollection:
     return build_mock_hotspots(request)
+
+
+@app.post("/ai/priorities", response_model=PriorityBatchResponse)
+def priorities(request: PriorityBatchRequest) -> PriorityBatchResponse:
+    return calculate_priority_scores(request)

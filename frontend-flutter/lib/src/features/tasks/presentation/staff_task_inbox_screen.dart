@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_map/flutter_map.dart';
 import 'package:latlong2/latlong.dart' hide Path;
 
+import '../../../core/location/current_location_map_layer.dart';
 import '../../../core/localization/app_localizations_extension.dart';
 import '../../../core/localization/domain_localizations.dart';
 import '../../../core/localization/language_menu_button.dart';
@@ -679,6 +680,7 @@ class _TaskMapPanel extends StatelessWidget {
                     );
                   }),
                 ),
+                const CurrentLocationMapLayer(),
               ],
             ),
           ),

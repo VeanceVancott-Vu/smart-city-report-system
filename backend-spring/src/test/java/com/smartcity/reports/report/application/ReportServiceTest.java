@@ -3,7 +3,9 @@ package com.smartcity.reports.report.application;
 import com.smartcity.reports.common.ResourceNotFoundException;
 import com.smartcity.reports.files.application.FileReferenceCleanupService;
 import com.smartcity.reports.issue.IssueCategory;
+import com.smartcity.reports.priority.application.PriorityScoringClient;
 import com.smartcity.reports.report.api.CreateReportRequest;
+import com.smartcity.reports.report.api.ReportListResponse;
 import com.smartcity.reports.report.api.ReportMapPinResponse;
 import com.smartcity.reports.report.api.ReportResponse;
 import com.smartcity.reports.report.api.ReportUpvoteResponse;
@@ -23,10 +25,13 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.ArgumentCaptor;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.data.domain.Sort;
+import org.springframework.data.jpa.domain.Specification;
 import org.springframework.security.access.AccessDeniedException;
 
 import java.time.Instant;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 import java.util.UUID;
 
@@ -52,6 +57,9 @@ class ReportServiceTest {
     @Mock
     private TaskRepository taskRepository;
 
+    @Mock
+    private PriorityScoringClient priorityScoringClient;
+
     private final ReportMapper reportMapper = new ReportMapper();
 
     private ReportService reportService;
@@ -64,7 +72,8 @@ class ReportServiceTest {
                 reportMapper,
                 fileReferenceCleanupService,
                 taskRepository,
-                null
+                null,
+                priorityScoringClient
         );
     }
 
@@ -118,6 +127,55 @@ class ReportServiceTest {
 
         assertThatThrownBy(() -> reportService.createReport(request, user(UserRole.STAFF)))
                 .isInstanceOf(AccessDeniedException.class);
+    }
+
+    @Test
+    void overseerReportListRefreshesAndSortsAiPriorities() {
+        User creator = user(UserRole.CITIZEN);
+        Report lowerPriority = reportFor(creator);
+        lowerPriority.setId(UUID.randomUUID());
+        lowerPriority.setCreatedAt(Instant.parse("2026-06-09T05:00:00Z"));
+        lowerPriority.setUpdatedAt(Instant.parse("2026-06-09T05:00:00Z"));
+        Report higherPriority = reportFor(creator);
+        higherPriority.setId(UUID.randomUUID());
+        higherPriority.setCreatedAt(Instant.parse("2026-06-08T05:00:00Z"));
+        higherPriority.setUpdatedAt(Instant.parse("2026-06-08T05:00:00Z"));
+
+        when(reportRepository.findAll(
+                org.mockito.ArgumentMatchers.<Specification<Report>>any(),
+                any(Sort.class)
+        )).thenReturn(List.of(lowerPriority, higherPriority));
+        when(priorityScoringClient.calculatePriorities(any())).thenReturn(Map.of(
+                lowerPriority.getId(), 28,
+                higherPriority.getId(), 91
+        ));
+
+        ReportListResponse response = reportService.getReports(
+                user(UserRole.OVERSEER),
+                false,
+                null,
+                null
+        );
+
+        assertThat(response.reports())
+                .extracting(ReportResponse::id)
+                .containsExactly(higherPriority.getId(), lowerPriority.getId());
+        assertThat(response.reports())
+                .extracting(ReportResponse::priorityScore)
+                .containsExactly(91, 28);
+        verify(priorityScoringClient).calculatePriorities(any());
+    }
+
+    @Test
+    void citizenReportListDoesNotCallPriorityAi() {
+        when(reportRepository.findAll(
+                org.mockito.ArgumentMatchers.<Specification<Report>>any(),
+                any(Sort.class)
+        )).thenReturn(List.of());
+
+        reportService.getReports(user(UserRole.CITIZEN), false, null, null);
+
+        verify(priorityScoringClient, never()).calculatePriorities(any());
     }
 
     @Test
@@ -311,13 +369,14 @@ class ReportServiceTest {
     }
 
     @Test
-    void upvoteReportCreatesOneUpvoteAndUpdatesPriorityScore() {
+    void upvoteReportUpdatesCountWithoutOverwritingAiPriority() {
         UUID reportId = UUID.randomUUID();
         User currentUser = user(UserRole.CITIZEN);
         Report report = reportFor(user(UserRole.CITIZEN));
         report.setId(reportId);
         report.setCreatedAt(Instant.parse("2026-06-08T05:00:00Z"));
         report.setUpdatedAt(Instant.parse("2026-06-08T05:00:00Z"));
+        report.updatePriorityScore(64);
 
         when(reportRepository.findById(reportId)).thenReturn(Optional.of(report));
         when(reportUpvoteRepository.insertIfAbsent(reportId, currentUser.getId())).thenReturn(1);
@@ -327,7 +386,7 @@ class ReportServiceTest {
 
         verify(reportUpvoteRepository).insertIfAbsent(reportId, currentUser.getId());
         assertThat(response.upvoteCount()).isEqualTo(1);
-        assertThat(response.priorityScore()).isEqualTo(1);
+        assertThat(response.priorityScore()).isEqualTo(64);
         assertThat(response.hasUpvoted()).isTrue();
     }
 
@@ -339,6 +398,7 @@ class ReportServiceTest {
         report.setId(reportId);
         report.setCreatedAt(Instant.parse("2026-06-08T05:00:00Z"));
         report.setUpdatedAt(Instant.parse("2026-06-08T05:00:00Z"));
+        report.updatePriorityScore(52);
 
         when(reportRepository.findById(reportId)).thenReturn(Optional.of(report));
         when(reportUpvoteRepository.insertIfAbsent(reportId, currentUser.getId())).thenReturn(0);
@@ -348,16 +408,17 @@ class ReportServiceTest {
 
         verify(reportUpvoteRepository, never()).save(any(ReportUpvote.class));
         assertThat(response.upvoteCount()).isEqualTo(2);
-        assertThat(response.priorityScore()).isEqualTo(2);
+        assertThat(response.priorityScore()).isEqualTo(52);
         assertThat(response.hasUpvoted()).isTrue();
     }
 
     @Test
-    void removeUpvoteDeletesOneUpvoteAndUpdatesPriorityScore() {
+    void removeUpvoteUpdatesCountWithoutOverwritingAiPriority() {
         UUID reportId = UUID.randomUUID();
         User currentUser = user(UserRole.CITIZEN);
         Report report = reportFor(user(UserRole.CITIZEN));
         report.setId(reportId);
+        report.updatePriorityScore(41);
 
         when(reportRepository.findById(reportId)).thenReturn(Optional.of(report));
         when(reportUpvoteRepository.deleteByReport_IdAndUser_Id(reportId, currentUser.getId())).thenReturn(1L);
@@ -367,7 +428,7 @@ class ReportServiceTest {
 
         verify(reportUpvoteRepository).deleteByReport_IdAndUser_Id(reportId, currentUser.getId());
         assertThat(response.upvoteCount()).isZero();
-        assertThat(response.priorityScore()).isZero();
+        assertThat(response.priorityScore()).isEqualTo(41);
         assertThat(response.hasUpvoted()).isFalse();
     }
 

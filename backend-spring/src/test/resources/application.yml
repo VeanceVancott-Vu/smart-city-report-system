@@ -4,6 +4,11 @@ app:
   files:
     upload-dir: ./target/test-uploads
     max-upload-size: 5MB
+  priority-ai:
+    base-url: http://127.0.0.1:8000
+    enabled: false
+    connect-timeout: 100ms
+    read-timeout: 100ms
 
 jwt:
   secret: test-secret-with-at-least-32-characters

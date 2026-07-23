@@ -5,6 +5,7 @@ import com.smartcity.reports.files.api.FileUploadResponse;
 import com.smartcity.reports.files.application.FileReferenceCleanupService;
 import com.smartcity.reports.files.application.FileStorageService;
 import com.smartcity.reports.issue.IssueCategory;
+import com.smartcity.reports.priority.application.PriorityScoringClient;
 import com.smartcity.reports.report.api.CreateReportRequest;
 import com.smartcity.reports.report.api.ReportListResponse;
 import com.smartcity.reports.report.api.ReportMapPinResponse;
@@ -30,7 +31,9 @@ import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.multipart.MultipartFile;
 
 import java.util.ArrayList;
+import java.util.Comparator;
 import java.util.List;
+import java.util.Map;
 import java.util.Objects;
 import java.util.UUID;
 
@@ -43,6 +46,7 @@ public class ReportService {
     private final FileReferenceCleanupService fileReferenceCleanupService;
     private final TaskRepository taskRepository;
     private final FileStorageService fileStorageService;
+    private final PriorityScoringClient priorityScoringClient;
 
     public ReportService(
             ReportRepository reportRepository,
@@ -56,6 +60,26 @@ public class ReportService {
                 reportMapper,
                 fileReferenceCleanupService,
                 null,
+                null,
+                null
+        );
+    }
+
+    public ReportService(
+            ReportRepository reportRepository,
+            ReportUpvoteRepository reportUpvoteRepository,
+            ReportMapper reportMapper,
+            FileReferenceCleanupService fileReferenceCleanupService,
+            TaskRepository taskRepository,
+            FileStorageService fileStorageService
+    ) {
+        this(
+                reportRepository,
+                reportUpvoteRepository,
+                reportMapper,
+                fileReferenceCleanupService,
+                taskRepository,
+                fileStorageService,
                 null
         );
     }
@@ -67,7 +91,8 @@ public class ReportService {
             ReportMapper reportMapper,
             FileReferenceCleanupService fileReferenceCleanupService,
             TaskRepository taskRepository,
-            FileStorageService fileStorageService
+            FileStorageService fileStorageService,
+            PriorityScoringClient priorityScoringClient
     ) {
         this.reportRepository = reportRepository;
         this.reportUpvoteRepository = reportUpvoteRepository;
@@ -75,6 +100,7 @@ public class ReportService {
         this.fileReferenceCleanupService = fileReferenceCleanupService;
         this.taskRepository = taskRepository;
         this.fileStorageService = fileStorageService;
+        this.priorityScoringClient = priorityScoringClient;
     }
 
     @Transactional
@@ -99,7 +125,7 @@ public class ReportService {
         return toResponse(reportRepository.save(report));
     }
 
-    @Transactional(readOnly = true)
+    @Transactional
     public ReportListResponse getReports(
             User currentUser,
             boolean mine,
@@ -108,12 +134,22 @@ public class ReportService {
     ) {
         requireAuthenticated(currentUser);
         Specification<Report> filters = buildFilters(currentUser, mine, status, category);
-        List<ReportResponse> reports = reportRepository
-                .findAll(filters, Sort.by(Sort.Direction.DESC, "createdAt"))
+        List<Report> reports = new ArrayList<>(reportRepository
+                .findAll(filters, Sort.by(Sort.Direction.DESC, "createdAt")));
+        if (currentUser.getRole() == UserRole.OVERSEER) {
+            refreshPriorityScores(reports);
+            reports.sort(Comparator.comparingInt(Report::getPriorityScore)
+                    .reversed()
+                    .thenComparing(
+                            Report::getCreatedAt,
+                            Comparator.nullsLast(Comparator.reverseOrder())
+                    ));
+        }
+        List<ReportResponse> responses = reports
                 .stream()
                 .map(this::toResponse)
                 .toList();
-        return new ReportListResponse(reports);
+        return new ReportListResponse(responses);
     }
 
     @Transactional(readOnly = true)
@@ -313,6 +349,22 @@ public class ReportService {
         int upvoteCount = Math.toIntExact(reportUpvoteRepository.countByReport_Id(report.getId()));
         report.updateUpvoteCount(upvoteCount);
         return reportMapper.toUpvoteResponse(report, hasUpvoted);
+    }
+
+    private void refreshPriorityScores(List<Report> reports) {
+        if (priorityScoringClient == null || reports.isEmpty()) {
+            return;
+        }
+
+        Map<UUID, Integer> calculatedScores = priorityScoringClient.calculatePriorities(
+                List.copyOf(reports)
+        );
+        reports.forEach(report -> {
+            Integer calculatedScore = calculatedScores.get(report.getId());
+            if (calculatedScore != null) {
+                report.updatePriorityScore(calculatedScore);
+            }
+        });
     }
 
     private void ensureCanReceiveUpvote(Report report) {

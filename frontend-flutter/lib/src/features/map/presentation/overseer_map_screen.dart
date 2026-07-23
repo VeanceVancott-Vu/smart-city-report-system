@@ -5,6 +5,7 @@ import 'package:flutter_map/flutter_map.dart';
 import 'package:latlong2/latlong.dart' hide Path;
 
 import '../../../core/files/uploaded_photo_view.dart';
+import '../../../core/location/current_location_map_layer.dart';
 import '../../../core/location/geocoding_service.dart';
 import '../../../core/localization/app_localizations_extension.dart';
 import '../../../core/localization/domain_localizations.dart';
@@ -624,6 +625,7 @@ class _OverseerMapScreenState extends State<OverseerMapScreen> {
                                       ),
                                   ],
                                 ),
+                                const CurrentLocationMapLayer(),
                               ],
                             ),
                           ),

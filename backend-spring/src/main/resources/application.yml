@@ -35,3 +35,8 @@ app:
   files:
     upload-dir: ${APP_FILE_UPLOAD_DIR}
     max-upload-size: ${APP_FILE_MAX_UPLOAD_SIZE:5MB}
+  priority-ai:
+    base-url: ${AI_SERVICE_BASE_URL:http://127.0.0.1:8000}
+    enabled: ${AI_PRIORITY_ENABLED:true}
+    connect-timeout: ${AI_PRIORITY_CONNECT_TIMEOUT:1s}
+    read-timeout: ${AI_PRIORITY_READ_TIMEOUT:2s}

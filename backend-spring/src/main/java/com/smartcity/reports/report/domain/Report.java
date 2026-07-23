@@ -189,9 +189,11 @@ public class Report {
     }
 
     public void updateUpvoteCount(int upvoteCount) {
-        int safeUpvoteCount = Math.max(0, upvoteCount);
-        this.upvoteCount = safeUpvoteCount;
-        this.priorityScore = safeUpvoteCount;
+        this.upvoteCount = Math.max(0, upvoteCount);
+    }
+
+    public void updatePriorityScore(int priorityScore) {
+        this.priorityScore = Math.max(0, Math.min(priorityScore, 100));
     }
 
     public UUID getId() {
