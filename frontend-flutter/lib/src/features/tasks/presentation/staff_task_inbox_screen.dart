@@ -680,7 +680,7 @@ class _TaskMapPanel extends StatelessWidget {
                     );
                   }),
                 ),
-                const CurrentLocationMapLayer(),
+                CurrentLocationMapLayer(mapController: mapController),
               ],
             ),
           ),
@@ -1577,7 +1577,7 @@ Color _reportStatusColor(ReportStatus status) {
 
 LatLng _taskMapCenter(List<StaffTask> tasks) {
   if (tasks.isEmpty) {
-    return LatLng(10.7769, 106.7009);
+    return const LatLng(16.0544, 108.2022);
   }
 
   final latitude = tasks.fold<double>(

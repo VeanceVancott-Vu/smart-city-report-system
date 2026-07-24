@@ -35,8 +35,8 @@ class _OverseerCreateTaskScreenState extends State<OverseerCreateTaskScreen> {
   final _formKey = GlobalKey<FormState>();
   final _titleController = TextEditingController();
   final _descriptionController = TextEditingController();
-  final _latitudeController = TextEditingController(text: '10.7769');
-  final _longitudeController = TextEditingController(text: '106.7009');
+  final _latitudeController = TextEditingController(text: '16.0544');
+  final _longitudeController = TextEditingController(text: '108.2022');
   final _addressController = TextEditingController();
   final _priorityController = TextEditingController(text: '0');
   final _reportIdsController = TextEditingController();

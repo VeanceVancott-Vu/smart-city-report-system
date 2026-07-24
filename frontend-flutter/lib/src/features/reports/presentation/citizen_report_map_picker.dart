@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_map/flutter_map.dart';
 import 'package:latlong2/latlong.dart' hide Path;
 
+import '../../../core/location/current_location_map_layer.dart';
 import '../../../core/location/geocoding_service.dart';
 import '../../../core/localization/app_localizations_extension.dart';
 import '../data/report_api_service.dart';
@@ -39,14 +40,15 @@ class _CitizenReportMapPickerState extends State<CitizenReportMapPicker>
   late final MapController _mapController;
   late final GeocodingService _geocodingService;
   LatLng? _pinnedLocation;
+  LatLng? _currentDeviceLocation;
   String _addressText = '';
   bool _isGeocoding = false;
 
   List<ReportMapPin> _pins = const <ReportMapPin>[];
-  double _minLat = 10.60;
-  double _minLng = 106.50;
-  double _maxLat = 10.95;
-  double _maxLng = 106.90;
+  double _minLat = 15.95;
+  double _minLng = 108.05;
+  double _maxLat = 16.18;
+  double _maxLng = 108.32;
 
   final TextEditingController _searchController = TextEditingController();
   final FocusNode _searchFocusNode = FocusNode();
@@ -64,7 +66,7 @@ class _CitizenReportMapPickerState extends State<CitizenReportMapPicker>
     super.initState();
     _mapController = MapController();
     _geocodingService = widget.geocodingService ?? NominatimGeocodingService();
-    _pinnedLocation = widget.initialLocation ?? const LatLng(10.7769, 106.7009);
+    _pinnedLocation = widget.initialLocation ?? const LatLng(16.0544, 108.2022);
     _addressText = widget.initialAddress ?? '';
     _searchController.text = _addressText;
 
@@ -199,13 +201,14 @@ class _CitizenReportMapPickerState extends State<CitizenReportMapPicker>
     _maxLng = bounds.northEast.longitude;
 
     // Khi người dùng di chuyển, cập nhật tọa độ tâm bản đồ làm vị trí ghim
-    setState(() {
-      _pinnedLocation = camera.center;
-    });
+    _pinnedLocation = camera.center;
   }
 
   void _handleMapCameraIdle() {
     if (_pinnedLocation != null) {
+      if (mounted) {
+        setState(() {});
+      }
       _fetchAddressFromCoordinates(_pinnedLocation!);
       _checkNearbyDuplicates();
     }
@@ -229,7 +232,7 @@ class _CitizenReportMapPickerState extends State<CitizenReportMapPicker>
                   mapController: _mapController,
                   options: MapOptions(
                     initialCenter:
-                        _pinnedLocation ?? const LatLng(10.7769, 106.7009),
+                        _pinnedLocation ?? const LatLng(16.0544, 108.2022),
                     initialZoom: 16.0,
                     minZoom: 4.0,
                     maxZoom: 18.0,
@@ -270,6 +273,14 @@ class _CitizenReportMapPickerState extends State<CitizenReportMapPicker>
                           ),
                         );
                       }).toList(),
+                    ),
+                    CurrentLocationMapLayer(
+                      mapController: _mapController,
+                      onLocationChanged: (location) {
+                        if (mounted) {
+                          setState(() => _currentDeviceLocation = location);
+                        }
+                      },
                     ),
                   ],
                 ),
@@ -504,12 +515,18 @@ class _CitizenReportMapPickerState extends State<CitizenReportMapPicker>
                       tooltip: context.l10n.mapUseCurrentLocationTooltip,
                       backgroundColor: colorScheme.surface,
                       foregroundColor: colorScheme.primary,
-                      onPressed: () {
-                        const currentLoc = LatLng(10.7769, 106.7009);
-                        setState(() => _pinnedLocation = currentLoc);
-                        _mapController.move(currentLoc, 16.0);
-                      },
-                      child: const Icon(Icons.my_location),
+                      onPressed: _currentDeviceLocation == null
+                          ? null
+                          : () {
+                              final currentLocation = _currentDeviceLocation!;
+                              setState(() => _pinnedLocation = currentLocation);
+                              _mapController.move(currentLocation, 16.0);
+                            },
+                      child: Icon(
+                        _currentDeviceLocation == null
+                            ? Icons.location_searching
+                            : Icons.my_location,
+                      ),
                     ),
                   ],
                 ),

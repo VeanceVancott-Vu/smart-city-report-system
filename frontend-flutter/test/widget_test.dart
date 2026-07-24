@@ -730,8 +730,8 @@ void main() {
         '44444444-4444-4444-4444-444444444444',
       );
       expect(createdTask.category, ReportCategory.streetLight);
-      expect(createdTask.latitude, 10.7769);
-      expect(createdTask.longitude, 106.7009);
+      expect(createdTask.latitude, 16.0602);
+      expect(createdTask.longitude, 108.2148);
       expect(createdTask.priorityScore, 3);
       expect(
         createdTask.reportIds,

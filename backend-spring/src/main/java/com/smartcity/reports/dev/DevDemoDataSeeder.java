@@ -29,8 +29,8 @@ import java.util.UUID;
 @Order(2)
 public class DevDemoDataSeeder implements ApplicationRunner {
 
-    static final int ANALYTICS_REPORT_COUNT = 48;
-    static final int ANALYTICS_TASK_COUNT = 32;
+    static final int ANALYTICS_REPORT_COUNT = 96;
+    static final int ANALYTICS_TASK_COUNT = 64;
 
     static final UUID POTHOLE_REPORT_ID = UUID.fromString("11111111-1111-1111-1111-000000000003");
     static final UUID STREETLIGHT_REPORT_ID = UUID.fromString("11111111-1111-1111-1111-000000000004");
@@ -38,10 +38,15 @@ public class DevDemoDataSeeder implements ApplicationRunner {
     static final UUID DRAIN_REPORT_ID = UUID.fromString("11111111-1111-1111-1111-000000000006");
     static final UUID MANHOLE_REPORT_ID = UUID.fromString("11111111-1111-1111-1111-000000000007");
     static final UUID FLOODING_REPORT_ID = UUID.fromString("11111111-1111-1111-1111-000000000008");
+    static final UUID VKU_ROAD_REPORT_ID = UUID.fromString("11111111-1111-1111-1111-000000000009");
+    static final UUID FPT_LIGHT_REPORT_ID = UUID.fromString("11111111-1111-1111-1111-000000000010");
+    static final UUID VKU_DRAIN_REPORT_ID = UUID.fromString("11111111-1111-1111-1111-000000000011");
+    static final UUID FPT_TREE_REPORT_ID = UUID.fromString("11111111-1111-1111-1111-000000000012");
 
     static final UUID ROAD_TASK_ID = UUID.fromString("33333333-3333-3333-3333-000000000001");
     static final UUID STREETLIGHT_TASK_ID = UUID.fromString("33333333-3333-3333-3333-000000000002");
     static final UUID DRAINAGE_TASK_ID = UUID.fromString("33333333-3333-3333-3333-000000000003");
+    static final UUID VKU_TASK_ID = UUID.fromString("33333333-3333-3333-3333-000000000004");
 
     private static final List<String> ANALYTICS_CITIZEN_EMAILS = List.of(
             "citizen@test.com",
@@ -56,49 +61,63 @@ public class DevDemoDataSeeder implements ApplicationRunner {
             "thuy.le.staff@test.com"
     );
     private static final String ANALYTICS_SEED_MARKER_TASK_TITLE =
-            "Resolve flush the local drainage line in District 1";
+            "Resolve repair the damaged road surface in Hai Chau District";
     private static final List<AreaSeed> ANALYTICS_AREAS = List.of(
             new AreaSeed(
-                    "District 1",
-                    "Nguyen Hue Boulevard, Ben Nghe Ward, District 1",
-                    "Nguyen Hue walking street",
-                    10.7769,
-                    106.7009
+                    "Hai Chau District",
+                    "Bach Dang Street, Hai Chau 1 Ward, Hai Chau District",
+                    "Han Market riverfront",
+                    16.0678,
+                    108.2241
             ),
             new AreaSeed(
-                    "District 3",
-                    "Vo Thi Sau Street, Ward 7, District 3",
-                    "Turtle Lake",
-                    10.7876,
-                    106.6917
+                    "Son Tra District",
+                    "Vo Nguyen Giap Street, Phuoc My Ward, Son Tra District",
+                    "My Khe Beach",
+                    16.0644,
+                    108.2461
             ),
             new AreaSeed(
-                    "Binh Thanh District",
-                    "Dien Bien Phu Street, Ward 25, Binh Thanh District",
-                    "Hang Xanh intersection",
-                    10.8030,
-                    106.7147
+                    "Thanh Khe District",
+                    "Dien Bien Phu Street, Chinh Gian Ward, Thanh Khe District",
+                    "Thanh Khe railway station",
+                    16.0666,
+                    108.1907
             ),
             new AreaSeed(
-                    "Thu Duc City",
-                    "Vo Nguyen Giap Boulevard, Thao Dien Ward, Thu Duc City",
-                    "Thao Dien station",
-                    10.8025,
-                    106.7335
+                    "Ngu Hanh Son District",
+                    "Ngu Hanh Son Street, My An Ward, Ngu Hanh Son District",
+                    "Bac My An Market",
+                    16.0474,
+                    108.2406
             ),
             new AreaSeed(
-                    "District 7",
-                    "Nguyen Van Linh Boulevard, Tan Phong Ward, District 7",
-                    "Crescent Mall junction",
-                    10.7295,
-                    106.7215
+                    "VKU - FPT Complex",
+                    "Nam Ky Khoi Nghia Street, Hoa Hai Ward, Ngu Hanh Son District",
+                    "VKU Campus & FPT Complex",
+                    15.9753,
+                    108.2532
             ),
             new AreaSeed(
-                    "Tan Binh District",
-                    "Cong Hoa Street, Ward 4, Tan Binh District",
-                    "Hoang Hoa Tham flyover",
-                    10.8004,
-                    106.6521
+                    "FPT City Urban Area",
+                    "Tran Dai Nghia Street, Hoa Hai Ward, Ngu Hanh Son District",
+                    "FPT Plaza & Software Park",
+                    15.9725,
+                    108.2580
+            ),
+            new AreaSeed(
+                    "Cam Le District",
+                    "Cach Mang Thang Tam Street, Khue Trung Ward, Cam Le District",
+                    "Hoa Cam junction",
+                    16.0145,
+                    108.2143
+            ),
+            new AreaSeed(
+                    "Lien Chieu District",
+                    "Nguyen Luong Bang Street, Hoa Khanh Bac Ward, Lien Chieu District",
+                    "Hoa Khanh market",
+                    16.0728,
+                    108.1508
             )
     );
     private static final List<IssueSeed> ANALYTICS_ISSUES = List.of(
@@ -203,6 +222,26 @@ public class DevDemoDataSeeder implements ApplicationRunner {
             TaskStatus.CANCELLED,
             TaskStatus.APPROVED,
             TaskStatus.IN_PROGRESS,
+            TaskStatus.CANCELLED,
+            TaskStatus.NEW,
+            TaskStatus.APPROVED,
+            TaskStatus.ASSIGNED,
+            TaskStatus.IN_PROGRESS,
+            TaskStatus.CLOSED,
+            TaskStatus.ASSIGNED,
+            TaskStatus.IN_PROGRESS,
+            TaskStatus.DONE,
+            TaskStatus.APPROVED,
+            TaskStatus.NEW,
+            TaskStatus.CLOSED,
+            TaskStatus.DENIED,
+            TaskStatus.IN_PROGRESS,
+            TaskStatus.CLOSED,
+            TaskStatus.ASSIGNED,
+            TaskStatus.DONE,
+            TaskStatus.CANCELLED,
+            TaskStatus.APPROVED,
+            TaskStatus.IN_PROGRESS,
             TaskStatus.CLOSED,
             TaskStatus.NEW,
             TaskStatus.ASSIGNED,
@@ -222,6 +261,10 @@ public class DevDemoDataSeeder implements ApplicationRunner {
             TaskStatus.IN_PROGRESS
     );
     private static final int[] STAFF_ASSIGNMENT_PATTERN = {
+            0, 0, 0, 1, 1, 2, 2, 3,
+            0, 0, 1, 1, 2, 2, 3, 0,
+            0, 1, 1, 2, 2, 3, 0, 0,
+            1, 1, 2, 2, 3, 0, 1, 2,
             0, 0, 0, 1, 1, 2, 2, 3,
             0, 0, 1, 1, 2, 2, 3, 0,
             0, 1, 1, 2, 2, 3, 0, 0,
@@ -261,9 +304,9 @@ public class DevDemoDataSeeder implements ApplicationRunner {
                 "Pothole beside the bus stop",
                 "Cars swerve around it during rush hour.",
                 IssueCategory.ROAD_DAMAGE,
-                10.7827,
-                106.6994,
-                "Bus stop near Le Loi",
+                16.0679,
+                108.2208,
+                "Bach Dang bus stop near Han Market",
                 "/uploads/report-before/pothole-before.jpg",
                 false,
                 5,
@@ -271,12 +314,12 @@ public class DevDemoDataSeeder implements ApplicationRunner {
         ), citizen);
         Report curb = findOrCreateReport(new SeedReport(
                 CURB_REPORT_ID,
-                "Cracked curb near Le Loi crossing",
+                "Cracked curb near Bach Dang crossing",
                 "The curb edge is broken and difficult for wheelchairs to pass.",
                 IssueCategory.ROAD_DAMAGE,
-                10.7831,
-                106.6991,
-                "Le Loi pedestrian crossing",
+                16.0683,
+                108.2211,
+                "Bach Dang pedestrian crossing near Han Market",
                 "/uploads/report-before/curb-before.jpg",
                 false,
                 2,
@@ -284,12 +327,12 @@ public class DevDemoDataSeeder implements ApplicationRunner {
         ), citizen);
         Report streetlight = findOrCreateReport(new SeedReport(
                 STREETLIGHT_REPORT_ID,
-                "Broken streetlight near Nguyen Hue",
+                "Broken streetlight near Dragon Bridge",
                 "The light has been off for two nights.",
                 IssueCategory.STREET_LIGHT,
-                10.7769,
-                106.7009,
-                "Nguyen Hue, District 1",
+                16.0612,
+                108.2276,
+                "Dragon Bridge, Hai Chau District",
                 "/uploads/report-before/streetlight-before.jpg",
                 false,
                 3,
@@ -297,12 +340,12 @@ public class DevDemoDataSeeder implements ApplicationRunner {
         ), citizen);
         Report blockedDrain = findOrCreateReport(new SeedReport(
                 DRAIN_REPORT_ID,
-                "Blocked drain on Pasteur Street",
+                "Blocked drain on Nguyen Van Linh Street",
                 "Rainwater is pooling because leaves and trash are blocking the drain.",
                 IssueCategory.DRAINAGE,
-                10.7805,
-                106.6956,
-                "Pasteur Street near the school gate",
+                16.0595,
+                108.2098,
+                "Nguyen Van Linh Street near the school gate",
                 "/uploads/report-before/drain-before.jpg",
                 false,
                 4,
@@ -310,12 +353,12 @@ public class DevDemoDataSeeder implements ApplicationRunner {
         ), citizen);
         Report looseManhole = findOrCreateReport(new SeedReport(
                 MANHOLE_REPORT_ID,
-                "Loose manhole cover near Pasteur alley",
+                "Loose manhole cover near Nguyen Van Linh alley",
                 "The cover shifts when motorcycles pass and could become dangerous.",
                 IssueCategory.DRAINAGE,
-                10.7801,
-                106.6961,
-                "Pasteur alley entrance",
+                16.0591,
+                108.2103,
+                "Nguyen Van Linh alley entrance",
                 "/uploads/report-before/manhole-before.jpg",
                 false,
                 3,
@@ -326,9 +369,9 @@ public class DevDemoDataSeeder implements ApplicationRunner {
                 "Street flooding after short rain",
                 "Water remains across the lane for hours after light rain.",
                 IssueCategory.DRAINAGE,
-                10.7810,
-                106.6951,
-                "Pasteur Street service lane",
+                16.0600,
+                108.2093,
+                "Nguyen Van Linh Street service lane",
                 "/uploads/report-before/flooding-before.jpg",
                 false,
                 2,
@@ -337,12 +380,12 @@ public class DevDemoDataSeeder implements ApplicationRunner {
 
         Task roadTask = findOrCreateTask(new SeedTask(
                 ROAD_TASK_ID,
-                "Repair road damage near Le Loi",
+                "Repair road damage near Bach Dang",
                 "Repair the pothole and damaged curb reported by citizens.",
                 IssueCategory.ROAD_DAMAGE,
-                10.7829,
-                106.6993,
-                "Bus stop near Le Loi",
+                16.0681,
+                108.2209,
+                "Bach Dang bus stop near Han Market",
                 7,
                 Instant.parse("2026-06-09T09:00:00Z")
         ), staff, overseer);
@@ -353,9 +396,9 @@ public class DevDemoDataSeeder implements ApplicationRunner {
                 "Inspect broken streetlight",
                 "Check wiring and replace the failed lamp.",
                 IssueCategory.STREET_LIGHT,
-                10.7769,
-                106.7009,
-                "Nguyen Hue, District 1",
+                16.0612,
+                108.2276,
+                "Dragon Bridge, Hai Chau District",
                 3,
                 Instant.parse("2026-06-09T10:00:00Z")
         ), staff, overseer);
@@ -363,16 +406,82 @@ public class DevDemoDataSeeder implements ApplicationRunner {
 
         Task drainageTask = findOrCreateTask(new SeedTask(
                 DRAINAGE_TASK_ID,
-                "Clear Pasteur drainage cluster",
+                "Clear Nguyen Van Linh drainage cluster",
                 "Clear the blocked drain, inspect the loose manhole cover, and check the flooded lane.",
                 IssueCategory.DRAINAGE,
-                10.7805,
-                106.6956,
-                "Pasteur Street drainage cluster",
+                16.0595,
+                108.2098,
+                "Nguyen Van Linh Street drainage cluster",
                 9,
                 Instant.parse("2026-06-09T11:00:00Z")
         ), staff, overseer);
         linkReports(drainageTask, List.of(blockedDrain, looseManhole, flooding));
+
+        Report vkuRoad = findOrCreateReport(new SeedReport(
+                VKU_ROAD_REPORT_ID,
+                "Sunken asphalt near VKU main entrance",
+                "Heavy vehicle traffic on Nam Ky Khoi Nghia has created deep ruts in front of VKU gate.",
+                IssueCategory.ROAD_DAMAGE,
+                15.9753,
+                108.2532,
+                "Nam Ky Khoi Nghia St, VKU Campus, Hoa Hai Ward",
+                "/uploads/report-before/pothole-before.jpg",
+                false,
+                8,
+                Instant.parse("2026-06-10T08:00:00Z")
+        ), citizen);
+        Report fptLight = findOrCreateReport(new SeedReport(
+                FPT_LIGHT_REPORT_ID,
+                "Dark streetlights along FPT Complex avenue",
+                "Multiple streetlight lamps are dark near FPT Complex entrance and FPT Plaza.",
+                IssueCategory.STREET_LIGHT,
+                15.9725,
+                108.2580,
+                "Tran Dai Nghia St, FPT Complex, Hoa Hai Ward",
+                "/uploads/report-before/streetlight-before.jpg",
+                false,
+                6,
+                Instant.parse("2026-06-11T19:30:00Z")
+        ), citizen);
+        Report vkuDrain = findOrCreateReport(new SeedReport(
+                VKU_DRAIN_REPORT_ID,
+                "Clogged stormwater inlet near VKU dormitories",
+                "Trash and leaves are blocking the storm drain inlet causing localized pooling.",
+                IssueCategory.DRAINAGE,
+                15.9768,
+                108.2515,
+                "Tran Dai Nghia St, near VKU Dormitories, Hoa Hai Ward",
+                "/uploads/report-before/drain-before.jpg",
+                false,
+                5,
+                Instant.parse("2026-06-12T07:15:00Z")
+        ), citizen);
+        Report fptTree = findOrCreateReport(new SeedReport(
+                FPT_TREE_REPORT_ID,
+                "Tree branches obstructing sign at FPT City roundabout",
+                "Low tree branches cover the directional traffic sign at FPT City main roundabout.",
+                IssueCategory.TREE_BLOCKAGE,
+                15.9710,
+                108.2595,
+                "FPT City main roundabout, Hoa Hai Ward",
+                "/uploads/report-before/curb-before.jpg",
+                false,
+                4,
+                Instant.parse("2026-06-12T10:45:00Z")
+        ), citizen);
+
+        Task vkuTask = findOrCreateTask(new SeedTask(
+                VKU_TASK_ID,
+                "Maintain infrastructure around VKU - FPT Complex",
+                "Resurface asphalt at VKU entrance, clear storm inlet, and inspect FPT streetlights.",
+                IssueCategory.ROAD_DAMAGE,
+                15.9753,
+                108.2532,
+                "Nam Ky Khoi Nghia St, VKU - FPT Complex area",
+                12,
+                Instant.parse("2026-06-13T09:00:00Z")
+        ), staff, overseer);
+        linkReports(vkuTask, List.of(vkuRoad, fptLight, vkuDrain, fptTree));
 
         seedAnalyticsData(
                 requireUsers(ANALYTICS_CITIZEN_EMAILS),
@@ -428,7 +537,7 @@ public class DevDemoDataSeeder implements ApplicationRunner {
             reports.set(reportIndex, finalizeAnalyticsReport(
                     tasks.get(taskIndex),
                     reports.get(reportIndex),
-                    ANALYTICS_TASK_STATUSES.get(taskIndex)
+                    ANALYTICS_TASK_STATUSES.get(taskIndex % ANALYTICS_TASK_STATUSES.size())
             ));
         }
         reportRepository.flush();
@@ -447,17 +556,34 @@ public class DevDemoDataSeeder implements ApplicationRunner {
 
     private Report findOrCreateAnalyticsReport(int index, User citizen, boolean willBeLinked) {
         UUID id = analyticsReportId(index);
+        AreaSeed area = analyticsArea(index);
+        IssueSeed issue = analyticsIssue(index);
+        String title = issue.reportTitle() + " near " + area.landmark();
+        String description = issue.description()
+                + " Nearby residents asked the city to inspect the site.";
+        double latitude = area.latitude() + coordinateOffset(index, 0.0007);
+        double longitude = area.longitude() + coordinateOffset(index + 2, 0.0008);
         return reportRepository.findById(id)
+                .map(report -> {
+                    report.updateDetails(
+                            title,
+                            description,
+                            issue.category(),
+                            latitude,
+                            longitude,
+                            area.addressText(),
+                            report.getBeforePhotoUrl()
+                    );
+                    return reportRepository.save(report);
+                })
                 .orElseGet(() -> {
-                    AreaSeed area = analyticsArea(index);
-                    IssueSeed issue = analyticsIssue(index);
                     Instant createdAt = analyticsReportCreatedAt(index);
                     Report report = new Report(
-                            issue.reportTitle() + " near " + area.landmark(),
-                            issue.description() + " Nearby residents asked the city to inspect the site.",
+                            title,
+                            description,
                             issue.category(),
-                            area.latitude() + coordinateOffset(index, 0.0007),
-                            area.longitude() + coordinateOffset(index + 2, 0.0008),
+                            latitude,
+                            longitude,
                             area.addressText(),
                             null,
                             index % 11 == 0,
@@ -483,19 +609,34 @@ public class DevDemoDataSeeder implements ApplicationRunner {
             User overseer
     ) {
         UUID id = analyticsTaskId(index);
+        IssueSeed issue = analyticsIssue(reportIndexForTask(index));
+        AreaSeed area = analyticsArea(reportIndexForTask(index));
+        String title = "Resolve " + issue.taskAction() + " in " + area.name();
+        String description = "Inspect the site, " + issue.taskAction()
+                + ", and record the completed work for overseer review.";
         return taskRepository.findById(id)
+                .map(task -> {
+                    task.updateDetails(
+                            title,
+                            description,
+                            report.getCategory(),
+                            report.getLatitude(),
+                            report.getLongitude(),
+                            report.getAddressText(),
+                            task.getPriorityScore(),
+                            task.getStaffNote()
+                    );
+                    return taskRepository.save(task);
+                })
                 .orElseGet(() -> {
-                    TaskStatus targetStatus = ANALYTICS_TASK_STATUSES.get(index);
+                    TaskStatus targetStatus = ANALYTICS_TASK_STATUSES.get(index % ANALYTICS_TASK_STATUSES.size());
                     User assignedStaff = targetStatus == TaskStatus.NEW
                             ? null
-                            : staff.get(STAFF_ASSIGNMENT_PATTERN[index]);
-                    IssueSeed issue = analyticsIssue(reportIndexForTask(index));
-                    AreaSeed area = analyticsArea(reportIndexForTask(index));
+                            : staff.get(STAFF_ASSIGNMENT_PATTERN[index % STAFF_ASSIGNMENT_PATTERN.length]);
                     Instant createdAt = report.getCreatedAt().plus(Duration.ofHours(2L + index % 5));
                     Task task = new Task(
-                            "Resolve " + issue.taskAction() + " in " + area.name(),
-                            "Inspect the site, " + issue.taskAction()
-                                    + ", and record the completed work for overseer review.",
+                            title,
+                            description,
                             report.getCategory(),
                             report.getLatitude(),
                             report.getLongitude(),
@@ -629,6 +770,18 @@ public class DevDemoDataSeeder implements ApplicationRunner {
                         seed.title(),
                         citizen.getEmail()
                 ))
+                .map(report -> {
+                    report.updateDetails(
+                            seed.title(),
+                            seed.description(),
+                            seed.category(),
+                            seed.latitude(),
+                            seed.longitude(),
+                            seed.addressText(),
+                            seed.beforePhotoUrl()
+                    );
+                    return reportRepository.save(report);
+                })
                 .orElseGet(() -> {
                     Report report = new Report(
                             seed.title(),
@@ -656,6 +809,19 @@ public class DevDemoDataSeeder implements ApplicationRunner {
                         seed.title(),
                         overseer.getEmail()
                 ))
+                .map(task -> {
+                    task.updateDetails(
+                            seed.title(),
+                            seed.description(),
+                            seed.category(),
+                            seed.latitude(),
+                            seed.longitude(),
+                            seed.addressText(),
+                            seed.priorityScore(),
+                            task.getStaffNote()
+                    );
+                    return taskRepository.save(task);
+                })
                 .orElseGet(() -> {
                     Task task = new Task(
                             seed.title(),

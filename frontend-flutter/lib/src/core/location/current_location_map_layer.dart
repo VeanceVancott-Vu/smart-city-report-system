@@ -16,11 +16,17 @@ typedef PositionStreamFactory = Stream<Position> Function();
 class CurrentLocationMapLayer extends StatefulWidget {
   const CurrentLocationMapLayer({
     super.key,
+    this.mapController,
+    this.initialZoom = 15.5,
+    this.onLocationChanged,
     this.requestPermission,
     this.positionStream,
     this.headingStream,
   });
 
+  final MapController? mapController;
+  final double initialZoom;
+  final ValueChanged<LatLng>? onLocationChanged;
   final LocationPermissionRequest? requestPermission;
   final PositionStreamFactory? positionStream;
   final Stream<double?>? headingStream;
@@ -31,12 +37,15 @@ class CurrentLocationMapLayer extends StatefulWidget {
 }
 
 class _CurrentLocationMapLayerState extends State<CurrentLocationMapLayer> {
+  static final Set<MapController> _centeredControllers = <MapController>{};
+
   StreamSubscription<Position>? _positionSubscription;
   StreamSubscription<double?>? _headingSubscription;
 
   Position? _position;
   double? _compassHeading;
   double? _movementHeading;
+  bool _didCenterMap = false;
 
   @override
   void initState() {
@@ -110,6 +119,7 @@ class _CurrentLocationMapLayerState extends State<CurrentLocationMapLayer> {
       return;
     }
 
+    final location = LatLng(position.latitude, position.longitude);
     final movementHeading = position.speed > 0.5
         ? _normalizedHeading(position.heading)
         : null;
@@ -117,6 +127,23 @@ class _CurrentLocationMapLayerState extends State<CurrentLocationMapLayer> {
       _position = position;
       _movementHeading = movementHeading;
     });
+    widget.onLocationChanged?.call(location);
+    _centerMapOnFirstFix(location);
+  }
+
+  void _centerMapOnFirstFix(LatLng location) {
+    final mapController = widget.mapController;
+    if (_didCenterMap || mapController == null || _centeredControllers.contains(mapController)) {
+      return;
+    }
+
+    try {
+      mapController.move(location, widget.initialZoom);
+      _didCenterMap = true;
+      _centeredControllers.add(mapController);
+    } on Object {
+      // A later position update retries if the map is not attached yet.
+    }
   }
 
   void _onHeadingChanged(double? heading) {

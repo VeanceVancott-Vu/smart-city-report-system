@@ -39,10 +39,10 @@ class _OverseerMapScreenState extends State<OverseerMapScreen> {
   ReportStatus? _selectedStatus;
   int _minPriority = 0;
 
-  double _minLat = 10.60;
-  double _minLng = 106.50;
-  double _maxLat = 10.95;
-  double _maxLng = 106.90;
+  double _minLat = 15.95;
+  double _minLng = 108.05;
+  double _maxLat = 16.18;
+  double _maxLng = 108.32;
 
   ReportMapPin? _selectedPin;
   Report? _selectedPinDetails;
@@ -545,7 +545,7 @@ class _OverseerMapScreenState extends State<OverseerMapScreen> {
                             child: FlutterMap(
                               mapController: _mapController,
                               options: MapOptions(
-                                initialCenter: LatLng(10.7769, 106.7009),
+                                initialCenter: const LatLng(16.0544, 108.2022),
                                 initialZoom: 13.0,
                                 minZoom: 4.0,
                                 maxZoom: 18.0,
@@ -625,7 +625,9 @@ class _OverseerMapScreenState extends State<OverseerMapScreen> {
                                       ),
                                   ],
                                 ),
-                                const CurrentLocationMapLayer(),
+                                CurrentLocationMapLayer(
+                                  mapController: _mapController,
+                                ),
                               ],
                             ),
                           ),

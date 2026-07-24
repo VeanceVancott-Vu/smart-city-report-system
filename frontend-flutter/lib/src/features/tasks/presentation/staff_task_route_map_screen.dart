@@ -1198,7 +1198,7 @@ List<Marker> _markersForPlan(BuildContext context, _RoutePlan plan) {
 
 LatLng _routeCenter(List<LatLng> points) {
   if (points.isEmpty) {
-    return LatLng(10.7769, 106.7009);
+    return const LatLng(16.0544, 108.2022);
   }
 
   final lat = points.fold<double>(0, (total, point) => total + point.latitude);

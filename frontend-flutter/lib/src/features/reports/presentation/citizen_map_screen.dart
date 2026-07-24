@@ -38,10 +38,10 @@ class _CitizenMapScreenState extends State<CitizenMapScreen> {
   ReportCategory? _selectedCategory;
   bool _hideOwnReports = false;
 
-  double _minLat = 10.60;
-  double _minLng = 106.50;
-  double _maxLat = 10.95;
-  double _maxLng = 106.90;
+  double _minLat = 15.95;
+  double _minLng = 108.05;
+  double _maxLat = 16.18;
+  double _maxLng = 108.32;
 
   bool _isMapView = true;
   ReportMapPin? _selectedPin;
@@ -437,7 +437,7 @@ class _CitizenMapScreenState extends State<CitizenMapScreen> {
               child: FlutterMap(
                 mapController: _mapController,
                 options: MapOptions(
-                  initialCenter: const LatLng(10.7769, 106.7009),
+                  initialCenter: const LatLng(16.0544, 108.2022),
                   initialZoom: 13.0,
                   minZoom: 4.0,
                   maxZoom: 18.0,
@@ -501,7 +501,7 @@ class _CitizenMapScreenState extends State<CitizenMapScreen> {
                         ),
                     ],
                   ),
-                  const CurrentLocationMapLayer(),
+                  CurrentLocationMapLayer(mapController: _mapController),
                 ],
               ),
             ),

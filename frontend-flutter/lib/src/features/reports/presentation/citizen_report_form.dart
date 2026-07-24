@@ -61,10 +61,10 @@ class _CitizenReportFormState extends State<CitizenReportForm> {
       text: report?.description ?? '',
     );
     _latitudeController = TextEditingController(
-      text: (report?.latitude ?? 10.7769).toString(),
+      text: (report?.latitude ?? 16.0544).toString(),
     );
     _longitudeController = TextEditingController(
-      text: (report?.longitude ?? 106.7009).toString(),
+      text: (report?.longitude ?? 108.2022).toString(),
     );
     _addressController = TextEditingController(text: report?.addressText ?? '');
     _beforePhotoUrl = report?.beforePhotoUrl;

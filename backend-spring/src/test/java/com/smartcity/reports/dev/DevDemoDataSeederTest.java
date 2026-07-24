@@ -110,13 +110,13 @@ class DevDemoDataSeederTest {
                 .toList();
 
         assertThat(analyticsReports).doesNotContainNull();
-        assertThat(analyticsReports).hasSize(48);
+        assertThat(analyticsReports).hasSize(96);
         assertThat(new HashSet<>(analyticsReports.stream().map(Report::getCategory).toList()))
                 .containsExactlyInAnyOrder(IssueCategory.values());
         assertThat(new HashSet<>(analyticsReports.stream().map(Report::getStatus).toList()))
                 .containsExactlyInAnyOrder(ReportStatus.values());
-        assertThat(analyticsReports).filteredOn(report -> report.getLinkedTaskId() != null).hasSize(32);
-        assertThat(analyticsReports).filteredOn(report -> report.getStatus() == ReportStatus.FIXED).hasSize(10);
+        assertThat(analyticsReports).filteredOn(report -> report.getLinkedTaskId() != null).hasSize(64);
+        assertThat(analyticsReports).filteredOn(report -> report.getStatus() == ReportStatus.FIXED).hasSize(20);
         assertThat(analyticsReports).filteredOn(report -> !report.getCreatedAt().isBefore(NOW.minus(Duration.ofDays(30))))
                 .hasSize(20);
         assertThat(analyticsReports.stream().map(Report::getCreatedAt).min(Instant::compareTo).orElseThrow())
@@ -136,12 +136,17 @@ class DevDemoDataSeederTest {
                         "an.le@test.com"
                 );
         assertThat(analyticsReports).extracting(Report::getAddressText)
-                .anyMatch(address -> address.contains("District 1"))
-                .anyMatch(address -> address.contains("District 3"))
-                .anyMatch(address -> address.contains("Binh Thanh District"))
-                .anyMatch(address -> address.contains("Thu Duc City"))
-                .anyMatch(address -> address.contains("District 7"))
-                .anyMatch(address -> address.contains("Tan Binh District"));
+                .anyMatch(address -> address.contains("Hai Chau District"))
+                .anyMatch(address -> address.contains("Son Tra District"))
+                .anyMatch(address -> address.contains("Thanh Khe District"))
+                .anyMatch(address -> address.contains("Ngu Hanh Son District"))
+                .anyMatch(address -> address.contains("Hoa Hai Ward"))
+                .anyMatch(address -> address.contains("Cam Le District"))
+                .anyMatch(address -> address.contains("Lien Chieu District"));
+        assertThat(analyticsReports).allSatisfy(report -> {
+            assertThat(report.getLatitude()).isBetween(15.9, 16.2);
+            assertThat(report.getLongitude()).isBetween(108.1, 108.3);
+        });
 
         ArgumentCaptor<Task> taskCaptor = ArgumentCaptor.forClass(Task.class);
         verify(taskRepository, atLeast(DevDemoDataSeeder.ANALYTICS_TASK_COUNT))
@@ -157,9 +162,13 @@ class DevDemoDataSeederTest {
                 .toList();
 
         assertThat(analyticsTasks).doesNotContainNull();
-        assertThat(analyticsTasks).hasSize(32);
+        assertThat(analyticsTasks).hasSize(64);
         assertThat(analyticsTasks).extracting(Task::getTitle)
-                .contains("Resolve flush the local drainage line in District 1");
+                .contains("Resolve repair the damaged road surface in Hai Chau District");
+        assertThat(analyticsTasks).allSatisfy(task -> {
+            assertThat(task.getLatitude()).isBetween(15.9, 16.2);
+            assertThat(task.getLongitude()).isBetween(108.1, 108.3);
+        });
         assertThat(new HashSet<>(analyticsTasks.stream().map(Task::getStatus).toList()))
                 .containsExactlyInAnyOrder(
                         TaskStatus.NEW,
@@ -171,7 +180,7 @@ class DevDemoDataSeederTest {
                         TaskStatus.CLOSED,
                         TaskStatus.CANCELLED
                 );
-        assertThat(analyticsTasks).filteredOn(task -> task.getAssignedStaff() == null).hasSize(3);
+        assertThat(analyticsTasks).filteredOn(task -> task.getAssignedStaff() == null).hasSize(6);
         assertThat(new HashSet<>(analyticsTasks.stream()
                 .filter(task -> task.getAssignedStaff() != null)
                 .map(task -> task.getAssignedStaff().getEmail())
@@ -196,7 +205,7 @@ class DevDemoDataSeederTest {
                 });
 
         verify(taskRepository).existsByTitleAndCreatedByOverseer_EmailIgnoreCase(
-                "Resolve flush the local drainage line in District 1",
+                "Resolve repair the damaged road surface in Hai Chau District",
                 "overseer@test.com"
         );
         verify(reportRepository).findFirstByTitleAndCreatedBy_EmailIgnoreCase(
@@ -204,7 +213,7 @@ class DevDemoDataSeederTest {
                 "citizen@test.com"
         );
         verify(taskRepository).findFirstByTitleAndCreatedByOverseer_EmailIgnoreCase(
-                "Repair road damage near Le Loi",
+                "Repair road damage near Bach Dang",
                 "overseer@test.com"
         );
     }
